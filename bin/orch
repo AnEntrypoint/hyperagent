@@ -185,9 +185,14 @@ def spawn_server() -> subprocess.Popen:
         raise SystemExit(f"airc server not found at {server}; set AIRC_DIR")
     ORCH_DIR.mkdir(parents=True, exist_ok=True)
     log = open(ORCH_DIR / "server.log", "ab")
+    env = dict(os.environ)
+    if os.environ.get("ORCH_SKIP_PERMISSIONS", "1") == "1":
+        env["AIRC_CLAUDE_SKIP_PERMISSIONS"] = "1"
+    else:
+        env.pop("AIRC_CLAUDE_SKIP_PERMISSIONS", None)
     proc = subprocess.Popen(
         [sys.executable, str(server), "--host", HOST, "--port", str(PORT)],
-        cwd=str(airc_root()), stdout=log, stderr=log, start_new_session=True)
+        cwd=str(airc_root()), stdout=log, stderr=log, start_new_session=True, env=env)
     (ORCH_DIR / "server.pid").write_text(str(proc.pid))
     return proc
 
