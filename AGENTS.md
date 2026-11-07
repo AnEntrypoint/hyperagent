@@ -85,6 +85,12 @@ the old message ids for the same reason.
 to resume a project's latest session automatically when its peer is not running. The
 CLI equivalents are `start --resume`, `prompt --resume` and `prompt --session ID`.
 
+`fork: true` / `--fork` adds the harness's fork form so the resumed session keeps its
+original id and the peer gets a new one; the source store is left untouched. Claude
+uses `--fork-session` and codex uses `fork`; freebuff has no fork form. After a fork
+the new session id is discovered and recorded in the ledger, so the next unqualified
+resume continues the fork.
+
 Codex and freebuff need their own CLI login before a peer can run; `codex login
 status` and freebuff's login screen report it.
 

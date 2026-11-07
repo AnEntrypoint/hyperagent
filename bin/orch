@@ -60,7 +60,7 @@ def base_url() -> str:
 
 
 def ws_url(name: str, cwd: str | None, harness: str, resume: str | None = None,
-           continue_last: bool = False) -> str:
+           continue_last: bool = False, fork: bool = False) -> str:
     query = {"session": name, "harness": harness, "mode": "tagged", "kinds": KINDS}
     if cwd:
         query["cwd"] = cwd
@@ -68,6 +68,8 @@ def ws_url(name: str, cwd: str | None, harness: str, resume: str | None = None,
         query["resume"] = resume
     if continue_last:
         query["continue"] = "1"
+    if fork and (resume or continue_last):
+        query["fork"] = "1"
     return f"ws://{HOST}:{PORT}/ws?{urlencode(query)}"
 
 
@@ -243,6 +245,8 @@ def normalize(entry: dict, require_prompt: bool) -> dict:
         if job.get("resume"):
             raise SystemExit(f"entry {name!r}: resume and continue are mutually exclusive")
         job["continue"] = True
+    if entry.get("fork"):
+        job["fork"] = True
     return job
 
 
@@ -486,9 +490,10 @@ async def run_job(job: dict, timeout: float, idle_exit: float, lock_wait: float,
             await retire(name)
         existing = await hub_exists(name)
         async with aiohttp.ClientSession() as http:
-            async with http.ws_connect(ws_url(name, job["cwd"], harness, job.get("resume"),
-                                              bool(job.get("continue"))),
-                                       heartbeat=30, max_msg_size=16 << 20) as ws:
+            async with http.ws_connect(
+                    ws_url(name, job["cwd"], harness, job.get("resume"),
+                           bool(job.get("continue")), bool(job.get("fork"))),
+                    heartbeat=30, max_msg_size=16 << 20) as ws:
                 if trust and not existing and await answer_trust(name):
                     print(f"[orch] {name}: accepted folder trust", file=sys.stderr)
                 await ws.send_str(job["prompt"])
@@ -545,9 +550,15 @@ async def run_job(job: dict, timeout: float, idle_exit: float, lock_wait: float,
                         await reader
     if status in ("timeout", "blocked"):
         tail = pane_tail(await capture(name))
-    return {"name": name, "harness": harness, "cwd": job["cwd"], "status": status,
-            "text": "".join(text_parts), "acked": acked, "pane_tail": tail,
-            "duration_s": round(time.time() - started, 1)}
+    result = {"name": name, "harness": harness, "cwd": job["cwd"], "status": status,
+              "text": "".join(text_parts), "acked": acked, "pane_tail": tail,
+              "duration_s": round(time.time() - started, 1)}
+    if job.get("fork"):
+        session = latest_session(harness, job["cwd"])
+        if session:
+            record_project(name, job["cwd"], session["session_id"], harness)
+            result["forked_session"] = session["session_id"]
+    return result
 
 
 def render_result(result: dict, tools: bool) -> str:
@@ -598,15 +609,24 @@ async def start_one(job: dict, settle: float, trust: bool,
         async with aiohttp.ClientSession() as http:
             async with http.ws_connect(
                     ws_url(job["name"], job["cwd"], job["harness"], job.get("resume"),
-                           bool(job.get("continue"))), heartbeat=30) as ws:
+                           bool(job.get("continue")), bool(job.get("fork"))),
+                    heartbeat=30) as ws:
                 if trust and not existing:
                     trusted = await answer_trust(job["name"])
                 await asyncio.sleep(settle)
-    return {**job, "trusted": trusted}
+    result = {**job, "trusted": trusted}
+    if job.get("fork"):
+        session = latest_session(job["harness"], job["cwd"])
+        if session:
+            record_project(job["name"], job["cwd"], session["session_id"], job["harness"])
+            result["forked_session"] = session["session_id"]
+    return result
 
 
 async def cmd_start(args) -> int:
     names = list(dict.fromkeys(args.names))
+    if args.fork and not args.resume:
+        raise SystemExit("--fork needs --resume")
     if not names:
         print("start needs one or more project names; see `bin/orch projects`", file=sys.stderr)
         return 1
@@ -627,6 +647,8 @@ async def cmd_start(args) -> int:
             session = latest_session(job["harness"], job["cwd"])
             if session:
                 job["resume"] = session["session_id"]
+                if args.fork:
+                    job["fork"] = True
     limit = args.concurrency if args.concurrency > 0 else len(jobs)
     gate = asyncio.Semaphore(max(1, limit))
 
@@ -669,11 +691,14 @@ async def cmd_resume(args) -> int:
     if args.continue_last:
         job.pop("resume", None)
         job["continue"] = True
+    if args.fork:
+        job["fork"] = True
     if prompt:
         job["prompt"] = prompt
     await fill_cwds([job])
     await ensure_server()
-    if await peer_present(job["name"]) and not session_id and not args.continue_last:
+    if (await peer_present(job["name"]) and not session_id and not args.continue_last
+            and not args.fork):
         sessions = await fetch_sessions()
         info = sessions.get(job["name"]) or {}
         if not info or info.get("harness") in (None, job["harness"]):
@@ -690,7 +715,10 @@ async def cmd_resume(args) -> int:
                                args.trust)
         await live_cwds([result])
         if args.json:
-            print(json.dumps({"session_id": target["session"]["session_id"],
+            print(json.dumps({"session_id": result.get("forked_session")
+                              or target["session"]["session_id"],
+                              "source_session_id": target["session"]["session_id"],
+                              "fork": bool(job.get("fork")),
                               "result": result}, indent=2))
         elif result["status"] == "turn_end":
             print(result["text"].strip())
@@ -705,7 +733,10 @@ async def cmd_resume(args) -> int:
     state = "resumed" if info.get("alive") else "not alive"
     payload = {"state": state, "project": job["name"], "cwd": job["cwd"],
                "harness": job["harness"],
-               "session_id": target["session"]["session_id"],
+               "session_id": started.get("forked_session")
+               or target["session"]["session_id"],
+               "source_session_id": target["session"]["session_id"],
+               "fork": bool(job.get("fork")),
                "launch_args": info.get("launch_args") or [],
                "trusted": started.get("trusted", False)}
     print(json.dumps(payload, indent=2) if args.json else
@@ -778,7 +809,8 @@ async def fill_cwds(jobs: list[dict]) -> None:
             job["harness"] = check_harness(entry["harness"])
     for job in jobs:
         if job.get("cwd"):
-            record_project(job["name"], job["cwd"], job.get("resume"), job.get("harness"))
+            session_id = None if job.get("fork") else job.get("resume")
+            record_project(job["name"], job["cwd"], session_id, job.get("harness"))
 
 
 async def live_cwds(results: list[dict]) -> None:
@@ -806,6 +838,10 @@ async def cmd_prompt(args) -> int:
         session = latest_session(job["harness"], job["cwd"])
         if session:
             job["resume"] = session["session_id"]
+    if args.fork:
+        if not (job.get("resume") or job.get("continue")):
+            raise SystemExit("--fork needs --resume or --session")
+        job["fork"] = True
     result = await run_job(job, args.timeout, args.idle_exit, args.lock_wait, args.tools,
                            args.trust)
     await live_cwds([result])
@@ -901,6 +937,8 @@ def build_parser() -> argparse.ArgumentParser:
     start.add_argument("--concurrency", type=int, default=8)
     start.add_argument("--resume", action="store_true",
                        help="resume each project's latest session when it is not running")
+    start.add_argument("--fork", action="store_true",
+                       help="fork the resumed session instead of reusing its id")
     start.add_argument("--no-trust", dest="trust", action="store_false")
     start.set_defaults(func=cmd_start)
 
@@ -917,6 +955,8 @@ def build_parser() -> argparse.ArgumentParser:
     prompt.add_argument("--resume", action="store_true",
                         help="resume the project's latest session when it is not running")
     prompt.add_argument("--session", help="resume this harness session id before prompting")
+    prompt.add_argument("--fork", action="store_true",
+                        help="fork the resumed session instead of reusing its id")
     prompt.add_argument("--no-trust", dest="trust", action="store_false")
     prompt.set_defaults(func=cmd_prompt)
 
@@ -936,6 +976,8 @@ def build_parser() -> argparse.ArgumentParser:
     resume.add_argument("--cwd", help="project directory when the name is not discovered")
     resume.add_argument("--continue", dest="continue_last", action="store_true",
                         help="use the harness's continue flag instead of a session id")
+    resume.add_argument("--fork", action="store_true",
+                        help="fork the session instead of reusing its id")
     resume.add_argument("--prompt", nargs="+", help="prompt to send after resuming")
     resume.add_argument("--harness", help="harness to resume; defaults to the project's remembered harness")
     resume.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT)

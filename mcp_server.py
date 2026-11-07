@@ -47,10 +47,12 @@ def flag(args: dict, key: str, default: bool) -> bool:
 
 
 async def prepare_job(name: str, prompt: str, resume: bool = False,
-                      harness: str | None = None) -> dict:
+                      harness: str | None = None, fork: bool = False) -> dict:
     entry = {"name": name, "prompt": prompt}
     if harness:
         entry["harness"] = harness
+    if fork:
+        entry["fork"] = True
     job = orch.normalize(entry, True)
     await orch.fill_cwds([job])
     if not job.get("cwd"):
@@ -117,6 +119,8 @@ async def tool_start_projects(args: dict) -> str:
             session = orch.latest_session(job["harness"], job["cwd"])
             if session:
                 job["resume"] = session["session_id"]
+                if flag(args, "fork", False):
+                    job["fork"] = True
     trust = flag(args, "trust", True)
     limit = int(args.get("concurrency") or DEFAULT_CONCURRENCY)
     gate = asyncio.Semaphore(max(1, limit))
@@ -145,7 +149,8 @@ async def tool_instruct(args: dict) -> str:
     if not prompt.strip():
         raise ValueError("prompt is required")
     job = await prepare_job(name, prompt, flag(args, "resume", False),
-                           str(args.get("harness") or "") or None)
+                           str(args.get("harness") or "") or None,
+                           flag(args, "fork", False))
     timeout_s = number(args, "timeout_s", DEFAULT_TIMEOUT)
     idle_s = number(args, "idle_exit_s", DEFAULT_IDLE)
     tools = flag(args, "tools", False)
@@ -172,7 +177,8 @@ async def tool_instruct_many(args: dict) -> str:
         if not prompt.strip():
             raise ValueError(f"job {name!r} has no prompt")
         harness = str(entry.get("harness") or args.get("harness") or "") or None
-        job = await prepare_job(name, prompt, flag(args, "resume", False), harness)
+        job = await prepare_job(name, prompt, flag(args, "resume", False), harness,
+                                flag(args, "fork", False))
         prepared.append((job, number(entry, "timeout_s", timeout_s),
                          number(entry, "idle_exit_s", idle_s)))
     if flag(args, "wait", True):
@@ -205,10 +211,13 @@ async def tool_resume_project(args: dict) -> str:
     cwd = str(args.get("cwd") or "") or None
     harness = str(args.get("harness") or "") or None
     prompt = str(args.get("prompt") or "")
+    fork = flag(args, "fork", False)
     target = orch.resume_target(project, session_id, cwd, harness)
     target_session = target["session"]["session_id"]
     job = {"name": target["name"], "harness": target["harness"],
            "cwd": target["cwd"], "resume": target_session}
+    if fork:
+        job["fork"] = True
     await orch.fill_cwds([job])
     present = await orch.peer_present(job["name"])
     live_args: list[str] = []
@@ -219,15 +228,15 @@ async def tool_resume_project(args: dict) -> str:
         live_harness = live.get("harness")
     live_id = live_args[1] if len(live_args) > 1 else None
     same_harness = live_harness in (None, job["harness"])
-    matches_live = present and same_harness and (not session_id
-                                                or target_session == live_id
-                                                or target_session in live_args)
+    matches_live = (present and same_harness and not fork
+                    and (not session_id or target_session == live_id
+                         or target_session in live_args))
     if matches_live and not prompt:
         return json.dumps({"state": "already_alive", "project": job["name"],
                            "cwd": job["cwd"], "harness": job["harness"],
                            "session_id": live_id,
                            "requested_session_id": target_session,
-                           "launch_args": live_args}, indent=2)
+                           "fork": fork, "launch_args": live_args}, indent=2)
     if matches_live:
         job.pop("resume", None)
     timeout_s = number(args, "timeout_s", DEFAULT_TIMEOUT)
@@ -240,20 +249,24 @@ async def tool_resume_project(args: dict) -> str:
             result = await orch.run_job(job, timeout_s, idle_s, LOCK_WAIT, tools, trust)
             return json.dumps({"state": "prompted", "project": job["name"],
                                "cwd": job["cwd"], "harness": job["harness"],
-                               "session_id": target_session,
-                               "result": result}, indent=2)
+                               "session_id": result.get("forked_session")
+                               or target_session,
+                               "source_session_id": target_session,
+                               "fork": fork, "result": result}, indent=2)
         turn_id = start_turn(job, timeout_s, idle_s, tools, trust)
         return json.dumps({"state": "running", "project": job["name"],
                            "cwd": job["cwd"], "harness": job["harness"],
-                           "session_id": target_session,
+                           "session_id": target_session, "fork": fork,
                            "turn_id": turn_id}, indent=2)
     await orch.ensure_server()
-    await orch.start_one(job, 3.0, trust)
+    started = await orch.start_one(job, 3.0, trust)
     sessions = await orch.fetch_sessions()
     info = sessions.get(job["name"]) or {}
     return json.dumps({"state": "resumed" if info.get("alive") else "not_alive",
                        "project": job["name"], "cwd": job["cwd"],
-                       "harness": job["harness"], "session_id": target_session,
+                       "harness": job["harness"],
+                       "session_id": started.get("forked_session") or target_session,
+                       "source_session_id": target_session, "fork": fork,
                        "launch_args": info.get("launch_args") or []}, indent=2)
 
 
@@ -340,6 +353,8 @@ TOOLS = [
                                                 "description": "claude, codex or freebuff; defaults to the project's remembered harness"},
                                     "resume": {"type": "boolean",
                                                "description": "resume each project's latest session when it is not running"},
+                                    "fork": {"type": "boolean",
+                                             "description": "fork the resumed session instead of reusing its id"},
                                     "trust": {"type": "boolean",
                                               "description": "answer the folder-trust dialog (default true)"}},
                      "required": ["names"], "additionalProperties": False}},
@@ -358,6 +373,8 @@ TOOLS = [
                                                 "description": "claude, codex or freebuff; defaults to the project's remembered harness"},
                                     "resume": {"type": "boolean",
                                                "description": "resume the project's latest session when the peer is not running"},
+                                    "fork": {"type": "boolean",
+                                             "description": "fork the resumed session instead of reusing its id"},
                                     "trust": {"type": "boolean"}},
                      "required": ["name", "prompt"], "additionalProperties": False}},
     {"name": "instruct_many",
@@ -378,6 +395,7 @@ TOOLS = [
                                     "wait": {"type": "boolean"},
                                     "harness": {"type": "string"},
                                     "resume": {"type": "boolean"},
+                                    "fork": {"type": "boolean"},
                                     "trust": {"type": "boolean"}},
                      "required": ["jobs"], "additionalProperties": False}},
     {"name": "turn_result",
@@ -407,6 +425,8 @@ TOOLS = [
                                     "idle_exit_s": {"type": "number"},
                                     "tools": {"type": "boolean"},
                                     "wait": {"type": "boolean"},
+                                    "fork": {"type": "boolean",
+                                             "description": "fork the resumed session instead of reusing its id"},
                                     "trust": {"type": "boolean"}},
                      "additionalProperties": False}},
     {"name": "list_project_sessions",

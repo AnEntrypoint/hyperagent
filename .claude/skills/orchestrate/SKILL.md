@@ -122,7 +122,8 @@ with `project` for a specific one; add `prompt` to send work in the same call. P
 `list_project_sessions` shows the ids per harness. `resume_project` restarts a dead
 airc server and retires any stale hub or tmux session first. `start_projects`,
 `instruct` and `instruct_many` accept `resume: true` and `harness` to resume a dead
-peer's latest session automatically.
+peer's latest session automatically. Add `fork: true` to resume without reusing the
+source session id; the ledger records the new one.
 
 A resumed peer answers from its saved context, so it is the right choice whenever a
 peer's next step depends on what it already did. Only start a fresh session when the

@@ -113,7 +113,8 @@ once. On first creation the server answers Claude Code's folder-trust dialog; pa
 instead of starting over:</p>
 <pre>resume_project {"prompt": "Continue the migration. End with REPORT: ..."}
 resume_project {"project": "project-a", "session_id": "83e12101-..."}
- resume_project {"project": "project-a", "harness": "codex"}</pre>
+resume_project {"project": "project-a", "harness": "codex"}
+resume_project {"project": "project-a", "fork": true}</pre>
 <table>
   <tr><th>Harness</th><th>Session store</th><th>Launch</th></tr>
   <tr><td>claude</td><td><code>~/.claude/projects/&lt;slug&gt;/&lt;id&gt;.jsonl</code></td><td><code>claude --resume &lt;id&gt;</code></td></tr>
@@ -131,6 +132,9 @@ reply, not the saved history. <code>start_projects</code>, <code>instruct</code>
 automatically when a peer is not running. The CLI is
 <code>bin/orch resume [NAME] [--harness H] [--session ID]</code> and
 <code>bin/orch sessions [NAME] [--harness H] [--all]</code>.</p>
+<p>Add <code>fork: true</code> / <code>--fork</code> to resume into a new session id instead of
+reusing the source; Claude uses <code>--fork-session</code> and codex uses <code>fork</code>. The
+source store is untouched and the new id becomes the project's remembered session.</p>
 <p>Codex and freebuff need their own CLI login before a peer can run.</p>
 
 <h2>05 — Cycle</h2>
