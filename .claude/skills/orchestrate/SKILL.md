@@ -157,16 +157,19 @@ supplies its own list.
 
 ## Wake-up loop
 
-Start `bin/watch` in the background before the first cycle. It captures every live
-peer's pane, and when a pane stops animating for `--idle` seconds it prints one line:
-the peer, its session, the last journaled output, and the exact `instruct` arguments
-that feed that output back. Use that line to decide the next assignment; it removes
-the need to poll `peer_status` or re-read a pane. `--once` reports peers that airc
-already marks not busy, and `--text` prints the human form.
+Start `bin/watch` in the background before the first cycle. It reports the moment a
+turn finishes, not after a quiet window: a new journal `result` record or a pane
+going from busy to not busy prints one line immediately with the peer, its session,
+the whole last response, and the exact `instruct` arguments that feed that response
+back (`trigger: result|pane`; `--idle` is only the fallback for a peer with neither
+signal). Use that line to decide the next assignment; it removes the need to poll
+`peer_status` or re-read a pane. `--once` reports peers that airc already marks not
+busy, and `--text` prints the human form.
 
-Every turn is journaled to `.orch/projects/<slug(cwd)>/<session>.jsonl`, so
-`list_outputs` and `read_output` show what a peer did without touching its pane.
-`bin/orch output NAME --tail 40` is the CLI view.
+`instruct` and `turn_result` return only the turn's final response block. Interim
+narration and tool calls remain in the journal, so `list_outputs` and `read_output`
+show everything without bloating the returned turn. `bin/orch output NAME --tail 40`
+is the CLI view.
 
 A client that speaks MCP events can skip `bin/watch`: subscribe with
 `resources/subscribe` or `subscriptions/listen`, set `logging/setLevel`, and receive

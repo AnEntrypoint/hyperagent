@@ -35,6 +35,13 @@ The writer binds to a real session id from the job's resume id, the live airc
 binds it writes to `peer-<name>.jsonl`; on bind that file is renamed and its
 `session` fields are rewritten. `ORCH_JOURNAL` overrides the journal root.
 
+Every frame is logged, including each streamed text delta. A turn's returned text is
+only its last response block: the text after the last tool frame (or all text when
+the turn had no tool call). Interim narration and tool names stay in the journal;
+`tool_names` rides beside the result. `last_response` rebuilds that same final block
+from the deltas, so a watcher event carries the whole last response rather than a
+single delta.
+
 `list_outputs` reads the index, `read_output` renders a compact transcript with
 filters (`kinds`, `tail`, `since`, `format`), and `search_output` greps every
 journal. The same files are MCP resources: `hyperagent://outputs` is the index,
@@ -49,11 +56,15 @@ path; `peer_status` annotates live peers with their latest journal.
 ## Watcher and MCP events
 
 `bin/watch` starts a local monitor. It polls `GET /sessions`, captures each peer's
-tmux pane, and hashes the pane text. A peer whose pane content stops changing for
-`--idle` seconds (default 20) emits one line with the last journaled text (or the
-pane tail when no journal exists) and a ready `instruct` call whose prompt feeds that
-last output back. It emits `gone` when a live peer disappears. `--once` reports
-peers that airc marks not busy. Output is one-line JSON, or `--text`.
+tmux pane, and hashes the pane text. An event fires as the turn finishes, not after
+a quiet window: a new `result` record in the session journal is the primary trigger,
+and a pane that goes from busy to not busy is the second. Both report `idle_s: 0`
+with `trigger: "result"` or `"pane"`. The `--idle` seconds (default 20) are only the
+fallback for a peer with no journal and no busy marker (`trigger: "idle"`). One line
+is emitted per finish, carrying the whole last response (or the pane tail when no
+journal exists) and a ready `instruct` call whose prompt feeds that response back.
+It emits `gone` when a live peer disappears. `--once` reports peers that airc marks
+not busy. Output is one-line JSON, or `--text`.
 
 The MCP server runs the same `bin/monitor.py` loop natively when a client asks for
 events. Delivery surfaces:
@@ -194,7 +205,7 @@ Claude transcript channel binds to the newest session file in a project director
 | `ORCH_HOST` | `127.0.0.1` | airc WebSocket server host |
 | `ORCH_HOME` | `.orch` | pid file, server log, session locks |
 | `ORCH_JOURNAL` | `$ORCH_HOME/projects` | root of the per-session output journal |
-| `ORCH_WATCH_IDLE` | `20` | MCP monitor idle seconds before an event |
+| `ORCH_WATCH_IDLE` | `20` | fallback idle seconds when no result or busy marker is available |
 | `ORCH_WATCH_POLL` | `1` | MCP monitor poll seconds |
 | `ORCH_WATCH_AGENTS` | empty | comma separated peers the MCP monitor keeps |
 | `ORCH_WATCH_LAST_CHARS` | `4000` | last-output characters in an event |

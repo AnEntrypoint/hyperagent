@@ -557,6 +557,8 @@ async def run_job(job: dict, timeout: float, idle_exit: float, lock_wait: float,
 
     await write_output("instruct", job.get("prompt") or "")
     text_parts: list[str] = []
+    final_parts: list[str] = []
+    tool_names: list[str] = []
     status = "died"
     acked = False
     tail: list[str] = []
@@ -613,13 +615,15 @@ async def run_job(job: dict, timeout: float, idle_exit: float, lock_wait: float,
                             kind, payload = TAG[frame[0]], frame[2:]
                             if kind == "text":
                                 text_parts.append(payload)
+                                final_parts.append(payload)
                                 await write_output("text", payload)
                             elif kind == "tool":
-                                if tools:
-                                    text_parts.append(f"\n[tool] {payload}\n")
+                                tool_names.append(payload)
+                                final_parts.clear()
                                 await write_output("tool", payload)
                             elif kind == "you":
                                 acked = True
+                                final_parts.clear()
                                 await write_output("you", payload)
                         else:
                             text_parts.append(frame)
@@ -640,8 +644,12 @@ async def run_job(job: dict, timeout: float, idle_exit: float, lock_wait: float,
     writer.append("result", "", status=status, duration_s=round(time.time() - started, 1),
                   acked=acked, pane_tail=tail)
     writer.flush()
+    response = "".join(final_parts)
+    if not response.strip():
+        response = "".join(text_parts)
     result = {"name": name, "harness": harness, "cwd": job["cwd"], "status": status,
-              "text": "".join(text_parts), "acked": acked, "pane_tail": tail,
+              "text": response, "acked": acked, "pane_tail": tail,
+              "tool_names": tool_names,
               "duration_s": round(time.time() - started, 1),
               "output_path": str(writer.path),
               "output_session": writer.session_id or writer.fallback_id}
@@ -659,6 +667,8 @@ def render_result(result: dict, tools: bool) -> str:
              f"harness={result['harness']} cwd={result['cwd']} ==="]
     text = result["text"].strip()
     lines.append(text if text else "(no text)")
+    if tools and result.get("tool_names"):
+        lines.append("[orch] tools: " + ", ".join(result["tool_names"]))
     if result["status"] != "turn_end":
         if not result["acked"]:
             lines.append("[orch] prompt was not echoed into the transcript")

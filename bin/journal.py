@@ -10,7 +10,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_HOME = Path(os.environ.get("ORCH_HOME") or (ROOT / ".orch")).resolve()
-TEXT_KINDS = ("text", "tool", "result", "you")
 
 
 def journal_root() -> Path:
@@ -259,6 +258,9 @@ def find_session(agent: str | None = None, cwd: str | None = None,
 
 def latest_output(cwd: str, agent: str,
                   root: Path | str | None = None) -> tuple[dict | None, dict | None]:
+    path, response = last_response(cwd, agent, root)
+    if response is not None:
+        return summarize(path), response
     base = Path(root).expanduser().resolve() if root else journal_root()
     directory = project_dir(cwd, base)
     if not directory.is_dir():
@@ -269,23 +271,66 @@ def latest_output(cwd: str, agent: str,
     except OSError:
         return None, None
     for path in files:
-        records = tail_records(path, 400, kinds=TEXT_KINDS)
-        text = None
-        tool = None
-        fallback = None
+        records = tail_records(path, 400, kinds=("tool", "result"))
         for record in reversed(records):
-            if record.get("agent") != agent:
-                continue
-            kind = record.get("kind")
-            if kind == "text" and text is None:
-                text = record
-            elif kind == "tool" and tool is None:
-                tool = record
-            elif fallback is None:
-                fallback = record
-        selected = text or tool or fallback
-        if selected is not None:
-            return summarize(path), selected
+            if record.get("agent") == agent:
+                return summarize(path), record
+    return None, None
+
+
+def last_response(cwd: str, agent: str,
+                  root: Path | str | None = None) -> tuple[Path | None, dict | None]:
+    base = Path(root).expanduser().resolve() if root else journal_root()
+    directory = project_dir(cwd, base)
+    if not directory.is_dir():
+        return None, None
+    try:
+        files = sorted((path for path in directory.glob("*.jsonl") if path.is_file()),
+                       key=lambda path: path.stat().st_mtime, reverse=True)
+    except OSError:
+        return None, None
+    for path in files:
+        records = tail_records(path, 4000, kinds=("text", "tool", "you", "instruct", "result"))
+        mine = [record for record in records if record.get("agent") == agent]
+        if not mine:
+            continue
+        start = 0
+        for index in range(len(mine) - 1, -1, -1):
+            if mine[index].get("kind") == "instruct":
+                start = index + 1
+                break
+        segment = mine[start:]
+        last_tool = -1
+        for index, record in enumerate(segment):
+            if record.get("kind") == "tool":
+                last_tool = index
+        tail = [record for record in segment[last_tool + 1:]
+                if record.get("kind") == "text"]
+        if not tail:
+            tail = [record for record in segment if record.get("kind") == "text"]
+        text = "".join(str(record.get("text") or "") for record in tail)
+        if text.strip():
+            return path, {"kind": "text", "ts": (tail[-1] or {}).get("ts"),
+                          "text": text, "session": path.stem}
+    return None, None
+
+
+def latest_result(cwd: str, agent: str,
+                  root: Path | str | None = None) -> tuple[Path | None, dict | None]:
+    base = Path(root).expanduser().resolve() if root else journal_root()
+    directory = project_dir(cwd, base)
+    if not directory.is_dir():
+        return None, None
+    try:
+        files = sorted((path for path in directory.glob("*.jsonl") if path.is_file()),
+                       key=lambda path: path.stat().st_mtime, reverse=True)
+    except OSError:
+        return None, None
+    for path in files:
+        records = tail_records(path, 400, kinds=("result",), max_bytes=65536)
+        for record in reversed(records):
+            if record.get("agent") == agent:
+                return path, record
     return None, None
 
 

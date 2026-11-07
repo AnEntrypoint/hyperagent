@@ -694,7 +694,8 @@ INSTRUCTIONS = (
     "Peers keep their conversation across prompts and stay alive until stop_peer or server_down. "
     "Every turn is journaled per session under .orch/projects; list_outputs, read_output and "
     "search_output are the MCP views, and resources under hyperagent://outputs read the same files. "
-    "The peer monitor emits idle and gone events: subscribe with resources/subscribe or "
+    "The peer monitor emits an idle event at turn end (trigger result or pane) with the "
+    "whole last response; subscribe with resources/subscribe or "
     "subscriptions/listen (resourceSubscriptions, resourcesListChanged), follow logging/setLevel "
     "for notifications/message, and read hyperagent://events for the recent event stream. "
     "Run bin/watch locally for the same events as lines.")
