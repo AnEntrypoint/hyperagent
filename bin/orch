@@ -13,6 +13,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from datetime import datetime
 from urllib.parse import urlencode
 
 import aiohttp
@@ -283,7 +284,27 @@ def session_from_launch_args(args: list[str] | tuple[str, ...]) -> str | None:
     return None
 
 
-async def resolve_output_session(job: dict) -> str | None:
+def session_first_stamp(path: str) -> float | None:
+    for record in output_journal.iter_records(path):
+        stamp = record.get("timestamp")
+        if stamp:
+            try:
+                return datetime.fromisoformat(str(stamp).replace("Z", "+00:00")).timestamp()
+            except ValueError:
+                return None
+    return None
+
+
+def session_created_after(harness: str, cwd: str, since: float) -> dict | None:
+    created = []
+    for session in harness_sessions(harness, cwd):
+        first = session_first_stamp(session["path"])
+        if first is not None and first >= since - 2.0:
+            created.append((first, session))
+    return min(created, key=lambda pair: pair[0])[1] if created else None
+
+
+async def resolve_output_session(job: dict, since: float) -> str | None:
     if job.get("resume"):
         return job["resume"]
     try:
@@ -293,7 +314,7 @@ async def resolve_output_session(job: dict) -> str | None:
             return found
     except Exception:
         pass
-    session = latest_session(job["harness"], job["cwd"])
+    session = session_created_after(job["harness"], job["cwd"], since)
     return session["session_id"] if session else None
 
 
@@ -550,7 +571,7 @@ async def run_job(job: dict, timeout: float, idle_exit: float, lock_wait: float,
                                             job.get("resume"))
         if writer.session_id is None and time.time() - bound_at >= 1.0:
             bound_at = time.time()
-            found = await resolve_output_session(job)
+            found = await resolve_output_session(job, started)
             if found:
                 writer.bind(found)
         writer.append(kind, text, **fields)
@@ -638,7 +659,7 @@ async def run_job(job: dict, timeout: float, idle_exit: float, lock_wait: float,
         writer = output_journal.Journal(name, job.get("cwd") or str(ROOT), harness,
                                         job.get("resume"))
     if writer.session_id is None:
-        found = await resolve_output_session(job)
+        found = await resolve_output_session(job, started)
         if found:
             writer.bind(found)
     writer.append("result", "", status=status, duration_s=round(time.time() - started, 1),
