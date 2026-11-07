@@ -26,6 +26,15 @@ DEFAULT_TIMEOUT = 1800.0
 DEFAULT_HARNESS = "claude"
 KINDS = "text,tool,you"
 TAG = {"t": "text", "u": "tool", "y": "you"}
+PARENT = Path(os.environ.get("ORCH_PARENT") or ROOT.parent).resolve()
+PROJECT_MARKERS = (
+    "AGENTS.md", "CLAUDE.md", "package.json", "pyproject.toml", "setup.py",
+    "Cargo.toml", "go.mod", "CMakeLists.txt", "Makefile", "requirements.txt",
+    "Gemfile", "composer.json", "pom.xml", "build.gradle", "meson.build", "deno.json",
+)
+PROJECT_SUFFIXES = (".sln", ".csproj", ".fsproj", ".xcodeproj", ".uproject", ".cabal")
+TRUST_TEXT = "Yes, I trust this folder"
+TRUST_HINT = "Enter to confirm"
 
 
 def airc_root() -> Path:
@@ -98,6 +107,43 @@ async def capture(name: str) -> str:
         return ""
 
 
+async def press(name: str, *keys: str) -> None:
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "tmux", "send-keys", "-t", f"ccb-{name}", *keys,
+            stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL)
+        await proc.wait()
+    except Exception:
+        pass
+
+
+async def answer_trust(name: str, timeout: float = 8.0) -> bool:
+    started = time.time()
+    answered = False
+    while time.time() - started < timeout:
+        pane = await capture(name)
+        dialog = TRUST_TEXT in pane and TRUST_HINT in pane
+        if dialog and not answered:
+            await press(name, "Down", "Enter")
+            answered = True
+            await asyncio.sleep(1.5)
+            continue
+        if answered and not dialog:
+            return True
+        if not answered and pane.strip() and time.time() - started > 3.0:
+            return False
+        await asyncio.sleep(0.3)
+    return answered
+
+
+async def hub_exists(name: str) -> bool:
+    try:
+        info = (await fetch_sessions()).get(name) or {}
+        return bool(info.get("alive"))
+    except Exception:
+        return False
+
+
 async def server_alive(timeout: float = 1.0) -> bool:
     try:
         async with aiohttp.ClientSession() as session:
@@ -163,13 +209,59 @@ def normalize(entry: dict, require_prompt: bool) -> dict:
         raise SystemExit(f"bad entry {entry!r}")
     name = check_name(str(entry.get("name") or ""))
     harness = check_harness(str(entry.get("harness") or DEFAULT_HARNESS))
-    job = {"name": name, "harness": harness, "cwd": resolve_cwd(entry.get("cwd"))}
+    job = {"name": name, "harness": harness}
+    if entry.get("cwd"):
+        job["cwd"] = resolve_cwd(entry.get("cwd"))
     prompt = entry.get("prompt")
     if require_prompt and not prompt:
         raise SystemExit(f"entry {name!r} has no prompt")
     if prompt:
         job["prompt"] = str(prompt)
     return job
+
+
+def safe_name(raw: str) -> str:
+    name = re.sub(r"[^A-Za-z0-9_-]+", "-", raw).strip("-")
+    return name[:64] or "project"
+
+
+def is_project(path: Path) -> bool:
+    if (path / ".git").exists():
+        return True
+    if any((path / marker).exists() for marker in PROJECT_MARKERS):
+        return True
+    if (path / "src").is_dir():
+        return True
+    try:
+        return any(entry.suffix in PROJECT_SUFFIXES for entry in path.iterdir())
+    except OSError:
+        return False
+
+
+def discover(all_dirs: bool) -> list[dict]:
+    if not PARENT.is_dir():
+        raise SystemExit(f"parent path not found: {PARENT}")
+    found: list[dict] = []
+    used: set[str] = set()
+    for path in sorted(PARENT.iterdir(), key=lambda entry: entry.name.lower()):
+        try:
+            if not path.is_dir() or path.name.startswith("."):
+                continue
+            if path.resolve() == ROOT:
+                continue
+            if not all_dirs and not is_project(path):
+                continue
+        except OSError:
+            continue
+        name = safe_name(path.name)
+        unique = name
+        counter = 2
+        while unique in used:
+            unique = f"{name}-{counter}"
+            counter += 1
+        used.add(unique)
+        found.append({"name": unique, "cwd": str(path.resolve()), "harness": DEFAULT_HARNESS})
+    return found
 
 
 @contextlib.asynccontextmanager
@@ -211,9 +303,10 @@ async def read_frames(ws, queue: asyncio.Queue) -> None:
 
 
 async def run_job(job: dict, timeout: float, idle_exit: float, lock_wait: float,
-                  tools: bool) -> dict:
+                  tools: bool, trust: bool) -> dict:
     name, harness = job["name"], job["harness"]
     started = time.time()
+    existing = await hub_exists(name)
     text_parts: list[str] = []
     status = "died"
     acked = False
@@ -222,6 +315,8 @@ async def run_job(job: dict, timeout: float, idle_exit: float, lock_wait: float,
         async with aiohttp.ClientSession() as http:
             async with http.ws_connect(ws_url(name, job["cwd"], harness),
                                        heartbeat=30, max_msg_size=16 << 20) as ws:
+                if trust and not existing and await answer_trust(name):
+                    print(f"[orch] {name}: accepted folder trust", file=sys.stderr)
                 await ws.send_str(job["prompt"])
                 queue: asyncio.Queue = asyncio.Queue()
                 reader = asyncio.create_task(read_frames(ws, queue))
@@ -308,23 +403,36 @@ async def cmd_down(args) -> int:
     return 0
 
 
-async def start_one(job: dict, settle: float) -> dict:
+async def start_one(job: dict, settle: float, trust: bool) -> dict:
+    existing = await hub_exists(job["name"])
+    trusted = False
     async with aiohttp.ClientSession() as http:
         async with http.ws_connect(ws_url(job["name"], job["cwd"], job["harness"]),
                                    heartbeat=30) as ws:
+            if trust and not existing:
+                trusted = await answer_trust(job["name"])
             await asyncio.sleep(settle)
-    return job
+    return {**job, "trusted": trusted}
 
 
 async def cmd_start(args) -> int:
     await ensure_server()
-    if args.roster:
-        jobs = [normalize(entry, False) for entry in read_entries(args.roster, "agents")]
-    elif args.name:
+    if args.name:
         jobs = [normalize({"name": args.name, "cwd": args.cwd, "harness": args.harness}, False)]
+        fill_cwds(jobs)
     else:
-        raise SystemExit("start needs NAME or --roster")
-    results = await asyncio.gather(*(start_one(job, args.settle) for job in jobs))
+        jobs = discover(args.all)
+        if not jobs:
+            print(f"no projects under {PARENT} (excluding {ROOT})")
+            return 0
+    limit = args.concurrency if args.concurrency > 0 else len(jobs)
+    gate = asyncio.Semaphore(max(1, limit))
+
+    async def bounded(job: dict) -> dict:
+        async with gate:
+            return await start_one(job, args.settle, args.trust)
+
+    results = await asyncio.gather(*(bounded(job) for job in jobs))
     sessions = await fetch_sessions()
     failed = 0
     for job in results:
@@ -332,8 +440,22 @@ async def cmd_start(args) -> int:
         state = "started" if live and live.get("alive") else "not alive"
         if not live or not live.get("alive"):
             failed += 1
-        print(f"{job['name']}: {state} harness={job['harness']} cwd={job['cwd']}")
+        suffix = " trust=accepted" if job.get("trusted") else ""
+        print(f"{job['name']}: {state} harness={job['harness']} "
+              f"cwd={job.get('cwd') or ROOT}{suffix}")
+    print(f"{len(results) - failed}/{len(results)} peers alive")
     return 0 if failed == 0 else 3
+
+
+async def cmd_projects(args) -> int:
+    jobs = discover(args.all)
+    if args.json:
+        print(json.dumps(jobs, indent=2))
+    else:
+        for job in jobs:
+            print(f"{job['name']}\t{job['cwd']}")
+        print(f"{len(jobs)} projects under {PARENT}", file=sys.stderr)
+    return 0
 
 
 async def cmd_status(args) -> int:
@@ -356,6 +478,13 @@ async def cmd_status(args) -> int:
     return 0
 
 
+def fill_cwds(jobs: list[dict]) -> None:
+    known = {project["name"]: project["cwd"] for project in discover(True)}
+    for job in jobs:
+        if not job.get("cwd"):
+            job["cwd"] = known.get(job["name"])
+
+
 async def live_cwds(results: list[dict]) -> None:
     try:
         sessions = await fetch_sessions()
@@ -371,7 +500,9 @@ async def cmd_prompt(args) -> int:
     await ensure_server()
     job = normalize({"name": args.name, "cwd": args.cwd, "harness": args.harness,
                      "prompt": " ".join(args.text)}, True)
-    result = await run_job(job, args.timeout, args.idle_exit, args.lock_wait, args.tools)
+    fill_cwds([job])
+    result = await run_job(job, args.timeout, args.idle_exit, args.lock_wait, args.tools,
+                           args.trust)
     await live_cwds([result])
     if args.json:
         print(json.dumps(result, indent=2))
@@ -385,8 +516,10 @@ async def cmd_prompt(args) -> int:
 async def cmd_fanout(args) -> int:
     await ensure_server()
     jobs = [normalize(entry, True) for entry in read_entries(args.file, "jobs")]
+    fill_cwds(jobs)
     results = await asyncio.gather(
-        *(run_job(job, args.timeout, args.idle_exit, args.lock_wait, args.tools) for job in jobs))
+        *(run_job(job, args.timeout, args.idle_exit, args.lock_wait, args.tools, args.trust)
+          for job in jobs))
     await live_cwds(results)
     if args.json:
         print(json.dumps(results, indent=2))
@@ -446,12 +579,19 @@ def build_parser() -> argparse.ArgumentParser:
     status.add_argument("--panes", action="store_true")
     status.set_defaults(func=cmd_status)
 
-    start = sub.add_parser("start", help="start one session or a roster of sessions")
+    projects = sub.add_parser("projects", help="list projects in the parent path except this one")
+    projects.add_argument("--all", action="store_true", help="include directories without a project marker")
+    projects.add_argument("--json", action="store_true")
+    projects.set_defaults(func=cmd_projects)
+
+    start = sub.add_parser("start", help="start one session, or every discovered project")
     start.add_argument("name", nargs="?")
-    start.add_argument("--roster")
+    start.add_argument("--all", action="store_true", help="include directories without a project marker")
     start.add_argument("--cwd")
     start.add_argument("--harness", default=DEFAULT_HARNESS)
     start.add_argument("--settle", type=float, default=3.0)
+    start.add_argument("--concurrency", type=int, default=8)
+    start.add_argument("--no-trust", dest="trust", action="store_false")
     start.set_defaults(func=cmd_start)
 
     prompt = sub.add_parser("prompt", help="start or prompt one session and wait for its turn")
@@ -464,6 +604,7 @@ def build_parser() -> argparse.ArgumentParser:
     prompt.add_argument("--lock-wait", type=float, default=1800.0)
     prompt.add_argument("--tools", action="store_true")
     prompt.add_argument("--json", action="store_true")
+    prompt.add_argument("--no-trust", dest="trust", action="store_false")
     prompt.set_defaults(func=cmd_prompt)
 
     fanout = sub.add_parser("fanout", help="prompt many sessions concurrently and collect answers")
@@ -473,6 +614,7 @@ def build_parser() -> argparse.ArgumentParser:
     fanout.add_argument("--lock-wait", type=float, default=1800.0)
     fanout.add_argument("--tools", action="store_true")
     fanout.add_argument("--json", action="store_true")
+    fanout.add_argument("--no-trust", dest="trust", action="store_false")
     fanout.set_defaults(func=cmd_fanout)
 
     stop = sub.add_parser("stop", help="stop one session")

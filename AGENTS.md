@@ -3,7 +3,7 @@
 hyperagent is the airc-driven successor to `../orchestrate`: the dispatcher still
 collects work, decides and assigns, but peers are coding-harness sessions started and
 prompted directly through `../airc` instead of Claude sessions reached over the
-messaging bus.
+messaging bus. Peers are discovered from the projects beside this one.
 
 ## Peers are airc sessions
 
@@ -17,13 +17,31 @@ The client uses `mode=tagged` and `kinds=text,tool,you`: `t:` is agent text, `u:
 tool name, `y:` is the echoed prompt, and `e:` ends a turn. The empty frame means the
 session died. `bin/orch` prints text only unless `--tools` is given.
 
+## Project discovery
+
+Every immediate subdirectory of `ORCH_PARENT` (default: the parent of this project) is
+a candidate, except this project and hidden directories. A directory counts as a
+project when it is a git worktree or contains a project marker: `AGENTS.md`,
+`CLAUDE.md`, `package.json`, `pyproject.toml`, `setup.py`, `Cargo.toml`, `go.mod`,
+`CMakeLists.txt`, `Makefile`, `requirements.txt`, `Gemfile`, `composer.json`,
+`pom.xml`, `build.gradle`, `meson.build`, `deno.json`, a solution/project file, or
+`src/`. `--all` includes unmarked directories. Peer names are sanitized directory
+names; a collision gets a numeric suffix.
+
+On first creation Claude Code may show its folder-trust dialog, whose default choice
+exits. `bin/orch start`, `prompt` and `fanout` answer it by sending `Down` then
+`Enter` (selecting "Yes, I trust this folder") and waiting for the dialog to clear.
+`--no-trust` disables that and leaves the decision to a person. A listed hub whose
+tmux session died counts as absent: the server recreates it and trust is checked again.
+
 ## Commands
 
 ```
 bin/orch up
-bin/orch status --json --panes
-bin/orch start --roster agents.json
+bin/orch projects [--json] [--all]
+bin/orch start [--all] [--concurrency 8]
 bin/orch start NAME --cwd DIR --harness claude
+bin/orch status --json --panes
 bin/orch prompt NAME "instruction" --timeout 1800 --idle-exit 120
 bin/orch fanout jobs.json --timeout 1800 --idle-exit 120
 bin/orch pane NAME --lines 40
@@ -44,11 +62,15 @@ check `bin/orch status` for `busy` before prompting that peer again.
 | variable | default | meaning |
 |---|---|---|
 | `AIRC_DIR` | `../airc` | checkout whose `server.py` and `mods/` are used |
+| `ORCH_PARENT` | parent of this project | directory whose projects become peers |
 | `ORCH_PORT` | `8787` | airc WebSocket server port |
 | `ORCH_HOST` | `127.0.0.1` | airc WebSocket server host |
 | `ORCH_HOME` | `.orch` | pid file, server log, session locks |
 
-Relative cwds in `agents.json` and job files resolve against this project root.
+Relative cwds in job files resolve against this project root. A job that omits cwd
+uses the discovered project's cwd for that name, so recreated hubs return to their
+project instead of the dispatcher's folder. Two peers should not share one cwd: the
+Claude transcript channel binds to the newest session file in a project directory.
 
 ## airc coupling
 
@@ -63,6 +85,5 @@ Relative cwds in `agents.json` and job files resolve against this project root.
 ## Source facts
 
 - No comments in source: intent lives in names, durable facts live here.
-- `agents.json` is machine-specific and ignored; `agents.example.json` is the template.
 - Job files are written under `.orch/`, which is ignored.
 - The dispatcher skill is `.claude/skills/orchestrate/SKILL.md`.

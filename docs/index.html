@@ -51,7 +51,7 @@
 
 <h1>Hyperagent<br>Dispatch Manual</h1>
 
-<p><span class="tag">Skill</span> <span class="tag">airc transport</span> <span class="tag">Direct peers</span></p>
+<p><span class="tag">Skill</span> <span class="tag">airc transport</span> <span class="tag">Project peers</span></p>
 
 <div class="box solid">
   <p><strong>You are the dispatcher. You decide; peers execute. Never leave a peer idle.</strong></p>
@@ -79,9 +79,10 @@ peer keeps its context across dispatch cycles. The tmux session is <code>ccb-NAM
 <table>
   <tr><th>Command</th><th>Effect</th></tr>
   <tr><td><code>bin/orch up</code></td><td>Start the airc server if it is not running. Idempotent.</td></tr>
+  <tr><td><code>bin/orch projects</code></td><td>List every project in the parent path except this one.</td></tr>
+  <tr><td><code>bin/orch start</code></td><td>Start a peer for every discovered project. Idempotent, concurrent.</td></tr>
+  <tr><td><code>bin/orch start NAME --cwd DIR</code></td><td>Start one extra peer.</td></tr>
   <tr><td><code>bin/orch status [--json] [--panes]</code></td><td>List live peers, ready/busy state, cwd, pane tail.</td></tr>
-  <tr><td><code>bin/orch start NAME --cwd DIR [--harness H]</code></td><td>Start one peer and wait for it to be ready.</td></tr>
-  <tr><td><code>bin/orch start --roster agents.json</code></td><td>Start every peer in the roster.</td></tr>
   <tr><td><code>bin/orch prompt NAME "text"</code></td><td>Start if needed, prompt, wait for the turn, print its text.</td></tr>
   <tr><td><code>bin/orch fanout jobs.json</code></td><td>Prompt many peers concurrently; one section per peer.</td></tr>
   <tr><td><code>bin/orch pane NAME</code></td><td>Print the peer's terminal pane.</td></tr>
@@ -90,17 +91,23 @@ peer keeps its context across dispatch cycles. The tmux session is <code>ccb-NAM
 <p><code>prompt</code> and <code>fanout</code> exit 0 when every turn ended, 2 on timeout or a blocked
 peer, 3 on a dead session. A turn that does not end prints its pane tail.</p>
 
-<h2>04 — Roster and jobs</h2>
-<pre>{"agents": [{"name": "worker-1", "cwd": "../project-a", "harness": "claude"}]}
-
-{"jobs": [{"name": "worker-1", "prompt": "Do X. End with REPORT: ..."}]}</pre>
-<p><code>agents.json</code> is ignored by git; <code>agents.example.json</code> is the template.
-Relative cwds resolve against this project root. Reuse a name to continue a conversation;
-start a new name for a fresh one.</p>
+<h2>04 — Projects and jobs</h2>
+<p>Every immediate subdirectory of the parent path is a candidate project, except this folder
+and hidden directories. A directory counts when it is a git worktree or carries a project
+marker: <code>AGENTS.md</code>, <code>CLAUDE.md</code>, <code>package.json</code>,
+<code>pyproject.toml</code>, <code>Cargo.toml</code>, <code>go.mod</code>,
+<code>CMakeLists.txt</code>, <code>Makefile</code>, <code>requirements.txt</code>,
+<code>src/</code>, and similar. <code>--all</code> includes unmarked directories.</p>
+<p>On a new session the harness may show Claude Code's folder-trust dialog. <code>bin/orch</code>
+selects "Yes, I trust this folder" and waits for it to clear; pass <code>--no-trust</code> to
+leave that decision to a person.</p>
+<pre>{"jobs": [{"name": "project-a", "prompt": "Do X. End with REPORT: ..."}]}</pre>
+<p>Peer names are the project directory names. Relative cwds in job files resolve against
+this project root. Reuse a name to continue a conversation; start a new name for a fresh one.</p>
 
 <h2>05 — Cycle</h2>
 <ol>
-  <li><code>bin/orch up</code>, then <code>bin/orch status --json</code>. Start missing roster members.</li>
+  <li><code>bin/orch up</code>, then <code>bin/orch projects --json</code> and <code>bin/orch start</code>.</li>
   <li>Ask every peer for its full ranked remaining work, with current item and status, via <code>fanout</code>.</li>
   <li>Decide the best next step for each peer.</li>
   <li>Send each peer its single next step, in the same turn as its report requirement.</li>
@@ -139,10 +146,13 @@ credential questions for the owner report.</p>
 <h2>10 — Run</h2>
 <pre>cd /data/workspace/hyperagent
 ./bin/orch up
+./bin/orch projects
+./bin/orch start
 claude
 /orchestrate</pre>
-<p>The airc checkout defaults to <code>../airc</code>; override with <code>AIRC_DIR</code>. The WebSocket
-server defaults to <code>127.0.0.1:8787</code>; override with <code>ORCH_HOST</code> / <code>ORCH_PORT</code>.</p>
+<p>The airc checkout defaults to <code>../airc</code>; override with <code>AIRC_DIR</code>. Projects come
+from the parent of this folder; override with <code>ORCH_PARENT</code>. The WebSocket server defaults
+to <code>127.0.0.1:8787</code>; override with <code>ORCH_HOST</code> / <code>ORCH_PORT</code>.</p>
 
 <h2>11 — Limits</h2>
 <ul>
@@ -150,6 +160,7 @@ server defaults to <code>127.0.0.1:8787</code>; override with <code>ORCH_HOST</c
   <li>Idle airc hubs are reaped after 1800 seconds without clients; a later prompt starts a fresh session under that name.</li>
   <li>One prompt per peer at a time is enforced by an advisory lock in <code>.orch/locks/</code>.</li>
   <li>The peer is an unmodified interactive harness, so its own permission and trust prompts still apply.</li>
+  <li>Discovery filters on project markers; use <code>--all</code> when a real project carries none.</li>
 </ul>
 
 <footer>

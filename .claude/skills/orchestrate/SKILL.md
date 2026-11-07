@@ -1,6 +1,6 @@
 ---
 name: orchestrate
-description: "Dispatch loop for the hyperagent session. Peer agents are airc harness sessions, started and prompted directly with bin/orch. Use when coordinating peer coding agents: collect their remaining work, decide, assign, and keep every agent working."
+description: "Dispatch loop for the hyperagent session. Peer agents are airc harness sessions, started and prompted directly with bin/orch. Peers are discovered from the projects in the parent directory. Use when coordinating peer coding agents: collect their remaining work, decide, assign, and keep every agent working."
 ---
 
 # Orchestrate dispatch (airc)
@@ -13,6 +13,8 @@ sessions in this session tree: `ListAgents` and `SendMessage` never reach them.
 Every exchange is a prompt typed into the peer's terminal plus its transcript text
 read back over the airc WebSocket.
 
+Peers come from the projects around this one, not from a hand-written roster.
+
 ## Transport
 
 `bin/orch` (in the project root) is the only channel to peers.
@@ -20,9 +22,10 @@ read back over the airc WebSocket.
 | command | meaning |
 |---|---|
 | `bin/orch up` | start the airc server if it is not running (idempotent) |
+| `bin/orch projects [--json] [--all]` | list every project in the parent path except this one |
+| `bin/orch start` | start a peer for every discovered project (idempotent, concurrent) |
+| `bin/orch start NAME --cwd DIR [--harness H]` | start one extra peer |
 | `bin/orch status [--json] [--panes]` | live peers, ready/busy state, cwd, pane tail |
-| `bin/orch start NAME --cwd DIR [--harness H]` | start one peer and wait for it to be ready |
-| `bin/orch start --roster agents.json` | start every peer in the roster |
 | `bin/orch prompt NAME "text" [--timeout S] [--idle-exit S] [--json]` | start if needed, prompt, wait for the turn, print its text |
 | `bin/orch fanout jobs.json [--timeout S] [--idle-exit S] [--json]` | prompt many peers concurrently and print one section per peer |
 | `bin/orch pane NAME [--lines N]` | print a peer's terminal pane |
@@ -33,29 +36,44 @@ read back over the airc WebSocket.
 3 on a dead session. A status other than `turn_end` prints a block with the pane tail
 so you can see what the peer is waiting on.
 
-`bin/orch` reads `AIRC_DIR` (default: `../airc`) and `ORCH_PORT` (default 8787).
-Relative cwds resolve against this project root.
+`bin/orch` reads `AIRC_DIR` (default: `../airc`), `ORCH_PORT` (default 8787) and
+`ORCH_PARENT` (default: the parent of this project). Relative cwds resolve against
+this project root.
 
-## Roster and job files
+## Projects and job files
 
-`agents.json` (ignored by git; copy `agents.example.json`):
+Every immediate subdirectory of the parent path is a candidate project, except this
+folder and hidden directories. A directory counts as a project when it is a git
+worktree or carries a project marker: `AGENTS.md`, `CLAUDE.md`, `package.json`,
+`pyproject.toml`, `setup.py`, `Cargo.toml`, `go.mod`, `CMakeLists.txt`, `Makefile`,
+`requirements.txt`, `Gemfile`, `composer.json`, `pom.xml`, `build.gradle`,
+`meson.build`, `deno.json`, a solution/project file, or `src/`. `--all` also includes
+unmarked directories.
 
-    {"agents": [{"name": "worker-1", "cwd": "../project-a", "harness": "claude"}]}
+`bin/orch projects --json` lists the peers you will manage; each peer's name is its
+project directory name. `bin/orch start` starts all of them and is safe to repeat.
+It runs up to 8 starts at a time; raise it with `--concurrency`.
+
+On a new session the harness may show Claude Code's folder-trust dialog. `bin/orch`
+selects "Yes, I trust this folder" and waits for it to clear. Pass `--no-trust` on
+`start`, `prompt` or `fanout` to leave that decision to a person. A hub that exists
+but is not alive is recreated and goes through the same check.
 
 A job file for `fanout`:
 
-    {"jobs": [{"name": "worker-1", "prompt": "..."}]}
+    {"jobs": [{"name": "project-a", "prompt": "..."}]}
 
 Each job may also carry `cwd` and `harness`; those only apply when the job creates the
-session. Names are stable identities: reuse the same name to continue the same
-conversation, and start a new name to get a fresh one.
+session. A job that omits `cwd` uses the discovered project's directory for that name,
+so a recreated hub returns to its own project. Names are stable identities: reuse the
+same name to continue the same conversation, and start a new name to get a fresh one.
 
 ## Cycle (repeat until no work remains)
 
 1. `bin/orch up`
-2. `bin/orch status --json`. Start any missing roster member with
-   `bin/orch start --roster agents.json`. Peers survive between cycles; never restart
-   one that is alive unless its context is wrong.
+2. `bin/orch projects --json`, then `bin/orch start` to make sure every discovered
+   project has a peer. Peers survive between cycles; never restart one that is alive
+   unless its context is wrong.
 3. Ask every peer for its full ranked remaining work, with current item and status.
    Write `.orch/ask.json` and run `bin/orch fanout .orch/ask.json --timeout 1200 --idle-exit 120`.
 4. Decide the best next step for each peer.
