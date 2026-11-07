@@ -11,10 +11,13 @@ messaging bus. The orchestrator talks to them through the `hyperagent` MCP serve
 enables it without a prompt. `claude mcp list` reports it as connected.
 
 Tools: `list_projects`, `start_projects`, `instruct`, `instruct_many`,
-`turn_result`, `peer_status`, `read_pane`, `stop_peer`, `server_down`.
+`turn_result`, `resume_project`, `list_project_sessions`, `peer_status`,
+`read_pane`, `stop_peer`, `server_down`.
 `list_projects` launches nothing. `start_projects` starts only the names given and
 runs Claude Code in each project through airc. `instruct` and `instruct_many` return
 the peer's turn; `wait: false` returns a turn id for `turn_result`.
+`resume_project` continues a project's saved Claude conversation; with no project it
+resumes the last project used. `list_project_sessions` lists resumable sessions.
 
 `bin/open` starts Claude Code in this project with `MCP_TOOL_TIMEOUT` set to 30
 minutes, so a turn can be collected in one call. Without it the client's shorter tool
@@ -53,6 +56,28 @@ exits. The MCP server and `bin/orch` answer it by sending `Down` then `Enter`
 listed hub whose tmux session died counts as absent: the server recreates it and trust
 is checked again.
 
+## Project resume
+
+`resume_project` (MCP) and `bin/orch resume [NAME]` continue a project's Claude
+conversation in a peer. With no project they use the last project touched, persisted
+in `.orch/state.json`; that ledger also stores each named project's cwd and touched
+time, so a project started with `--cwd` stays addressable by name.
+
+Three parts make resume safe:
+
+- `list_project_sessions` / `bin/orch sessions [NAME] [--all]` read the Claude
+transcripts for the project directory and return session ids with timestamps. The
+newest is the default; `session_id` / `--session` selects a specific one.
+- Resume retires any live hub and leftover `ccb-NAME` tmux session first, restarts
+the airc server when it is down, then asks airc for a new hub with
+`resume=<session-id>` (or `continue=1`). airc launches `claude --resume <id>`.
+- a resumed hub reads its transcript from the end, so the reply contains only the
+new turn rather than the whole saved history.
+
+`start_projects`, `instruct` and `instruct_many` take `resume: true` to resume a
+project's latest session automatically when its peer is not running. The CLI
+equivalents are `start --resume`, `prompt --resume` and `prompt --session ID`.
+
 ## CLI (debug path)
 
 ```
@@ -62,7 +87,10 @@ bin/orch projects [--json] [--all]
 bin/orch start NAME [NAME...] [--concurrency 8]
 bin/orch start NAME --cwd DIR --harness claude
 bin/orch status --json --panes
+bin/orch sessions [NAME] [--all] [--json]
+bin/orch resume [NAME] [--session ID] [--prompt "instruction"]
 bin/orch prompt NAME "instruction" --timeout 1800 --idle-exit 120
+bin/orch prompt NAME "instruction" --resume
 bin/orch fanout jobs.json --timeout 1800 --idle-exit 120
 bin/orch pane NAME --lines 40
 bin/orch stop NAME

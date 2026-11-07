@@ -22,10 +22,15 @@ ORCH_DIR = Path(os.environ.get("ORCH_HOME") or (ROOT / ".orch")).resolve()
 HOST = os.environ.get("ORCH_HOST", "127.0.0.1")
 PORT = int(os.environ.get("ORCH_PORT", "8787"))
 NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
+SESSION_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{7,127}$")
+STATE_FILE = ORCH_DIR / "state.json"
+STATE_LOCK = ORCH_DIR / "state.lock"
 DEFAULT_TIMEOUT = 1800.0
 DEFAULT_HARNESS = "claude"
 KINDS = "text,tool,you"
 TAG = {"t": "text", "u": "tool", "y": "you"}
+PROMPT_RETRY_AFTER = 12.0
+PROMPT_RETRIES = 2
 PARENT = Path(os.environ.get("ORCH_PARENT") or ROOT.parent).resolve()
 PROJECT_MARKERS = (
     "AGENTS.md", "CLAUDE.md", "package.json", "pyproject.toml", "setup.py",
@@ -54,10 +59,15 @@ def base_url() -> str:
     return f"http://{HOST}:{PORT}"
 
 
-def ws_url(name: str, cwd: str | None, harness: str) -> str:
+def ws_url(name: str, cwd: str | None, harness: str, resume: str | None = None,
+           continue_last: bool = False) -> str:
     query = {"session": name, "harness": harness, "mode": "tagged", "kinds": KINDS}
     if cwd:
         query["cwd"] = cwd
+    if resume:
+        query["resume"] = resume
+    if continue_last:
+        query["continue"] = "1"
     return f"ws://{HOST}:{PORT}/ws?{urlencode(query)}"
 
 
@@ -94,6 +104,15 @@ def is_busy(harness: str, pane: str) -> bool:
         return airc_mods().load(harness).pane_busy(pane)
     except Exception:
         return False
+
+
+async def pane_idle_ready(harness: str, name: str) -> bool:
+    pane = await capture(name)
+    try:
+        mod = airc_mods().load(harness)
+    except Exception:
+        return False
+    return mod.pane_ready(pane) and not mod.pane_busy(pane)
 
 
 async def capture(name: str) -> str:
@@ -217,12 +236,155 @@ def normalize(entry: dict, require_prompt: bool) -> dict:
         raise SystemExit(f"entry {name!r} has no prompt")
     if prompt:
         job["prompt"] = str(prompt)
+    session_id = entry.get("session_id") or entry.get("resume")
+    if session_id:
+        job["resume"] = check_session_id(str(session_id))
+    if entry.get("continue"):
+        if job.get("resume"):
+            raise SystemExit(f"entry {name!r}: resume and continue are mutually exclusive")
+        job["continue"] = True
     return job
 
 
 def safe_name(raw: str) -> str:
     name = re.sub(r"[^A-Za-z0-9_-]+", "-", raw).strip("-")
     return name[:64] or "project"
+
+
+def check_session_id(session_id: str) -> str:
+    if not SESSION_ID_RE.match(session_id):
+        raise SystemExit(f"bad session id {session_id!r}: use letters, digits, underscore, dash")
+    return session_id
+
+
+def claude_sessions(cwd: str) -> list[dict]:
+    return airc_mods().claude.sessions(cwd)
+
+
+def latest_session(cwd: str) -> dict | None:
+    found = claude_sessions(cwd)
+    return found[-1] if found else None
+
+
+def read_state() -> dict:
+    try:
+        data = json.loads(STATE_FILE.read_text())
+    except (OSError, ValueError):
+        return {"last_project": None, "projects": {}}
+    if not isinstance(data, dict):
+        return {"last_project": None, "projects": {}}
+    if not isinstance(data.get("projects"), dict):
+        data["projects"] = {}
+    return data
+
+
+def update_state(change) -> dict:
+    STATE_LOCK.parent.mkdir(parents=True, exist_ok=True)
+    with open(STATE_LOCK, "a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        state = read_state()
+        change(state)
+        temp = STATE_FILE.with_suffix(".json.tmp")
+        temp.write_text(json.dumps(state, indent=2, sort_keys=True))
+        os.replace(temp, STATE_FILE)
+        fcntl.flock(lock, fcntl.LOCK_UN)
+    return state
+
+
+def record_project(name: str, cwd: str, session_id: str | None = None) -> None:
+    def change(state: dict) -> None:
+        entry = state["projects"].setdefault(name, {})
+        entry["cwd"] = cwd
+        entry["touched"] = round(time.time(), 3)
+        if session_id:
+            entry["session_id"] = session_id
+            entry["resumed_at"] = round(time.time(), 3)
+        state["last_project"] = name
+
+    update_state(change)
+
+
+def last_project() -> dict | None:
+    projects = read_state()["projects"]
+    ordered = sorted(projects.items(), key=lambda pair: pair[1].get("touched", 0),
+                     reverse=True)
+    for name, entry in ordered:
+        if entry.get("cwd"):
+            return {"name": name, "cwd": entry["cwd"]}
+    return None
+
+
+def newest_project() -> dict | None:
+    best: dict | None = None
+    for project in discover(True):
+        session = latest_session(project["cwd"])
+        if session is None:
+            continue
+        if best is None or session["mtime"] > best["mtime"]:
+            best = {"name": project["name"], "cwd": project["cwd"], "mtime": session["mtime"]}
+    if best is not None:
+        best.pop("mtime", None)
+    return best
+
+
+def project_target(project: str | None = None, cwd: str | None = None) -> dict:
+    if cwd:
+        return {"name": check_name(project or safe_name(Path(cwd).name)),
+                "cwd": resolve_cwd(cwd)}
+    if project:
+        name = check_name(project)
+        known = {item["name"]: item["cwd"] for item in discover(True)}
+        entry = read_state()["projects"].get(name) or {}
+        location = known.get(name) or entry.get("cwd")
+        if not location:
+            raise SystemExit(f"unknown project {project!r}; see bin/orch projects")
+        return {"name": name, "cwd": resolve_cwd(location)}
+    target = last_project() or newest_project()
+    if target is None:
+        raise SystemExit("no project with a Claude session to resume")
+    return {"name": target["name"], "cwd": resolve_cwd(target["cwd"])}
+
+
+def resume_target(project: str | None = None, session_id: str | None = None,
+                  cwd: str | None = None) -> dict:
+    target = project_target(project, cwd)
+    found = claude_sessions(target["cwd"])
+    if not found:
+        raise SystemExit(f"no Claude session transcript for {target['cwd']}")
+    if session_id:
+        chosen = next((item for item in found if item["session_id"] == session_id), None)
+        if chosen is None:
+            recent = ", ".join(item["session_id"] for item in found[-5:])
+            raise SystemExit(f"session {session_id!r} not found for {target['cwd']}; "
+                             f"recent: {recent}")
+    else:
+        chosen = found[-1]
+    return {**target, "session": chosen}
+
+
+async def tmux_alive(name: str) -> bool:
+    proc = await asyncio.create_subprocess_exec(
+        "tmux", "has-session", "-t", f"ccb-{name}",
+        stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL)
+    return await proc.wait() == 0
+
+
+async def peer_present(name: str) -> bool:
+    return await hub_exists(name) or await tmux_alive(name)
+
+
+async def retire(name: str) -> dict:
+    stopped_hub = False
+    if await server_alive():
+        async with aiohttp.ClientSession() as http:
+            async with http.delete(base_url() + f"/sessions/{name}",
+                                   timeout=aiohttp.ClientTimeout(total=30)) as response:
+                stopped_hub = response.status == 200
+    proc = await asyncio.create_subprocess_exec(
+        "tmux", "kill-session", "-t", f"ccb-{name}",
+        stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL)
+    killed_tmux = await proc.wait() == 0
+    return {"hub": stopped_hub, "tmux": killed_tmux}
 
 
 def is_project(path: Path) -> bool:
@@ -306,18 +468,23 @@ async def run_job(job: dict, timeout: float, idle_exit: float, lock_wait: float,
                   tools: bool, trust: bool) -> dict:
     name, harness = job["name"], job["harness"]
     started = time.time()
-    existing = await hub_exists(name)
     text_parts: list[str] = []
     status = "died"
     acked = False
     tail: list[str] = []
     async with session_lock(name, lock_wait):
+        if job.get("resume") or job.get("continue"):
+            await retire(name)
+        existing = await hub_exists(name)
         async with aiohttp.ClientSession() as http:
-            async with http.ws_connect(ws_url(name, job["cwd"], harness),
+            async with http.ws_connect(ws_url(name, job["cwd"], harness, job.get("resume"),
+                                              bool(job.get("continue"))),
                                        heartbeat=30, max_msg_size=16 << 20) as ws:
                 if trust and not existing and await answer_trust(name):
                     print(f"[orch] {name}: accepted folder trust", file=sys.stderr)
                 await ws.send_str(job["prompt"])
+                sent = time.time()
+                retries = 0
                 queue: asyncio.Queue = asyncio.Queue()
                 reader = asyncio.create_task(read_frames(ws, queue))
                 last = time.time()
@@ -330,7 +497,16 @@ async def run_job(job: dict, timeout: float, idle_exit: float, lock_wait: float,
                         try:
                             frame = await asyncio.wait_for(queue.get(), min(remaining, 5.0))
                         except asyncio.TimeoutError:
-                            if idle_exit > 0 and time.time() - last >= idle_exit:
+                            now = time.time()
+                            if (not acked and not text_parts and retries < PROMPT_RETRIES
+                                    and now - sent >= PROMPT_RETRY_AFTER
+                                    and await pane_idle_ready(harness, name)):
+                                await ws.send_str(job["prompt"])
+                                sent = now
+                                retries += 1
+                                last = now
+                                continue
+                            if idle_exit > 0 and now - last >= idle_exit:
                                 pane = await capture(name)
                                 if not is_busy(harness, pane):
                                     tail = pane_tail(pane)
@@ -403,15 +579,20 @@ async def cmd_down(args) -> int:
     return 0
 
 
-async def start_one(job: dict, settle: float, trust: bool) -> dict:
-    existing = await hub_exists(job["name"])
+async def start_one(job: dict, settle: float, trust: bool,
+                     lock_wait: float = DEFAULT_TIMEOUT) -> dict:
     trusted = False
-    async with aiohttp.ClientSession() as http:
-        async with http.ws_connect(ws_url(job["name"], job["cwd"], job["harness"]),
-                                   heartbeat=30) as ws:
-            if trust and not existing:
-                trusted = await answer_trust(job["name"])
-            await asyncio.sleep(settle)
+    async with session_lock(job["name"], lock_wait):
+        if job.get("resume") or job.get("continue"):
+            await retire(job["name"])
+        existing = await hub_exists(job["name"])
+        async with aiohttp.ClientSession() as http:
+            async with http.ws_connect(
+                    ws_url(job["name"], job["cwd"], job["harness"], job.get("resume"),
+                           bool(job.get("continue"))), heartbeat=30) as ws:
+                if trust and not existing:
+                    trusted = await answer_trust(job["name"])
+                await asyncio.sleep(settle)
     return {**job, "trusted": trusted}
 
 
@@ -430,6 +611,13 @@ async def cmd_start(args) -> int:
     if unknown:
         raise SystemExit(f"unknown project(s): {', '.join(unknown)}; "
                          "see bin/orch projects or pass --cwd")
+    if args.resume:
+        for job in jobs:
+            if await peer_present(job["name"]):
+                continue
+            session = latest_session(job["cwd"])
+            if session:
+                job["resume"] = session["session_id"]
     limit = args.concurrency if args.concurrency > 0 else len(jobs)
     gate = asyncio.Semaphore(max(1, limit))
 
@@ -463,6 +651,77 @@ async def cmd_projects(args) -> int:
     return 0
 
 
+async def cmd_resume(args) -> int:
+    prompt = " ".join(args.prompt) if args.prompt else ""
+    session_id = check_session_id(args.session) if args.session else None
+    target = resume_target(args.name, session_id, args.cwd)
+    job = {"name": target["name"], "harness": args.harness, "cwd": target["cwd"],
+           "resume": target["session"]["session_id"]}
+    if args.continue_last:
+        job.pop("resume", None)
+        job["continue"] = True
+    if prompt:
+        job["prompt"] = prompt
+    await fill_cwds([job])
+    await ensure_server()
+    if await peer_present(job["name"]) and not session_id and not args.continue_last:
+        sessions = await fetch_sessions()
+        info = sessions.get(job["name"]) or {}
+        payload = {"state": "already_alive", "project": job["name"], "cwd": job["cwd"],
+                   "session_id": target["session"]["session_id"],
+                   "launch_args": info.get("launch_args") or []}
+        print(json.dumps(payload, indent=2) if args.json else
+              f"{job['name']}: already alive cwd={job['cwd']} "
+              f"session={target['session']['session_id']}")
+        return 0
+    if prompt:
+        result = await run_job(job, args.timeout, args.idle_exit, args.lock_wait, args.tools,
+                               args.trust)
+        await live_cwds([result])
+        if args.json:
+            print(json.dumps({"session_id": target["session"]["session_id"],
+                              "result": result}, indent=2))
+        elif result["status"] == "turn_end":
+            print(result["text"].strip())
+        else:
+            print(render_result(result, args.tools))
+        if result["status"] == "turn_end":
+            return 0
+        return 2 if result["status"] in ("timeout", "blocked") else 3
+    started = await start_one(job, args.settle, args.trust)
+    sessions = await fetch_sessions()
+    info = sessions.get(job["name"]) or {}
+    state = "resumed" if info.get("alive") else "not alive"
+    payload = {"state": state, "project": job["name"], "cwd": job["cwd"],
+               "session_id": target["session"]["session_id"],
+               "launch_args": info.get("launch_args") or [],
+               "trusted": started.get("trusted", False)}
+    print(json.dumps(payload, indent=2) if args.json else
+          f"{job['name']}: {state} session={target['session']['session_id']} "
+          f"launch={payload['launch_args']} cwd={job['cwd']}")
+    return 0 if info.get("alive") else 3
+
+
+async def cmd_sessions(args) -> int:
+    if args.all:
+        rows = []
+        for project in discover(True):
+            for item in claude_sessions(project["cwd"]):
+                rows.append({"project": project["name"], "cwd": project["cwd"], **item})
+    else:
+        target = project_target(args.name, args.cwd)
+        rows = [{"project": target["name"], "cwd": target["cwd"], **item}
+                for item in claude_sessions(target["cwd"])]
+    if args.json:
+        print(json.dumps(rows, indent=2))
+    else:
+        for row in rows:
+            stamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(row["mtime"]))
+            print(f"{row['project']}\t{row['session_id']}\t{stamp}\t{row['size']}\t{row['path']}")
+        print(f"{len(rows)} sessions", file=sys.stderr)
+    return 0 if rows else 3
+
+
 async def cmd_status(args) -> int:
     await ensure_server()
     sessions = await fetch_sessions()
@@ -485,6 +744,8 @@ async def cmd_status(args) -> int:
 
 async def fill_cwds(jobs: list[dict]) -> None:
     known = {project["name"]: project["cwd"] for project in discover(True)}
+    remembered = {name: entry["cwd"] for name, entry in read_state()["projects"].items()
+                  if entry.get("cwd")}
     live: dict = {}
     try:
         live = await fetch_sessions()
@@ -493,7 +754,11 @@ async def fill_cwds(jobs: list[dict]) -> None:
     for job in jobs:
         if not job.get("cwd"):
             info = live.get(job["name"]) or {}
-            job["cwd"] = info.get("cwd") or known.get(job["name"])
+            job["cwd"] = (info.get("cwd") or known.get(job["name"])
+                          or remembered.get(job["name"]))
+    for job in jobs:
+        if job.get("cwd"):
+            record_project(job["name"], job["cwd"], job.get("resume"))
 
 
 async def live_cwds(results: list[dict]) -> None:
@@ -515,6 +780,12 @@ async def cmd_prompt(args) -> int:
     if not job.get("cwd"):
         raise SystemExit(f"unknown project {job['name']!r}; "
                          "see bin/orch projects or pass --cwd")
+    if args.session:
+        job["resume"] = check_session_id(args.session)
+    elif args.resume and not await peer_present(job["name"]):
+        session = latest_session(job["cwd"])
+        if session:
+            job["resume"] = session["session_id"]
     result = await run_job(job, args.timeout, args.idle_exit, args.lock_wait, args.tools,
                            args.trust)
     await live_cwds([result])
@@ -608,6 +879,8 @@ def build_parser() -> argparse.ArgumentParser:
     start.add_argument("--harness", default=DEFAULT_HARNESS)
     start.add_argument("--settle", type=float, default=3.0)
     start.add_argument("--concurrency", type=int, default=8)
+    start.add_argument("--resume", action="store_true",
+                       help="resume each project's latest Claude session when it is not running")
     start.add_argument("--no-trust", dest="trust", action="store_false")
     start.set_defaults(func=cmd_start)
 
@@ -621,6 +894,9 @@ def build_parser() -> argparse.ArgumentParser:
     prompt.add_argument("--lock-wait", type=float, default=1800.0)
     prompt.add_argument("--tools", action="store_true")
     prompt.add_argument("--json", action="store_true")
+    prompt.add_argument("--resume", action="store_true",
+                        help="resume the project's latest Claude session when it is not running")
+    prompt.add_argument("--session", help="resume this Claude session id before prompting")
     prompt.add_argument("--no-trust", dest="trust", action="store_false")
     prompt.set_defaults(func=cmd_prompt)
 
@@ -633,6 +909,30 @@ def build_parser() -> argparse.ArgumentParser:
     fanout.add_argument("--json", action="store_true")
     fanout.add_argument("--no-trust", dest="trust", action="store_false")
     fanout.set_defaults(func=cmd_fanout)
+
+    resume = sub.add_parser("resume", help="resume a project's Claude session; default is the last project")
+    resume.add_argument("name", nargs="?", help="project name; omitted resumes the last project")
+    resume.add_argument("--session", help="specific Claude session id")
+    resume.add_argument("--cwd", help="project directory when the name is not discovered")
+    resume.add_argument("--continue", dest="continue_last", action="store_true",
+                        help="resume with claude --continue instead of a session id")
+    resume.add_argument("--prompt", nargs="+", help="prompt to send after resuming")
+    resume.add_argument("--harness", default=DEFAULT_HARNESS)
+    resume.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT)
+    resume.add_argument("--idle-exit", type=float, default=120.0)
+    resume.add_argument("--lock-wait", type=float, default=1800.0)
+    resume.add_argument("--settle", type=float, default=3.0)
+    resume.add_argument("--tools", action="store_true")
+    resume.add_argument("--json", action="store_true")
+    resume.add_argument("--no-trust", dest="trust", action="store_false")
+    resume.set_defaults(func=cmd_resume)
+
+    sessions = sub.add_parser("sessions", help="list resumable Claude sessions")
+    sessions.add_argument("name", nargs="?", help="project name; omitted uses the last project")
+    sessions.add_argument("--cwd", help="project directory when the name is not discovered")
+    sessions.add_argument("--all", action="store_true", help="list sessions for every discovered project")
+    sessions.add_argument("--json", action="store_true")
+    sessions.set_defaults(func=cmd_sessions)
 
     stop = sub.add_parser("stop", help="stop one session")
     stop.add_argument("name")

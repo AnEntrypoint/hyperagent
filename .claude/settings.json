@@ -24,6 +24,8 @@
       "mcp__hyperagent__instruct",
       "mcp__hyperagent__instruct_many",
       "mcp__hyperagent__turn_result",
+      "mcp__hyperagent__resume_project",
+      "mcp__hyperagent__list_project_sessions",
       "mcp__hyperagent__peer_status",
       "mcp__hyperagent__read_pane",
       "mcp__hyperagent__stop_peer",

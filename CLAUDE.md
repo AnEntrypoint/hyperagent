@@ -9,6 +9,8 @@ Peer agents are Claude Code sessions started and prompted directly through airc.
 - `start_projects` — start Claude Code peers for the named projects only.
 - `instruct` / `instruct_many` — prompt one or many peers and return their turns.
 - `turn_result` — collect a background turn started with `wait: false`.
+- `resume_project` — continue a project's saved Claude conversation; the last
+  project is the default. `list_project_sessions` lists the candidates.
 - `peer_status`, `read_pane`, `stop_peer`, `server_down`.
 
 Never start a peer that has no work. The full dispatch loop is `/orchestrate`.
