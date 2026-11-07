@@ -190,6 +190,11 @@ def spawn_server() -> subprocess.Popen:
         env["AIRC_CLAUDE_SKIP_PERMISSIONS"] = "1"
     else:
         env.pop("AIRC_CLAUDE_SKIP_PERMISSIONS", None)
+    model = os.environ.get("ORCH_CLAUDE_MODEL", "haiku")
+    if model:
+        env["AIRC_CLAUDE_MODEL"] = model
+    else:
+        env.pop("AIRC_CLAUDE_MODEL", None)
     proc = subprocess.Popen(
         [sys.executable, str(server), "--host", HOST, "--port", str(PORT)],
         cwd=str(airc_root()), stdout=log, stderr=log, start_new_session=True, env=env)
