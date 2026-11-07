@@ -416,15 +416,20 @@ async def start_one(job: dict, settle: float, trust: bool) -> dict:
 
 
 async def cmd_start(args) -> int:
+    names = list(dict.fromkeys(args.names))
+    if not names:
+        print("start needs one or more project names; see `bin/orch projects`", file=sys.stderr)
+        return 1
+    if args.cwd and len(names) > 1:
+        raise SystemExit("--cwd applies to a single name")
     await ensure_server()
-    if args.name:
-        jobs = [normalize({"name": args.name, "cwd": args.cwd, "harness": args.harness}, False)]
-        fill_cwds(jobs)
-    else:
-        jobs = discover(args.all)
-        if not jobs:
-            print(f"no projects under {PARENT} (excluding {ROOT})")
-            return 0
+    jobs = [normalize({"name": name, "cwd": args.cwd if len(names) == 1 else None,
+                       "harness": args.harness}, False) for name in names]
+    await fill_cwds(jobs)
+    unknown = [job["name"] for job in jobs if not job.get("cwd")]
+    if unknown:
+        raise SystemExit(f"unknown project(s): {', '.join(unknown)}; "
+                         "see bin/orch projects or pass --cwd")
     limit = args.concurrency if args.concurrency > 0 else len(jobs)
     gate = asyncio.Semaphore(max(1, limit))
 
@@ -478,11 +483,17 @@ async def cmd_status(args) -> int:
     return 0
 
 
-def fill_cwds(jobs: list[dict]) -> None:
+async def fill_cwds(jobs: list[dict]) -> None:
     known = {project["name"]: project["cwd"] for project in discover(True)}
+    live: dict = {}
+    try:
+        live = await fetch_sessions()
+    except Exception:
+        pass
     for job in jobs:
         if not job.get("cwd"):
-            job["cwd"] = known.get(job["name"])
+            info = live.get(job["name"]) or {}
+            job["cwd"] = info.get("cwd") or known.get(job["name"])
 
 
 async def live_cwds(results: list[dict]) -> None:
@@ -500,7 +511,10 @@ async def cmd_prompt(args) -> int:
     await ensure_server()
     job = normalize({"name": args.name, "cwd": args.cwd, "harness": args.harness,
                      "prompt": " ".join(args.text)}, True)
-    fill_cwds([job])
+    await fill_cwds([job])
+    if not job.get("cwd"):
+        raise SystemExit(f"unknown project {job['name']!r}; "
+                         "see bin/orch projects or pass --cwd")
     result = await run_job(job, args.timeout, args.idle_exit, args.lock_wait, args.tools,
                            args.trust)
     await live_cwds([result])
@@ -516,7 +530,11 @@ async def cmd_prompt(args) -> int:
 async def cmd_fanout(args) -> int:
     await ensure_server()
     jobs = [normalize(entry, True) for entry in read_entries(args.file, "jobs")]
-    fill_cwds(jobs)
+    await fill_cwds(jobs)
+    unknown = [job["name"] for job in jobs if not job.get("cwd")]
+    if unknown:
+        raise SystemExit(f"unknown project(s): {', '.join(unknown)}; "
+                         "see bin/orch projects or give each job a cwd")
     results = await asyncio.gather(
         *(run_job(job, args.timeout, args.idle_exit, args.lock_wait, args.tools, args.trust)
           for job in jobs))
@@ -584,9 +602,8 @@ def build_parser() -> argparse.ArgumentParser:
     projects.add_argument("--json", action="store_true")
     projects.set_defaults(func=cmd_projects)
 
-    start = sub.add_parser("start", help="start one session, or every discovered project")
-    start.add_argument("name", nargs="?")
-    start.add_argument("--all", action="store_true", help="include directories without a project marker")
+    start = sub.add_parser("start", help="start one or more named project peers")
+    start.add_argument("names", nargs="*", metavar="NAME")
     start.add_argument("--cwd")
     start.add_argument("--harness", default=DEFAULT_HARNESS)
     start.add_argument("--settle", type=float, default=3.0)

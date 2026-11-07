@@ -39,7 +39,7 @@ tmux session died counts as absent: the server recreates it and trust is checked
 ```
 bin/orch up
 bin/orch projects [--json] [--all]
-bin/orch start [--all] [--concurrency 8]
+bin/orch start NAME [NAME...] [--concurrency 8]
 bin/orch start NAME --cwd DIR --harness claude
 bin/orch status --json --panes
 bin/orch prompt NAME "instruction" --timeout 1800 --idle-exit 120
@@ -56,6 +56,10 @@ One prompt per peer at a time is enforced with an advisory lock in `.orch/locks/
 Concurrent prompts to different peers are expected; `fanout` runs them in parallel.
 A timeout or blocked return closes the client but leaves the harness turn running;
 check `bin/orch status` for `busy` before prompting that peer again.
+
+`start` launches only the names given; a bare `start` is an error and starts nothing.
+`prompt` and `fanout` may create a named peer implicitly, which is still an explicit
+instruction. Discovery only lists candidates; it never launches them.
 
 ## Environment
 

@@ -23,8 +23,8 @@ Peers come from the projects around this one, not from a hand-written roster.
 |---|---|
 | `bin/orch up` | start the airc server if it is not running (idempotent) |
 | `bin/orch projects [--json] [--all]` | list every project in the parent path except this one |
-| `bin/orch start` | start a peer for every discovered project (idempotent, concurrent) |
-| `bin/orch start NAME --cwd DIR [--harness H]` | start one extra peer |
+| `bin/orch start NAME [NAME...]` | start only the named project peers; nothing starts implicitly |
+| `bin/orch start NAME --cwd DIR [--harness H]` | start one peer outside discovery |
 | `bin/orch status [--json] [--panes]` | live peers, ready/busy state, cwd, pane tail |
 | `bin/orch prompt NAME "text" [--timeout S] [--idle-exit S] [--json]` | start if needed, prompt, wait for the turn, print its text |
 | `bin/orch fanout jobs.json [--timeout S] [--idle-exit S] [--json]` | prompt many peers concurrently and print one section per peer |
@@ -50,9 +50,10 @@ worktree or carries a project marker: `AGENTS.md`, `CLAUDE.md`, `package.json`,
 `meson.build`, `deno.json`, a solution/project file, or `src/`. `--all` also includes
 unmarked directories.
 
-`bin/orch projects --json` lists the peers you will manage; each peer's name is its
-project directory name. `bin/orch start` starts all of them and is safe to repeat.
-It runs up to 8 starts at a time; raise it with `--concurrency`.
+`bin/orch projects --json` lists the projects you can manage; each project's name is
+its directory name. `bin/orch start NAME [NAME...]` starts only the projects you name.
+Nothing starts implicitly. Peers stay alive between cycles, so start a name once. The
+start is concurrent, up to 8 at a time; raise it with `--concurrency`.
 
 On a new session the harness may show Claude Code's folder-trust dialog. `bin/orch`
 selects "Yes, I trust this folder" and waits for it to clear. Pass `--no-trust` on
@@ -71,9 +72,10 @@ same name to continue the same conversation, and start a new name to get a fresh
 ## Cycle (repeat until no work remains)
 
 1. `bin/orch up`
-2. `bin/orch projects --json`, then `bin/orch start` to make sure every discovered
-   project has a peer. Peers survive between cycles; never restart one that is alive
-   unless its context is wrong.
+2. `bin/orch projects --json` lists candidates. Start only the peers this instruction
+   calls for: `bin/orch start NAME [NAME...]`. Never start a peer with no work for it.
+   Peers survive between cycles; never restart one that is alive unless its context is
+   wrong.
 3. Ask every peer for its full ranked remaining work, with current item and status.
    Write `.orch/ask.json` and run `bin/orch fanout .orch/ask.json --timeout 1200 --idle-exit 120`.
 4. Decide the best next step for each peer.
