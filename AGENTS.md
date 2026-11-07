@@ -58,25 +58,35 @@ is checked again.
 
 ## Project resume
 
-`resume_project` (MCP) and `bin/orch resume [NAME]` continue a project's Claude
-conversation in a peer. With no project they use the last project touched, persisted
-in `.orch/state.json`; that ledger also stores each named project's cwd and touched
-time, so a project started with `--cwd` stays addressable by name.
+`resume_project` (MCP) and `bin/orch resume [NAME]` continue a project's saved
+conversation in claude, codex or freebuff. With no project they use the last project
+touched, persisted in `.orch/state.json`; that ledger also stores each project's cwd,
+harness and touched time, so a project started with `--cwd` stays addressable by name
+and resumes in the harness it last used. Pass `harness` / `--harness` to override.
 
-Three parts make resume safe:
+Each harness answers `sessions(cwd)` and `resume_args` in its mod:
 
-- `list_project_sessions` / `bin/orch sessions [NAME] [--all]` read the Claude
-transcripts for the project directory and return session ids with timestamps. The
-newest is the default; `session_id` / `--session` selects a specific one.
-- Resume retires any live hub and leftover `ccb-NAME` tmux session first, restarts
-the airc server when it is down, then asks airc for a new hub with
-`resume=<session-id>` (or `continue=1`). airc launches `claude --resume <id>`.
-- a resumed hub reads its transcript from the end, so the reply contains only the
-new turn rather than the whole saved history.
+| harness | session source | resume launch |
+|---|---|---|
+| claude | `~/.claude/projects/<slug(cwd)>/<id>.jsonl` | `claude --resume <id>` |
+| codex | `$CODEX_HOME/state_*.sqlite` table `threads` (`id`, `cwd`, `updated_at_ms`), plus legacy `sessions/**/rollout-*.jsonl` | `codex resume <id>` (or `codex resume --last`) |
+| freebuff | `~/.config/manicode/projects/<basename(cwd)>/chats/<id>/chat-messages.json` | `freebuff --continue <id>` |
 
-`start_projects`, `instruct` and `instruct_many` take `resume: true` to resume a
-project's latest session automatically when its peer is not running. The CLI
-equivalents are `start --resume`, `prompt --resume` and `prompt --session ID`.
+`list_project_sessions` / `bin/orch sessions [NAME] [--harness H] [--all]` return
+session ids with timestamps; the newest is the default and `session_id` / `--session`
+selects a specific one. Resume retires any live hub and leftover `ccb-NAME` tmux
+session first, restarts the airc server when it is down, then asks airc for a new hub
+with `resume=<session-id>` (or `continue=1`), and airc launches the harness's resume
+form. The resumed channel binds to that exact session and starts at the end of its
+store, so the reply contains only the new turn. Freebuff's JSON store is seeded with
+the old message ids for the same reason.
+
+`start_projects`, `instruct` and `instruct_many` take `resume: true` (and `harness`)
+to resume a project's latest session automatically when its peer is not running. The
+CLI equivalents are `start --resume`, `prompt --resume` and `prompt --session ID`.
+
+Codex and freebuff need their own CLI login before a peer can run; `codex login
+status` and freebuff's login screen report it.
 
 ## CLI (debug path)
 

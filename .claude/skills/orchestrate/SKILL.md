@@ -25,8 +25,8 @@ The `hyperagent` MCP server is the channel to peers.
 | `mcp__hyperagent__instruct` | prompt one peer and wait for its turn; starts it if needed |
 | `mcp__hyperagent__instruct_many` | prompt many peers concurrently (`jobs`) and collect every turn |
 | `mcp__hyperagent__turn_result` | collect a background turn started with `wait: false` |
-| `mcp__hyperagent__resume_project` | continue a project's saved Claude conversation; no project means the last project |
-| `mcp__hyperagent__list_project_sessions` | list resumable Claude sessions for a project or all projects |
+| `mcp__hyperagent__resume_project` | continue a project's saved conversation in claude, codex or freebuff; no project means the last project |
+| `mcp__hyperagent__list_project_sessions` | list resumable sessions for a project or all projects, per harness |
 | `mcp__hyperagent__peer_status` | live peers: alive, busy, harness, cwd, pane tail |
 | `mcp__hyperagent__read_pane` | a peer's terminal pane |
 | `mcp__hyperagent__stop_peer` | retire one peer |
@@ -115,13 +115,14 @@ Include these in every assignment prompt:
 
 ## Resume
 
-A peer that is not running can continue its saved Claude conversation instead of starting
+A peer that is not running can continue its saved conversation instead of starting
 fresh. Call `resume_project` with no arguments to resume the last project touched, or
 with `project` for a specific one; add `prompt` to send work in the same call. Pass
-`session_id` to pick an older conversation; `list_project_sessions` shows the ids.
-`resume_project` restarts a dead airc server and retires any stale hub or tmux session
-first. `start_projects`, `instruct` and `instruct_many` accept `resume: true` to
-resume a dead peer's latest session automatically.
+`session_id` to pick an older conversation and `harness` for claude, codex or freebuff;
+`list_project_sessions` shows the ids per harness. `resume_project` restarts a dead
+airc server and retires any stale hub or tmux session first. `start_projects`,
+`instruct` and `instruct_many` accept `resume: true` and `harness` to resume a dead
+peer's latest session automatically.
 
 A resumed peer answers from its saved context, so it is the right choice whenever a
 peer's next step depends on what it already did. Only start a fresh session when the

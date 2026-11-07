@@ -84,8 +84,8 @@ its context across dispatch cycles. The tmux session is <code>ccb-NAME</code>.</
   <tr><td><code>instruct</code></td><td>Prompt one peer and wait for its turn. Starts it if needed.</td></tr>
   <tr><td><code>instruct_many</code></td><td>Prompt many peers concurrently (<code>jobs</code>) and collect every turn.</td></tr>
   <tr><td><code>turn_result</code></td><td>Collect a background turn started with <code>wait: false</code>.</td></tr>
-  <tr><td><code>resume_project</code></td><td>Continue a project's saved Claude conversation. No project means the last project; no <code>session_id</code> means its newest session.</td></tr>
-  <tr><td><code>list_project_sessions</code></td><td>List resumable Claude sessions for a project, or every project with <code>all: true</code>.</td></tr>
+  <tr><td><code>resume_project</code></td><td>Continue a project's saved conversation in claude, codex or freebuff. No project means the last project and harness; no <code>session_id</code> means its newest session.</td></tr>
+  <tr><td><code>list_project_sessions</code></td><td>List resumable sessions per harness for a project, or every project with <code>all: true</code>.</td></tr>
   <tr><td><code>peer_status</code></td><td>Live peers: alive, busy, harness, cwd, pane tail.</td></tr>
   <tr><td><code>read_pane</code></td><td>Print a peer's terminal pane.</td></tr>
   <tr><td><code>stop_peer</code> / <code>server_down</code></td><td>Retire one peer / stop the server and every peer.</td></tr>
@@ -109,19 +109,29 @@ once. On first creation the server answers Claude Code's folder-trust dialog; pa
 <pre>instruct_many {"jobs": [{"name": "project-a", "prompt": "Do X. End with REPORT: ..."}]}</pre>
 
 <h2>04.1 — Resume</h2>
-<p>Claude Code keeps each conversation in a transcript under its project directory. A stopped peer
-can continue that conversation instead of starting over:</p>
+<p>Each harness keeps saved conversations in its own store. A stopped peer can continue one
+instead of starting over:</p>
 <pre>resume_project {"prompt": "Continue the migration. End with REPORT: ..."}
-resume_project {"project": "project-a", "session_id": "83e12101-..."}</pre>
+resume_project {"project": "project-a", "session_id": "83e12101-..."}
+ resume_project {"project": "project-a", "harness": "codex"}</pre>
+<table>
+  <tr><th>Harness</th><th>Session store</th><th>Launch</th></tr>
+  <tr><td>claude</td><td><code>~/.claude/projects/&lt;slug&gt;/&lt;id&gt;.jsonl</code></td><td><code>claude --resume &lt;id&gt;</code></td></tr>
+  <tr><td>codex</td><td><code>$CODEX_HOME/state_*.sqlite</code> threads, plus legacy rollouts</td><td><code>codex resume &lt;id&gt;</code></td></tr>
+  <tr><td>freebuff</td><td><code>~/.config/manicode/projects/&lt;name&gt;/chats/&lt;id&gt;/chat-messages.json</code></td><td><code>freebuff --continue &lt;id&gt;</code></td></tr>
+</table>
 <p>With no <code>project</code>, the last project touched is used; that ledger lives in
-<code>.orch/state.json</code>. With no <code>session_id</code>, the project's newest session is
-resumed. <code>list_project_sessions</code> shows the candidates. Resume retires a live hub or
-leftover <code>ccb-NAME</code> tmux session, restarts the airc server when needed, and launches
-<code>claude --resume &lt;id&gt;</code>. The resumed transcript is read from its end, so a turn
-returns only the new reply, not the saved history. <code>start_projects</code>, <code>instruct</code>
-and <code>instruct_many</code> accept <code>resume: true</code> to do this automatically when a peer
-is not running. The CLI is <code>bin/orch resume [NAME] [--session ID]</code> and
-<code>bin/orch sessions [NAME] [--all]</code>.</p>
+<code>.orch/state.json</code> and remembers each project's cwd and harness. With no
+<code>session_id</code>, the project's newest session in that harness is resumed.
+<code>list_project_sessions</code> shows the candidates per harness. Resume retires a live hub or
+leftover <code>ccb-NAME</code> tmux session, restarts the airc server when needed, and launches the
+harness's resume form. The resumed store is read from its end, so a turn returns only the new
+reply, not the saved history. <code>start_projects</code>, <code>instruct</code> and
+<code>instruct_many</code> accept <code>resume: true</code> and <code>harness</code> to do this
+automatically when a peer is not running. The CLI is
+<code>bin/orch resume [NAME] [--harness H] [--session ID]</code> and
+<code>bin/orch sessions [NAME] [--harness H] [--all]</code>.</p>
+<p>Codex and freebuff need their own CLI login before a peer can run.</p>
 
 <h2>05 — Cycle</h2>
 <ol>

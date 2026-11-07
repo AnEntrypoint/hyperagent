@@ -46,14 +46,17 @@ def flag(args: dict, key: str, default: bool) -> bool:
     return bool(value) if value is not None else default
 
 
-async def prepare_job(name: str, prompt: str, resume: bool = False) -> dict:
-    job = orch.normalize({"name": name, "prompt": prompt,
-                          "harness": orch.DEFAULT_HARNESS}, True)
+async def prepare_job(name: str, prompt: str, resume: bool = False,
+                      harness: str | None = None) -> dict:
+    entry = {"name": name, "prompt": prompt}
+    if harness:
+        entry["harness"] = harness
+    job = orch.normalize(entry, True)
     await orch.fill_cwds([job])
     if not job.get("cwd"):
         raise ValueError(f"unknown project {job['name']!r}; call list_projects first")
     if resume and not await orch.peer_present(job["name"]):
-        session = orch.latest_session(job["cwd"])
+        session = orch.latest_session(job["harness"], job["cwd"])
         if session:
             job["resume"] = session["session_id"]
     return job
@@ -96,8 +99,13 @@ async def tool_start_projects(args: dict) -> str:
     if not names:
         raise ValueError("names must contain at least one project name")
     await orch.ensure_server()
-    jobs = [orch.normalize({"name": name, "harness": orch.DEFAULT_HARNESS}, False)
-            for name in names]
+    harness = str(args.get("harness") or "") or None
+    jobs = []
+    for name in names:
+        entry = {"name": name}
+        if harness:
+            entry["harness"] = harness
+        jobs.append(orch.normalize(entry, False))
     await orch.fill_cwds(jobs)
     missing = [job["name"] for job in jobs if not job.get("cwd")]
     if missing:
@@ -106,7 +114,7 @@ async def tool_start_projects(args: dict) -> str:
         for job in jobs:
             if await orch.peer_present(job["name"]):
                 continue
-            session = orch.latest_session(job["cwd"])
+            session = orch.latest_session(job["harness"], job["cwd"])
             if session:
                 job["resume"] = session["session_id"]
     trust = flag(args, "trust", True)
@@ -136,7 +144,8 @@ async def tool_instruct(args: dict) -> str:
     prompt = str(args.get("prompt") or "")
     if not prompt.strip():
         raise ValueError("prompt is required")
-    job = await prepare_job(name, prompt, flag(args, "resume", False))
+    job = await prepare_job(name, prompt, flag(args, "resume", False),
+                           str(args.get("harness") or "") or None)
     timeout_s = number(args, "timeout_s", DEFAULT_TIMEOUT)
     idle_s = number(args, "idle_exit_s", DEFAULT_IDLE)
     tools = flag(args, "tools", False)
@@ -162,7 +171,8 @@ async def tool_instruct_many(args: dict) -> str:
         prompt = str(entry.get("prompt") or "")
         if not prompt.strip():
             raise ValueError(f"job {name!r} has no prompt")
-        job = await prepare_job(name, prompt, flag(args, "resume", False))
+        harness = str(entry.get("harness") or args.get("harness") or "") or None
+        job = await prepare_job(name, prompt, flag(args, "resume", False), harness)
         prepared.append((job, number(entry, "timeout_s", timeout_s),
                          number(entry, "idle_exit_s", idle_s)))
     if flag(args, "wait", True):
@@ -193,23 +203,29 @@ async def tool_resume_project(args: dict) -> str:
     project = str(args.get("project") or "") or None
     session_id = str(args.get("session_id") or "") or None
     cwd = str(args.get("cwd") or "") or None
+    harness = str(args.get("harness") or "") or None
     prompt = str(args.get("prompt") or "")
-    target = orch.resume_target(project, session_id, cwd)
+    target = orch.resume_target(project, session_id, cwd, harness)
     target_session = target["session"]["session_id"]
-    job = {"name": target["name"], "harness": orch.DEFAULT_HARNESS,
+    job = {"name": target["name"], "harness": target["harness"],
            "cwd": target["cwd"], "resume": target_session}
     await orch.fill_cwds([job])
     present = await orch.peer_present(job["name"])
     live_args: list[str] = []
+    live_harness = None
     if present and await orch.server_alive():
         live = (await orch.fetch_sessions()).get(job["name"]) or {}
         live_args = list(live.get("launch_args") or [])
-    live_id = live_args[1] if len(live_args) > 1 and live_args[0] == "--resume" else None
-    matches_live = present and (not session_id or target_session == live_id
-                                or target_session in live_args)
+        live_harness = live.get("harness")
+    live_id = live_args[1] if len(live_args) > 1 else None
+    same_harness = live_harness in (None, job["harness"])
+    matches_live = present and same_harness and (not session_id
+                                                or target_session == live_id
+                                                or target_session in live_args)
     if matches_live and not prompt:
         return json.dumps({"state": "already_alive", "project": job["name"],
-                           "cwd": job["cwd"], "session_id": live_id,
+                           "cwd": job["cwd"], "harness": job["harness"],
+                           "session_id": live_id,
                            "requested_session_id": target_session,
                            "launch_args": live_args}, indent=2)
     if matches_live:
@@ -223,11 +239,13 @@ async def tool_resume_project(args: dict) -> str:
         if flag(args, "wait", True):
             result = await orch.run_job(job, timeout_s, idle_s, LOCK_WAIT, tools, trust)
             return json.dumps({"state": "prompted", "project": job["name"],
-                               "cwd": job["cwd"], "session_id": target_session,
+                               "cwd": job["cwd"], "harness": job["harness"],
+                               "session_id": target_session,
                                "result": result}, indent=2)
         turn_id = start_turn(job, timeout_s, idle_s, tools, trust)
         return json.dumps({"state": "running", "project": job["name"],
-                           "cwd": job["cwd"], "session_id": target_session,
+                           "cwd": job["cwd"], "harness": job["harness"],
+                           "session_id": target_session,
                            "turn_id": turn_id}, indent=2)
     await orch.ensure_server()
     await orch.start_one(job, 3.0, trust)
@@ -235,7 +253,7 @@ async def tool_resume_project(args: dict) -> str:
     info = sessions.get(job["name"]) or {}
     return json.dumps({"state": "resumed" if info.get("alive") else "not_alive",
                        "project": job["name"], "cwd": job["cwd"],
-                       "session_id": target_session,
+                       "harness": job["harness"], "session_id": target_session,
                        "launch_args": info.get("launch_args") or []}, indent=2)
 
 
@@ -243,14 +261,18 @@ async def tool_list_project_sessions(args: dict) -> str:
     if flag(args, "all", False):
         rows = []
         for project in orch.discover(True):
-            for session in orch.claude_sessions(project["cwd"]):
-                rows.append({"project": project["name"], "cwd": project["cwd"], **session})
+            for harness in orch.airc_mods().names():
+                for session in orch.harness_sessions(harness, project["cwd"]):
+                    rows.append({"project": project["name"], "cwd": project["cwd"],
+                                 "harness": harness, **session})
         return json.dumps(rows, indent=2)
     project = str(args.get("project") or "") or None
     cwd = str(args.get("cwd") or "") or None
-    target = orch.project_target(project, cwd)
-    rows = [{"project": target["name"], "cwd": target["cwd"], **session}
-            for session in orch.claude_sessions(target["cwd"])]
+    harness = str(args.get("harness") or "") or None
+    target = orch.project_target(project, cwd, harness)
+    rows = [{"project": target["name"], "cwd": target["cwd"],
+             "harness": target["harness"], **session}
+            for session in orch.harness_sessions(target["harness"], target["cwd"])]
     return json.dumps(rows, indent=2)
 
 
@@ -314,8 +336,10 @@ TOOLS = [
                      "properties": {"names": {"type": "array", "items": {"type": "string"},
                                               "minItems": 1},
                                     "concurrency": {"type": "number"},
+                                    "harness": {"type": "string",
+                                                "description": "claude, codex or freebuff; defaults to the project's remembered harness"},
                                     "resume": {"type": "boolean",
-                                               "description": "resume each project's latest Claude session when it is not running"},
+                                               "description": "resume each project's latest session when it is not running"},
                                     "trust": {"type": "boolean",
                                               "description": "answer the folder-trust dialog (default true)"}},
                      "required": ["names"], "additionalProperties": False}},
@@ -330,8 +354,10 @@ TOOLS = [
                                     "tools": {"type": "boolean"},
                                     "wait": {"type": "boolean",
                                              "description": "false returns a turn_id instead of waiting"},
+                                    "harness": {"type": "string",
+                                                "description": "claude, codex or freebuff; defaults to the project's remembered harness"},
                                     "resume": {"type": "boolean",
-                                               "description": "resume the project's latest Claude session when the peer is not running"},
+                                               "description": "resume the project's latest session when the peer is not running"},
                                     "trust": {"type": "boolean"}},
                      "required": ["name", "prompt"], "additionalProperties": False}},
     {"name": "instruct_many",
@@ -342,6 +368,7 @@ TOOLS = [
                                              "items": {"type": "object",
                                                        "properties": {"name": {"type": "string"},
                                                                       "prompt": {"type": "string"},
+                                                                      "harness": {"type": "string"},
                                                                       "timeout_s": {"type": "number"},
                                                                       "idle_exit_s": {"type": "number"}},
                                                        "required": ["name", "prompt"]}},
@@ -349,6 +376,7 @@ TOOLS = [
                                     "idle_exit_s": {"type": "number"},
                                     "tools": {"type": "boolean"},
                                     "wait": {"type": "boolean"},
+                                    "harness": {"type": "string"},
                                     "resume": {"type": "boolean"},
                                     "trust": {"type": "boolean"}},
                      "required": ["jobs"], "additionalProperties": False}},
@@ -359,10 +387,11 @@ TOOLS = [
                                     "wait_s": {"type": "number"}},
                      "required": ["turn_id"], "additionalProperties": False}},
     {"name": "resume_project",
-     "description": "Resume a project's Claude Code conversation. With no project it resumes the last "
-                    "project used; with no session_id it resumes that project's newest session. A "
-                    "specific project or session_id can be given. Starts the airc server and peer as "
-                    "needed and optionally sends a prompt, returning the resumed session and the turn.",
+     "description": "Resume a project's conversation in claude, codex or freebuff. With no project "
+                    "it resumes the last project used; with no session_id it resumes that project's "
+                    "newest session. A specific project, harness or session_id can be given. Starts "
+                    "the airc server and peer as needed and optionally sends a prompt, returning the "
+                    "resumed session and the turn.",
      "inputSchema": {"type": "object",
                      "properties": {"project": {"type": "string",
                                                "description": "project name; omitted resumes the last project"},
@@ -370,6 +399,8 @@ TOOLS = [
                                                    "description": "specific Claude session id; omitted resumes the newest"},
                                     "cwd": {"type": "string",
                                             "description": "project directory for a name that is not discovered"},
+                                    "harness": {"type": "string",
+                                                "description": "claude, codex or freebuff; defaults to the project's remembered harness"},
                                     "prompt": {"type": "string",
                                                "description": "optional prompt sent after resume"},
                                     "timeout_s": {"type": "number"},
@@ -379,11 +410,12 @@ TOOLS = [
                                     "trust": {"type": "boolean"}},
                      "additionalProperties": False}},
     {"name": "list_project_sessions",
-     "description": "List resumable Claude Code sessions for one project, or for every discovered "
-                    "project with all=true. Shows session ids with timestamps and transcript paths.",
+     "description": "List resumable harness sessions for one project, or for every discovered "
+                    "project and harness with all=true. Shows session ids with timestamps and paths.",
      "inputSchema": {"type": "object",
                      "properties": {"project": {"type": "string"},
                                     "cwd": {"type": "string"},
+                                    "harness": {"type": "string"},
                                     "all": {"type": "boolean"}},
                      "additionalProperties": False}},
     {"name": "peer_status",
@@ -421,8 +453,8 @@ INSTRUCTIONS = (
     "Peer agents are project directories beside this one. list_projects launches nothing. "
     "start_projects starts only the names given and runs Claude Code in each project through airc. "
     "instruct and instruct_many prompt peers and return their turns; wait=false returns a turn_id "
-    "for turn_result. resume_project continues a project's last Claude conversation (or a named "
-    "one) after its peer stopped; list_project_sessions shows the candidates. Peers keep their "
+    "for turn_result. resume_project continues a project's last conversation in claude, codex or "
+    "freebuff (or a named one) after its peer stopped; list_project_sessions shows the candidates. Peers keep their "
     "conversation across prompts and stay alive until stop_peer or server_down.")
 
 

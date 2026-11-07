@@ -22,7 +22,7 @@ ORCH_DIR = Path(os.environ.get("ORCH_HOME") or (ROOT / ".orch")).resolve()
 HOST = os.environ.get("ORCH_HOST", "127.0.0.1")
 PORT = int(os.environ.get("ORCH_PORT", "8787"))
 NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
-SESSION_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{7,127}$")
+SESSION_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$")
 STATE_FILE = ORCH_DIR / "state.json"
 STATE_LOCK = ORCH_DIR / "state.lock"
 DEFAULT_TIMEOUT = 1800.0
@@ -228,7 +228,7 @@ def normalize(entry: dict, require_prompt: bool) -> dict:
         raise SystemExit(f"bad entry {entry!r}")
     name = check_name(str(entry.get("name") or ""))
     harness = check_harness(str(entry.get("harness") or DEFAULT_HARNESS))
-    job = {"name": name, "harness": harness}
+    job = {"name": name, "harness": harness, "harness_explicit": bool(entry.get("harness"))}
     if entry.get("cwd"):
         job["cwd"] = resolve_cwd(entry.get("cwd"))
     prompt = entry.get("prompt")
@@ -253,16 +253,16 @@ def safe_name(raw: str) -> str:
 
 def check_session_id(session_id: str) -> str:
     if not SESSION_ID_RE.match(session_id):
-        raise SystemExit(f"bad session id {session_id!r}: use letters, digits, underscore, dash")
+        raise SystemExit(f"bad session id {session_id!r}: use letters, digits, dot, colon, dash")
     return session_id
 
 
-def claude_sessions(cwd: str) -> list[dict]:
-    return airc_mods().claude.sessions(cwd)
+def harness_sessions(harness: str, cwd: str) -> list[dict]:
+    return airc_mods().load(harness).sessions(cwd)
 
 
-def latest_session(cwd: str) -> dict | None:
-    found = claude_sessions(cwd)
+def latest_session(harness: str, cwd: str) -> dict | None:
+    found = harness_sessions(harness, cwd)
     return found[-1] if found else None
 
 
@@ -291,11 +291,14 @@ def update_state(change) -> dict:
     return state
 
 
-def record_project(name: str, cwd: str, session_id: str | None = None) -> None:
+def record_project(name: str, cwd: str, session_id: str | None = None,
+                   harness: str | None = None) -> None:
     def change(state: dict) -> None:
         entry = state["projects"].setdefault(name, {})
         entry["cwd"] = cwd
         entry["touched"] = round(time.time(), 3)
+        if harness:
+            entry["harness"] = harness
         if session_id:
             entry["session_id"] = session_id
             entry["resumed_at"] = round(time.time(), 3)
@@ -310,27 +313,31 @@ def last_project() -> dict | None:
                      reverse=True)
     for name, entry in ordered:
         if entry.get("cwd"):
-            return {"name": name, "cwd": entry["cwd"]}
+            return {"name": name, "cwd": entry["cwd"],
+                    "harness": entry.get("harness") or DEFAULT_HARNESS}
     return None
 
 
 def newest_project() -> dict | None:
     best: dict | None = None
     for project in discover(True):
-        session = latest_session(project["cwd"])
-        if session is None:
-            continue
-        if best is None or session["mtime"] > best["mtime"]:
-            best = {"name": project["name"], "cwd": project["cwd"], "mtime": session["mtime"]}
+        for harness in airc_mods().names():
+            session = latest_session(harness, project["cwd"])
+            if session is None:
+                continue
+            if best is None or session["mtime"] > best["mtime"]:
+                best = {"name": project["name"], "cwd": project["cwd"],
+                        "harness": harness, "mtime": session["mtime"]}
     if best is not None:
         best.pop("mtime", None)
     return best
 
 
-def project_target(project: str | None = None, cwd: str | None = None) -> dict:
+def project_target(project: str | None = None, cwd: str | None = None,
+                   harness: str | None = None) -> dict:
     if cwd:
         return {"name": check_name(project or safe_name(Path(cwd).name)),
-                "cwd": resolve_cwd(cwd)}
+                "cwd": resolve_cwd(cwd), "harness": harness or DEFAULT_HARNESS}
     if project:
         name = check_name(project)
         known = {item["name"]: item["cwd"] for item in discover(True)}
@@ -338,19 +345,21 @@ def project_target(project: str | None = None, cwd: str | None = None) -> dict:
         location = known.get(name) or entry.get("cwd")
         if not location:
             raise SystemExit(f"unknown project {project!r}; see bin/orch projects")
-        return {"name": name, "cwd": resolve_cwd(location)}
+        return {"name": name, "cwd": resolve_cwd(location),
+                "harness": harness or entry.get("harness") or DEFAULT_HARNESS}
     target = last_project() or newest_project()
     if target is None:
-        raise SystemExit("no project with a Claude session to resume")
-    return {"name": target["name"], "cwd": resolve_cwd(target["cwd"])}
+        raise SystemExit("no project with a session to resume")
+    return {"name": target["name"], "cwd": resolve_cwd(target["cwd"]),
+            "harness": harness or target.get("harness") or DEFAULT_HARNESS}
 
 
 def resume_target(project: str | None = None, session_id: str | None = None,
-                  cwd: str | None = None) -> dict:
-    target = project_target(project, cwd)
-    found = claude_sessions(target["cwd"])
+                  cwd: str | None = None, harness: str | None = None) -> dict:
+    target = project_target(project, cwd, harness)
+    found = harness_sessions(target["harness"], target["cwd"])
     if not found:
-        raise SystemExit(f"no Claude session transcript for {target['cwd']}")
+        raise SystemExit(f"no {target['harness']} session transcript for {target['cwd']}")
     if session_id:
         chosen = next((item for item in found if item["session_id"] == session_id), None)
         if chosen is None:
@@ -615,7 +624,7 @@ async def cmd_start(args) -> int:
         for job in jobs:
             if await peer_present(job["name"]):
                 continue
-            session = latest_session(job["cwd"])
+            session = latest_session(job["harness"], job["cwd"])
             if session:
                 job["resume"] = session["session_id"]
     limit = args.concurrency if args.concurrency > 0 else len(jobs)
@@ -654,8 +663,8 @@ async def cmd_projects(args) -> int:
 async def cmd_resume(args) -> int:
     prompt = " ".join(args.prompt) if args.prompt else ""
     session_id = check_session_id(args.session) if args.session else None
-    target = resume_target(args.name, session_id, args.cwd)
-    job = {"name": target["name"], "harness": args.harness, "cwd": target["cwd"],
+    target = resume_target(args.name, session_id, args.cwd, args.harness)
+    job = {"name": target["name"], "harness": target["harness"], "cwd": target["cwd"],
            "resume": target["session"]["session_id"]}
     if args.continue_last:
         job.pop("resume", None)
@@ -667,13 +676,15 @@ async def cmd_resume(args) -> int:
     if await peer_present(job["name"]) and not session_id and not args.continue_last:
         sessions = await fetch_sessions()
         info = sessions.get(job["name"]) or {}
-        payload = {"state": "already_alive", "project": job["name"], "cwd": job["cwd"],
-                   "session_id": target["session"]["session_id"],
-                   "launch_args": info.get("launch_args") or []}
-        print(json.dumps(payload, indent=2) if args.json else
-              f"{job['name']}: already alive cwd={job['cwd']} "
-              f"session={target['session']['session_id']}")
-        return 0
+        if not info or info.get("harness") in (None, job["harness"]):
+            payload = {"state": "already_alive", "project": job["name"], "cwd": job["cwd"],
+                       "harness": job["harness"],
+                       "session_id": target["session"]["session_id"],
+                       "launch_args": info.get("launch_args") or []}
+            print(json.dumps(payload, indent=2) if args.json else
+                  f"{job['name']}: already alive cwd={job['cwd']} "
+                  f"session={target['session']['session_id']}")
+            return 0
     if prompt:
         result = await run_job(job, args.timeout, args.idle_exit, args.lock_wait, args.tools,
                                args.trust)
@@ -693,6 +704,7 @@ async def cmd_resume(args) -> int:
     info = sessions.get(job["name"]) or {}
     state = "resumed" if info.get("alive") else "not alive"
     payload = {"state": state, "project": job["name"], "cwd": job["cwd"],
+               "harness": job["harness"],
                "session_id": target["session"]["session_id"],
                "launch_args": info.get("launch_args") or [],
                "trusted": started.get("trusted", False)}
@@ -706,18 +718,22 @@ async def cmd_sessions(args) -> int:
     if args.all:
         rows = []
         for project in discover(True):
-            for item in claude_sessions(project["cwd"]):
-                rows.append({"project": project["name"], "cwd": project["cwd"], **item})
+            for harness in airc_mods().names():
+                for item in harness_sessions(harness, project["cwd"]):
+                    rows.append({"project": project["name"], "cwd": project["cwd"],
+                                 "harness": harness, **item})
     else:
-        target = project_target(args.name, args.cwd)
-        rows = [{"project": target["name"], "cwd": target["cwd"], **item}
-                for item in claude_sessions(target["cwd"])]
+        target = project_target(args.name, args.cwd, args.harness)
+        rows = [{"project": target["name"], "cwd": target["cwd"],
+                 "harness": target["harness"], **item}
+                for item in harness_sessions(target["harness"], target["cwd"])]
     if args.json:
         print(json.dumps(rows, indent=2))
     else:
         for row in rows:
             stamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(row["mtime"]))
-            print(f"{row['project']}\t{row['session_id']}\t{stamp}\t{row['size']}\t{row['path']}")
+            print(f"{row['project']}\t{row['harness']}\t{row['session_id']}\t{stamp}\t"
+                  f"{row['size']}\t{row['path']}")
         print(f"{len(rows)} sessions", file=sys.stderr)
     return 0 if rows else 3
 
@@ -744,7 +760,8 @@ async def cmd_status(args) -> int:
 
 async def fill_cwds(jobs: list[dict]) -> None:
     known = {project["name"]: project["cwd"] for project in discover(True)}
-    remembered = {name: entry["cwd"] for name, entry in read_state()["projects"].items()
+    state_projects = read_state()["projects"]
+    remembered = {name: entry["cwd"] for name, entry in state_projects.items()
                   if entry.get("cwd")}
     live: dict = {}
     try:
@@ -756,9 +773,12 @@ async def fill_cwds(jobs: list[dict]) -> None:
             info = live.get(job["name"]) or {}
             job["cwd"] = (info.get("cwd") or known.get(job["name"])
                           or remembered.get(job["name"]))
+        entry = state_projects.get(job["name"]) or {}
+        if not job.get("harness_explicit") and entry.get("harness"):
+            job["harness"] = check_harness(entry["harness"])
     for job in jobs:
         if job.get("cwd"):
-            record_project(job["name"], job["cwd"], job.get("resume"))
+            record_project(job["name"], job["cwd"], job.get("resume"), job.get("harness"))
 
 
 async def live_cwds(results: list[dict]) -> None:
@@ -783,7 +803,7 @@ async def cmd_prompt(args) -> int:
     if args.session:
         job["resume"] = check_session_id(args.session)
     elif args.resume and not await peer_present(job["name"]):
-        session = latest_session(job["cwd"])
+        session = latest_session(job["harness"], job["cwd"])
         if session:
             job["resume"] = session["session_id"]
     result = await run_job(job, args.timeout, args.idle_exit, args.lock_wait, args.tools,
@@ -876,11 +896,11 @@ def build_parser() -> argparse.ArgumentParser:
     start = sub.add_parser("start", help="start one or more named project peers")
     start.add_argument("names", nargs="*", metavar="NAME")
     start.add_argument("--cwd")
-    start.add_argument("--harness", default=DEFAULT_HARNESS)
+    start.add_argument("--harness", help="harness for the peer; defaults to the project's remembered harness")
     start.add_argument("--settle", type=float, default=3.0)
     start.add_argument("--concurrency", type=int, default=8)
     start.add_argument("--resume", action="store_true",
-                       help="resume each project's latest Claude session when it is not running")
+                       help="resume each project's latest session when it is not running")
     start.add_argument("--no-trust", dest="trust", action="store_false")
     start.set_defaults(func=cmd_start)
 
@@ -888,15 +908,15 @@ def build_parser() -> argparse.ArgumentParser:
     prompt.add_argument("name")
     prompt.add_argument("text", nargs="+")
     prompt.add_argument("--cwd")
-    prompt.add_argument("--harness", default=DEFAULT_HARNESS)
+    prompt.add_argument("--harness", help="harness for the peer; defaults to the project's remembered harness")
     prompt.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT)
     prompt.add_argument("--idle-exit", type=float, default=120.0)
     prompt.add_argument("--lock-wait", type=float, default=1800.0)
     prompt.add_argument("--tools", action="store_true")
     prompt.add_argument("--json", action="store_true")
     prompt.add_argument("--resume", action="store_true",
-                        help="resume the project's latest Claude session when it is not running")
-    prompt.add_argument("--session", help="resume this Claude session id before prompting")
+                        help="resume the project's latest session when it is not running")
+    prompt.add_argument("--session", help="resume this harness session id before prompting")
     prompt.add_argument("--no-trust", dest="trust", action="store_false")
     prompt.set_defaults(func=cmd_prompt)
 
@@ -910,14 +930,14 @@ def build_parser() -> argparse.ArgumentParser:
     fanout.add_argument("--no-trust", dest="trust", action="store_false")
     fanout.set_defaults(func=cmd_fanout)
 
-    resume = sub.add_parser("resume", help="resume a project's Claude session; default is the last project")
+    resume = sub.add_parser("resume", help="resume a project's session; default is the last project")
     resume.add_argument("name", nargs="?", help="project name; omitted resumes the last project")
-    resume.add_argument("--session", help="specific Claude session id")
+    resume.add_argument("--session", help="specific harness session id")
     resume.add_argument("--cwd", help="project directory when the name is not discovered")
     resume.add_argument("--continue", dest="continue_last", action="store_true",
-                        help="resume with claude --continue instead of a session id")
+                        help="use the harness's continue flag instead of a session id")
     resume.add_argument("--prompt", nargs="+", help="prompt to send after resuming")
-    resume.add_argument("--harness", default=DEFAULT_HARNESS)
+    resume.add_argument("--harness", help="harness to resume; defaults to the project's remembered harness")
     resume.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT)
     resume.add_argument("--idle-exit", type=float, default=120.0)
     resume.add_argument("--lock-wait", type=float, default=1800.0)
@@ -927,10 +947,12 @@ def build_parser() -> argparse.ArgumentParser:
     resume.add_argument("--no-trust", dest="trust", action="store_false")
     resume.set_defaults(func=cmd_resume)
 
-    sessions = sub.add_parser("sessions", help="list resumable Claude sessions")
+    sessions = sub.add_parser("sessions", help="list resumable harness sessions")
     sessions.add_argument("name", nargs="?", help="project name; omitted uses the last project")
     sessions.add_argument("--cwd", help="project directory when the name is not discovered")
-    sessions.add_argument("--all", action="store_true", help="list sessions for every discovered project")
+    sessions.add_argument("--harness", help="harness to list; defaults to the project's remembered harness")
+    sessions.add_argument("--all", action="store_true",
+                          help="list sessions for every discovered project and harness")
     sessions.add_argument("--json", action="store_true")
     sessions.set_defaults(func=cmd_sessions)
 
