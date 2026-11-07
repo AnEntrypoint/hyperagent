@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HYPERAGENT — Manual</title>
+<style>
+  :root { --ink: #000; --paper: #fff; --rule: 4px; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--paper); color: var(--ink); }
+  body {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 16px; line-height: 1.5; padding: 2rem; max-width: 60rem; margin: auto;
+  }
+  h1, h2, h3 { font-family: Impact, "Arial Black", Arial, sans-serif; text-transform: uppercase; line-height: 1; margin: 0; }
+  h1 { font-size: 3.5rem; border: var(--rule) solid var(--ink); padding: 1rem; margin-bottom: 2rem; }
+  h2 { font-size: 2rem; border-top: var(--rule) solid var(--ink); padding-top: 1rem; margin: 3rem 0 1rem; }
+  h3 { font-size: 1.25rem; margin: 2rem 0 .5rem; }
+  p, li { max-width: 52rem; }
+  ol li, ul li { margin-bottom: .4rem; }
+  code, pre { font-family: inherit; background: var(--paper); border: 2px solid var(--ink); }
+  code { padding: 0 .3rem; }
+  pre { padding: 1rem; overflow-x: auto; }
+  .tag { display: inline-block; border: 2px solid var(--ink); padding: .1rem .5rem; font-weight: 700; text-transform: uppercase; }
+  .box { border: var(--rule) solid var(--ink); padding: 1rem 1.25rem; margin: 1.5rem 0; }
+  .box.solid { background: var(--ink); color: var(--paper); }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+  th, td { border: 2px solid var(--ink); padding: .5rem; text-align: left; vertical-align: top; }
+  th { background: var(--ink); color: var(--paper); text-transform: uppercase; }
+  a { color: var(--ink); font-weight: 700; }
+  footer { margin-top: 4rem; border-top: var(--rule) solid var(--ink); padding-top: 1rem; font-size: .9rem; }
+  .print-btn { font: inherit; font-weight: 700; text-transform: uppercase; background: var(--paper); color: var(--ink); border: var(--rule) solid var(--ink); padding: .5rem 1rem; cursor: pointer; margin-bottom: 2rem; }
+  .print-btn:hover { background: var(--ink); color: var(--paper); }
+
+  @media print {
+    @page { margin: 18mm; }
+    body { padding: 0; max-width: none; font-size: 11pt; }
+    .print-btn { display: none; }
+    h1 { font-size: 28pt; }
+    h2 { font-size: 18pt; break-after: avoid; }
+    h3 { break-after: avoid; }
+    .box, table, pre { break-inside: avoid; }
+    a[href]::after { content: " (" attr(href) ")"; font-weight: 400; }
+    a[href^="#"]::after { content: none; }
+  }
+</style>
+</head>
+<body>
+
+<button class="print-btn" onclick="window.print()">Print this manual</button>
+
+<h1>Hyperagent<br>Dispatch Manual</h1>
+
+<p><span class="tag">Skill</span> <span class="tag">airc transport</span> <span class="tag">Direct peers</span></p>
+
+<div class="box solid">
+  <p><strong>You are the dispatcher. You decide; peers execute. Never leave a peer idle.</strong></p>
+</div>
+
+<h2>01 — Scope</h2>
+<p>This skill runs the <em>hyperagent</em> session. It coordinates peer coding agents that it
+starts and prompts itself. Peers are unmodified interactive harnesses — <code>claude</code>,
+<code>codex</code>, or <code>freebuff</code> — running in tmux through <a href="https://github.com/AnEntrypoint/airc">airc</a>.
+They are <strong>not</strong> Claude sessions in this session tree, so <code>ListAgents</code> and
+<code>SendMessage</code> never reach them. The only channel is <code>bin/orch</code>.</p>
+
+<h2>02 — Architecture</h2>
+<table>
+  <tr><th>Direction</th><th>Mechanism</th><th>Result</th></tr>
+  <tr><td>Prompt in</td><td><code>bin/orch</code> sends text over the airc WebSocket; airc pastes it into the harness's tmux pane with bracketed paste and Enter</td><td>the peer treats it exactly like a human typing</td></tr>
+  <tr><td>Reply out</td><td>airc reads the harness's own transcript, never the TUI screen</td><td>clean text with no spinner or ANSI damage</td></tr>
+  <tr><td>Turn end</td><td>Claude's <code>system/turn_duration</code> record</td><td>one <code>e:</code> frame per turn</td></tr>
+  <tr><td>Status</td><td><code>GET /sessions</code> plus tmux pane tail</td><td><code>alive</code>, <code>busy</code>, <code>cwd</code>, last pane lines</td></tr>
+</table>
+<p>A session is created the first time its name connects and survives client disconnects, so a
+peer keeps its context across dispatch cycles. The tmux session is <code>ccb-NAME</code>.</p>
+
+<h2>03 — Commands</h2>
+<table>
+  <tr><th>Command</th><th>Effect</th></tr>
+  <tr><td><code>bin/orch up</code></td><td>Start the airc server if it is not running. Idempotent.</td></tr>
+  <tr><td><code>bin/orch status [--json] [--panes]</code></td><td>List live peers, ready/busy state, cwd, pane tail.</td></tr>
+  <tr><td><code>bin/orch start NAME --cwd DIR [--harness H]</code></td><td>Start one peer and wait for it to be ready.</td></tr>
+  <tr><td><code>bin/orch start --roster agents.json</code></td><td>Start every peer in the roster.</td></tr>
+  <tr><td><code>bin/orch prompt NAME "text"</code></td><td>Start if needed, prompt, wait for the turn, print its text.</td></tr>
+  <tr><td><code>bin/orch fanout jobs.json</code></td><td>Prompt many peers concurrently; one section per peer.</td></tr>
+  <tr><td><code>bin/orch pane NAME</code></td><td>Print the peer's terminal pane.</td></tr>
+  <tr><td><code>bin/orch stop NAME</code> / <code>down</code></td><td>Retire one peer / stop the server and every peer.</td></tr>
+</table>
+<p><code>prompt</code> and <code>fanout</code> exit 0 when every turn ended, 2 on timeout or a blocked
+peer, 3 on a dead session. A turn that does not end prints its pane tail.</p>
+
+<h2>04 — Roster and jobs</h2>
+<pre>{"agents": [{"name": "worker-1", "cwd": "../project-a", "harness": "claude"}]}
+
+{"jobs": [{"name": "worker-1", "prompt": "Do X. End with REPORT: ..."}]}</pre>
+<p><code>agents.json</code> is ignored by git; <code>agents.example.json</code> is the template.
+Relative cwds resolve against this project root. Reuse a name to continue a conversation;
+start a new name for a fresh one.</p>
+
+<h2>05 — Cycle</h2>
+<ol>
+  <li><code>bin/orch up</code>, then <code>bin/orch status --json</code>. Start missing roster members.</li>
+  <li>Ask every peer for its full ranked remaining work, with current item and status, via <code>fanout</code>.</li>
+  <li>Decide the best next step for each peer.</li>
+  <li>Send each peer its single next step, in the same turn as its report requirement.</li>
+  <li>The call's output is the report: <strong>finished</strong>, <strong>open</strong>, <strong>blocked</strong>, plus witness output.</li>
+</ol>
+
+<h2>06 — Decision rules</h2>
+<table>
+  <tr><th>Class</th><th>Examples</th><th>Action</th></tr>
+  <tr><td>Reversible</td><td>Small edits, local commits, read-only checks</td><td>Decide and proceed. Tell the owner afterwards.</td></tr>
+  <tr><td>Irreversible</td><td>Deletes, live sends, publishes, credential changes</td><td>Hold for the owner report.</td></tr>
+  <tr><td>Blocked</td><td>Waiting on a person, a permission, or another item</td><td>Give that peer an unblocked item and drive the block towards resolution.</td></tr>
+</table>
+<p>Always decide to drive deeper progress. Ignore effort; there is no budget on labor. Ship
+small commits, pushed as each item is verified.</p>
+
+<h2>07 — Standing instructions for peers</h2>
+<ul>
+  <li><strong>Work</strong> only in the cwd you were started in. Commit as lanmower in the shared checkout. No clones, no worktrees.</li>
+  <li><strong>Comments</strong> become code. Replace prose comments with self-explanatory code, or move what cannot be expressed that way into <code>AGENTS.md</code>.</li>
+  <li><strong>Verify</strong> by running. Quote the witness output.</li>
+  <li><strong>Dev servers</strong> stop by their own PID. Never <code>pkill</code> or <code>killall</code>.</li>
+  <li><strong>No agent-to-agent messaging.</strong> Return findings in the report.</li>
+  <li><strong>End</strong> every turn with <code>REPORT: finished|open|blocked — &lt;one line&gt; — witness: &lt;evidence&gt;</code>.</li>
+</ul>
+
+<h2>08 — Blocked peers</h2>
+<p><code>--idle-exit</code> returns early when the transcript is silent and the pane is not busy:
+the peer is waiting for a person, usually a permission or trust question. Read the pane
+tail. Answer reversible questions yourself by re-prompting the peer; collect irreversible or
+credential questions for the owner report.</p>
+
+<h2>09 — Owner report</h2>
+<p>One line per peer: <strong>finished</strong>, <strong>open</strong>, <strong>blocked</strong>, and which held decisions it is waiting on.</p>
+
+<h2>10 — Run</h2>
+<pre>cd /data/workspace/hyperagent
+./bin/orch up
+claude
+/orchestrate</pre>
+<p>The airc checkout defaults to <code>../airc</code>; override with <code>AIRC_DIR</code>. The WebSocket
+server defaults to <code>127.0.0.1:8787</code>; override with <code>ORCH_HOST</code> / <code>ORCH_PORT</code>.</p>
+
+<h2>11 — Limits</h2>
+<ul>
+  <li>A client attaching mid-turn sees only later events; the dispatcher always prompts and waits for the turn.</li>
+  <li>Idle airc hubs are reaped after 1800 seconds without clients; a later prompt starts a fresh session under that name.</li>
+  <li>One prompt per peer at a time is enforced by an advisory lock in <code>.orch/locks/</code>.</li>
+  <li>The peer is an unmodified interactive harness, so its own permission and trust prompts still apply.</li>
+</ul>
+
+<footer>
+  <p>Transport: <a href="https://github.com/AnEntrypoint/airc">github.com/AnEntrypoint/airc</a>.
+  Dispatch rules adapted from <a href="https://github.com/AnEntrypoint/superagent">github.com/AnEntrypoint/superagent</a>.</p>
+</footer>
+
+</body>
+</html>

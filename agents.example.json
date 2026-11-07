@@ -1,0 +1,6 @@
+{
+  "agents": [
+    {"name": "worker-1", "cwd": "../project-a", "harness": "claude"},
+    {"name": "worker-2", "cwd": "../project-b", "harness": "claude"}
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "claudeMdExcludes": [
+    "~/.claude/CLAUDE.md",
+    "~/.claude/RTK.md"
+  ],
+  "permissions": {
+    "allow": [
+      "CronCreate",
+      "CronDelete",
+      "CronList",
+      "Read",
+      "Write",
+      "Edit",
+      "Bash(bin/orch:*)",
+      "Bash(./bin/orch:*)",
+      "Bash(python3 bin/orch:*)",
+      "Bash(tmux capture-pane:*)",
+      "Bash(tmux ls:*)"
+    ],
+    "deny": []
+  },
+  "disableAllHooks": true,
+  "enabledPlugins": {
+    "cc-plugin-agents-md@builtin": false
+  },
+  "enableArtifact": false,
+  "promptSuggestionEnabled": false,
+  "awaySummaryEnabled": false,
+  "remoteControlAtStartup": false
+}
