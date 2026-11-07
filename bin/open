@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+export MCP_TIMEOUT="${MCP_TIMEOUT:-60000}"
+export MCP_TOOL_TIMEOUT="${MCP_TOOL_TIMEOUT:-1800000}"
+exec claude "$@"

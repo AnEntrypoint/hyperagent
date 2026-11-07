@@ -3,6 +3,9 @@
     "~/.claude/CLAUDE.md",
     "~/.claude/RTK.md"
   ],
+  "enabledMcpjsonServers": [
+    "hyperagent"
+  ],
   "permissions": {
     "allow": [
       "CronCreate",
@@ -15,7 +18,16 @@
       "Bash(./bin/orch:*)",
       "Bash(python3 bin/orch:*)",
       "Bash(tmux capture-pane:*)",
-      "Bash(tmux ls:*)"
+      "Bash(tmux ls:*)",
+      "mcp__hyperagent__list_projects",
+      "mcp__hyperagent__start_projects",
+      "mcp__hyperagent__instruct",
+      "mcp__hyperagent__instruct_many",
+      "mcp__hyperagent__turn_result",
+      "mcp__hyperagent__peer_status",
+      "mcp__hyperagent__read_pane",
+      "mcp__hyperagent__stop_peer",
+      "mcp__hyperagent__server_down"
     ],
     "deny": []
   },

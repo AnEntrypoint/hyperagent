@@ -51,65 +51,66 @@
 
 <h1>Hyperagent<br>Dispatch Manual</h1>
 
-<p><span class="tag">Skill</span> <span class="tag">airc transport</span> <span class="tag">Project peers</span></p>
+<p><span class="tag">MCP tools</span> <span class="tag">airc transport</span> <span class="tag">Claude Code peers</span></p>
 
 <div class="box solid">
   <p><strong>You are the dispatcher. You decide; peers execute. Never leave a peer idle.</strong></p>
 </div>
 
 <h2>01 — Scope</h2>
-<p>This skill runs the <em>hyperagent</em> session. It coordinates peer coding agents that it
-starts and prompts itself. Peers are unmodified interactive harnesses — <code>claude</code>,
-<code>codex</code>, or <code>freebuff</code> — running in tmux through <a href="https://github.com/AnEntrypoint/airc">airc</a>.
-They are <strong>not</strong> Claude sessions in this session tree, so <code>ListAgents</code> and
-<code>SendMessage</code> never reach them. The only channel is <code>bin/orch</code>.</p>
+<p>This project opens as a Claude Code session with the <code>hyperagent</code> MCP server attached.
+The server starts peer Claude Code sessions in the projects beside this one, prompts them, and
+returns their turns. Peers are unmodified interactive harnesses running in tmux through
+<a href="https://github.com/AnEntrypoint/airc">airc</a>. They are <strong>not</strong> Claude sessions in this
+session tree, so <code>ListAgents</code> and <code>SendMessage</code> never reach them.</p>
 
 <h2>02 — Architecture</h2>
 <table>
   <tr><th>Direction</th><th>Mechanism</th><th>Result</th></tr>
-  <tr><td>Prompt in</td><td><code>bin/orch</code> sends text over the airc WebSocket; airc pastes it into the harness's tmux pane with bracketed paste and Enter</td><td>the peer treats it exactly like a human typing</td></tr>
+  <tr><td>Tool call</td><td>Claude Code calls <code>mcp__hyperagent__*</code>; the stdio server runs <code>bin/orch</code></td><td>one orchestration layer for MCP and CLI</td></tr>
+  <tr><td>Prompt in</td><td>airc pastes text into the peer's tmux pane with bracketed paste and Enter</td><td>the peer treats it as a human typing</td></tr>
   <tr><td>Reply out</td><td>airc reads the harness's own transcript, never the TUI screen</td><td>clean text with no spinner or ANSI damage</td></tr>
   <tr><td>Turn end</td><td>Claude's <code>system/turn_duration</code> record</td><td>one <code>e:</code> frame per turn</td></tr>
   <tr><td>Status</td><td><code>GET /sessions</code> plus tmux pane tail</td><td><code>alive</code>, <code>busy</code>, <code>cwd</code>, last pane lines</td></tr>
 </table>
-<p>A session is created the first time its name connects and survives client disconnects, so a
-peer keeps its context across dispatch cycles. The tmux session is <code>ccb-NAME</code>.</p>
+<p>A session is created the first time its name connects and survives tool calls, so a peer keeps
+its context across dispatch cycles. The tmux session is <code>ccb-NAME</code>.</p>
 
-<h2>03 — Commands</h2>
+<h2>03 — MCP tools</h2>
 <table>
-  <tr><th>Command</th><th>Effect</th></tr>
-  <tr><td><code>bin/orch up</code></td><td>Start the airc server if it is not running. Idempotent.</td></tr>
-  <tr><td><code>bin/orch projects</code></td><td>List every project in the parent path except this one.</td></tr>
-  <tr><td><code>bin/orch start NAME [NAME...]</code></td><td>Start only the named project peers. Nothing starts implicitly.</td></tr>
-  <tr><td><code>bin/orch start NAME --cwd DIR</code></td><td>Start one peer outside discovery.</td></tr>
-  <tr><td><code>bin/orch status [--json] [--panes]</code></td><td>List live peers, ready/busy state, cwd, pane tail.</td></tr>
-  <tr><td><code>bin/orch prompt NAME "text"</code></td><td>Start if needed, prompt, wait for the turn, print its text.</td></tr>
-  <tr><td><code>bin/orch fanout jobs.json</code></td><td>Prompt many peers concurrently; one section per peer.</td></tr>
-  <tr><td><code>bin/orch pane NAME</code></td><td>Print the peer's terminal pane.</td></tr>
-  <tr><td><code>bin/orch stop NAME</code> / <code>down</code></td><td>Retire one peer / stop the server and every peer.</td></tr>
+  <tr><th>Tool</th><th>Effect</th></tr>
+  <tr><td><code>list_projects</code></td><td>List every project in the parent path except this one. Launches nothing.</td></tr>
+  <tr><td><code>start_projects</code></td><td>Start Claude Code peers for the named projects only (<code>names</code>).</td></tr>
+  <tr><td><code>instruct</code></td><td>Prompt one peer and wait for its turn. Starts it if needed.</td></tr>
+  <tr><td><code>instruct_many</code></td><td>Prompt many peers concurrently (<code>jobs</code>) and collect every turn.</td></tr>
+  <tr><td><code>turn_result</code></td><td>Collect a background turn started with <code>wait: false</code>.</td></tr>
+  <tr><td><code>peer_status</code></td><td>Live peers: alive, busy, harness, cwd, pane tail.</td></tr>
+  <tr><td><code>read_pane</code></td><td>Print a peer's terminal pane.</td></tr>
+  <tr><td><code>stop_peer</code> / <code>server_down</code></td><td>Retire one peer / stop the server and every peer.</td></tr>
 </table>
-<p><code>prompt</code> and <code>fanout</code> exit 0 when every turn ended, 2 on timeout or a blocked
-peer, 3 on a dead session. A turn that does not end prints its pane tail.</p>
+<p>A turn that ends returns the peer's text with status <code>turn_end</code>. Any other status
+(<code>timeout</code>, <code>blocked</code>, <code>died</code>) returns the pane tail. Open the project with
+<code>bin/open</code> so a tool call gets a 30-minute timeout; otherwise use <code>wait: false</code> and
+<code>turn_result</code>.</p>
 
-<h2>04 — Projects and jobs</h2>
-<p>Every immediate subdirectory of the parent path is a candidate project, except this folder
-and hidden directories. A directory counts when it is a git worktree or carries a project
-marker: <code>AGENTS.md</code>, <code>CLAUDE.md</code>, <code>package.json</code>,
-<code>pyproject.toml</code>, <code>Cargo.toml</code>, <code>go.mod</code>,
-<code>CMakeLists.txt</code>, <code>Makefile</code>, <code>requirements.txt</code>,
-<code>src/</code>, and similar. <code>--all</code> includes unmarked directories.</p>
-<p>On a new session the harness may show Claude Code's folder-trust dialog. <code>bin/orch</code>
-selects "Yes, I trust this folder" and waits for it to clear; pass <code>--no-trust</code> to
-leave that decision to a person.</p>
-<pre>{"jobs": [{"name": "project-a", "prompt": "Do X. End with REPORT: ..."}]}</pre>
-<p>Peer names are the project directory names. Start only what the instruction names;
-nothing launches implicitly. Relative cwds in job files resolve against this project root.
-Reuse a name to continue a conversation; start a new name for a fresh one.</p>
+<h2>04 — Projects</h2>
+<p>Every immediate subdirectory of the parent path is a candidate, except this folder and hidden
+directories. A directory counts when it is a git worktree or carries a project marker:
+<code>AGENTS.md</code>, <code>CLAUDE.md</code>, <code>package.json</code>, <code>pyproject.toml</code>,
+<code>Cargo.toml</code>, <code>go.mod</code>, <code>CMakeLists.txt</code>, <code>Makefile</code>,
+<code>requirements.txt</code>, <code>src/</code>, and similar. Pass <code>all: true</code> to include
+unmarked directories.</p>
+<p>Peer names are the project directory names. <code>start_projects</code> starts only the names the
+instruction gives; nothing launches implicitly. Peers stay alive between cycles, so start a name
+once. On first creation the server answers Claude Code's folder-trust dialog; pass
+<code>trust: false</code> to leave that decision to a person.</p>
+<pre>instruct_many {"jobs": [{"name": "project-a", "prompt": "Do X. End with REPORT: ..."}]}</pre>
 
 <h2>05 — Cycle</h2>
 <ol>
-  <li><code>bin/orch up</code>, then <code>bin/orch projects --json</code>. Start only the peers the run needs with <code>bin/orch start NAME</code>.</li>
-  <li>Ask every peer for its full ranked remaining work, with current item and status, via <code>fanout</code>.</li>
+  <li><code>list_projects</code>.</li>
+  <li><code>start_projects</code> for the peers this instruction calls for. Never start a peer with no work for it.</li>
+  <li>Ask every started peer for its full ranked remaining work, with current item and status, via <code>instruct_many</code>.</li>
   <li>Decide the best next step for each peer.</li>
   <li>Send each peer its single next step, in the same turn as its report requirement.</li>
   <li>The call's output is the report: <strong>finished</strong>, <strong>open</strong>, <strong>blocked</strong>, plus witness output.</li>
@@ -136,31 +137,34 @@ small commits, pushed as each item is verified.</p>
 </ul>
 
 <h2>08 — Blocked peers</h2>
-<p><code>--idle-exit</code> returns early when the transcript is silent and the pane is not busy:
-the peer is waiting for a person, usually a permission or trust question. Read the pane
-tail. Answer reversible questions yourself by re-prompting the peer; collect irreversible or
-credential questions for the owner report.</p>
+<p><code>idle_exit_s</code> returns early when the transcript is silent and the pane is not busy: the
+peer is waiting for a person, usually a permission question. Call <code>read_pane</code> and decide.
+Answer reversible questions yourself by re-prompting the peer; collect irreversible or credential
+questions for the owner report. A timeout does not cancel the peer's turn: check
+<code>peer_status</code> before prompting again.</p>
 
 <h2>09 — Owner report</h2>
 <p>One line per peer: <strong>finished</strong>, <strong>open</strong>, <strong>blocked</strong>, and which held decisions it is waiting on.</p>
 
-<h2>10 — Run</h2>
+<h2>10 — Open</h2>
 <pre>cd /data/workspace/hyperagent
-./bin/orch up
-./bin/orch projects
-claude
-/orchestrate</pre>
-<p>The airc checkout defaults to <code>../airc</code>; override with <code>AIRC_DIR</code>. Projects come
-from the parent of this folder; override with <code>ORCH_PARENT</code>. The WebSocket server defaults
-to <code>127.0.0.1:8787</code>; override with <code>ORCH_HOST</code> / <code>ORCH_PORT</code>.</p>
+./bin/open</pre>
+<p><code>bin/open</code> starts Claude Code in this project and sets <code>MCP_TOOL_TIMEOUT=1800000</code>.
+The server is registered by <code>.mcp.json</code> and enabled by <code>.claude/settings.json</code>
+(<code>enabledMcpjsonServers</code>). Then run <code>/orchestrate</code>. The CLI equivalent is
+<code>bin/orch</code>: <code>projects</code>, <code>start NAME</code>, <code>prompt</code>,
+<code>fanout</code>, <code>status</code>, <code>pane</code>, <code>stop</code>, <code>down</code>.</p>
+<p>The airc checkout defaults to <code>../airc</code> (<code>AIRC_DIR</code>), projects come from the parent
+folder (<code>ORCH_PARENT</code>), and the server listens on <code>127.0.0.1:8787</code>
+(<code>ORCH_HOST</code> / <code>ORCH_PORT</code>).</p>
 
 <h2>11 — Limits</h2>
 <ul>
-  <li>A client attaching mid-turn sees only later events; the dispatcher always prompts and waits for the turn.</li>
-  <li>Idle airc hubs are reaped after 1800 seconds without clients; a later prompt starts a fresh session under that name.</li>
+  <li>One tool call waits for one turn; <code>bin/open</code> raises the client timeout to 30 minutes.</li>
+  <li>A client attaching mid-turn sees only later events; the tools always prompt and wait for the turn.</li>
   <li>One prompt per peer at a time is enforced by an advisory lock in <code>.orch/locks/</code>.</li>
-  <li>The peer is an unmodified interactive harness, so its own permission and trust prompts still apply.</li>
-  <li>Discovery filters on project markers; use <code>--all</code> when a real project carries none.</li>
+  <li>Two peers should not share one cwd: the Claude transcript channel binds the newest session file per project directory.</li>
+  <li>Discovery filters on project markers; pass <code>all: true</code> when a real project carries none.</li>
 </ul>
 
 <footer>
