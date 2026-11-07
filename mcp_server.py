@@ -238,7 +238,8 @@ async def tool_resume_project(args: dict) -> str:
                            "cwd": job["cwd"], "harness": job["harness"],
                            "session_id": live_id,
                            "requested_session_id": target_session,
-                           "fork": fork, "launch_args": live_args}, indent=2)
+                           "fork": fork, "global": bool(target["session"].get("global")),
+                           "launch_args": live_args}, indent=2)
     if matches_live:
         job.pop("resume", None)
     timeout_s = number(args, "timeout_s", DEFAULT_TIMEOUT)
@@ -255,11 +256,14 @@ async def tool_resume_project(args: dict) -> str:
                                or result.get("resolved_session")
                                or target_session,
                                "source_session_id": target_session,
-                               "fork": fork, "result": result}, indent=2)
+                               "fork": fork,
+                               "global": bool(target["session"].get("global")),
+                               "result": result}, indent=2)
         turn_id = start_turn(job, timeout_s, idle_s, tools, trust)
         return json.dumps({"state": "running", "project": job["name"],
                            "cwd": job["cwd"], "harness": job["harness"],
                            "session_id": target_session, "fork": fork,
+                           "global": bool(target["session"].get("global")),
                            "turn_id": turn_id}, indent=2)
     await orch.ensure_server()
     started = await orch.start_one(job, 3.0, trust)
@@ -271,6 +275,7 @@ async def tool_resume_project(args: dict) -> str:
                        "session_id": started.get("forked_session")
                        or started.get("resolved_session") or target_session,
                        "source_session_id": target_session, "fork": fork,
+                       "global": bool(target["session"].get("global")),
                        "launch_args": info.get("launch_args") or []}, indent=2)
 
 

@@ -383,10 +383,25 @@ def resume_target(project: str | None = None, session_id: str | None = None,
                           "mtime": stat.st_mtime, "size": stat.st_size,
                           "selector": kind}
             else:
-                recent = ", ".join(item["session_id"] for item in found[-5:]) or "(none)"
-                raise SystemExit(f"session {selector!r} not found for {target['cwd']}; "
-                                 f"recent: {recent}")
+                global_session = adapter.find(selector)
+                if global_session is not None:
+                    chosen = {**global_session, "selector": kind, "global": True}
+                else:
+                    recent = ", ".join(item["session_id"] for item in found[-5:]) or "(none)"
+                    raise SystemExit(f"session {selector!r} not found for {target['cwd']}; "
+                                     f"recent: {recent}")
         return {**target, "session": chosen}
+    entry = read_state()["projects"].get(target["name"]) or {}
+    remembered = entry.get("session_id")
+    if remembered:
+        chosen = next((item for item in found if item["session_id"] == remembered), None)
+        if chosen is None:
+            try:
+                chosen = airc_mods().load(target["harness"]).find(remembered)
+            except (ValueError, NotImplementedError):
+                chosen = None
+        if chosen is not None:
+            return {**target, "session": chosen}
     if not found:
         raise SystemExit(f"no {target['harness']} session transcript for {target['cwd']}")
     return {**target, "session": found[-1]}
@@ -741,6 +756,7 @@ async def cmd_resume(args) -> int:
                               or target["session"]["session_id"],
                               "source_session_id": target["session"]["session_id"],
                               "fork": bool(job.get("fork")),
+                              "global": bool(target["session"].get("global")),
                               "result": result}, indent=2))
         elif result["status"] == "turn_end":
             print(result["text"].strip())
@@ -760,6 +776,7 @@ async def cmd_resume(args) -> int:
                or target["session"]["session_id"],
                "source_session_id": target["session"]["session_id"],
                "fork": bool(job.get("fork")),
+               "global": bool(target["session"].get("global")),
                "launch_args": info.get("launch_args") or [],
                "trusted": started.get("trusted", False)}
     print(json.dumps(payload, indent=2) if args.json else

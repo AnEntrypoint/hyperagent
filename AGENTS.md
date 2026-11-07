@@ -76,7 +76,12 @@ Each harness answers `sessions(cwd)` and `resume_args` in its mod:
 session ids with timestamps; the newest is the default and `session_id` / `--session`
 selects a specific one. Claude also accepts a session name or an absolute `.jsonl`
 transcript path there; codex accepts a name; freebuff accepts only chat ids. A name or
-path resume records the resolved transcript id in the ledger. Resume retires any live
+path resume records the resolved transcript id in the ledger. A UUID that is not in the
+project's store is looked up globally by the harness (claude across all project
+transcript dirs, codex across the thread index), and the channel binds the transcript
+that lookup returns. An unqualified resume prefers the ledger's remembered session id
+over the newest local transcript, so a globally resumed session stays the project's
+last session. Resume retires any live
 hub and leftover `ccb-NAME` tmux
 session first, restarts the airc server when it is down, then asks airc for a new hub
 with `resume=<session-id>` (or `continue=1`), and airc launches the harness's resume

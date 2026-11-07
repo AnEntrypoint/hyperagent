@@ -123,7 +123,10 @@ resume_project {"project": "project-a", "fork": true}</pre>
 </table>
 <p><code>session_id</code> takes a session id; claude also takes a session name or an
 absolute <code>.jsonl</code> transcript path, and codex takes a name. Freebuff takes only its
-chat-directory id.</p>
+chat-directory id. An id missing from the project's store is looked up globally by
+claude (all transcript dirs) or codex (thread index), and the transcript that lookup
+returns is bound. Without a <code>session_id</code>, the ledger's last-used session is
+preferred over the newest local one.</p>
 <p>With no <code>project</code>, the last project touched is used; that ledger lives in
 <code>.orch/state.json</code> and remembers each project's cwd and harness. With no
 <code>session_id</code>, the project's newest session in that harness is resumed.
