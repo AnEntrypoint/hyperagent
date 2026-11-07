@@ -219,6 +219,17 @@ Claude transcript channel binds to the newest session file in a project director
 - `DELETE /sessions/{name}` stops one hub and its tmux session.
 - `server_down` / `bin/orch down` ends every peer.
 
+## Log GUI
+
+`bin/gui [--port 8790]` serves a realtime view of `.orch/projects/**/*.jsonl` and `.orch/server.log` at http://127.0.0.1:8790/.
+
+- `gui/server.py` is stdlib only. Each journal tail starts at its end, and a connect gets a snapshot of the last 1500 records, then `records` batches over SSE `/api/events`. Records are keyed `<source>@<byte offset>`, so the client drops duplicates after a reconnect.
+- HMR: `/api/reload` sends `change` on any edit under `gui/public`. A stylesheet edit swaps in place; other edits reload the page. An edit to `gui/server.py` restarts the server after a compile check, and the page reloads when it is back.
+- Client: `gui/public/app.js` renders with webjsx `createElement`/`applyDiff` through htm tagged templates, so there is no build step. Both are vendored under `gui/public/vendor` (webjsx 0.0.73, htm 3.1.1, MIT). Renders run on animation frames, the buffer holds 8000 records, and the last 300 matches show with "Show older".
+- Streamed `text` deltas are hidden by default. The URL hash carries the filters (`q`, `agent`, `kinds`).
+- Keys: `/` search, `p` pause, `f` follow, `Esc` clear selection.
+- Browser checks run through the gm playwriter setup.
+
 ## Source facts
 
 - No comments in source: intent lives in names, durable facts live here.

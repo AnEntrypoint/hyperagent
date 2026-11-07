@@ -1,0 +1,340 @@
+:root {
+  color-scheme: dark;
+  --bg: #0e1116;
+  --panel: #161b22;
+  --line: #262d36;
+  --text: #d6dde6;
+  --dim: #7d8793;
+  --accent: #58a6ff;
+  --ok: #3fb950;
+  --warn: #d29922;
+  --bad: #f85149;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --kind-instruct: #58a6ff;
+  --kind-you: #bc8cff;
+  --kind-tool: #d29922;
+  --kind-result: #3fb950;
+  --kind-log: #7d8793;
+  --kind-raw: #7d8793;
+  --kind-malformed: #f85149;
+  --kind-text: #4b5563;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+  overflow: hidden;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.brand {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.brand span {
+  color: var(--dim);
+  font-weight: 400;
+}
+
+.live {
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--dim);
+}
+
+.live.live {
+  color: var(--ok);
+  border-color: color-mix(in srgb, var(--ok) 50%, transparent);
+}
+
+.live.down {
+  color: var(--bad);
+  border-color: color-mix(in srgb, var(--bad) 50%, transparent);
+}
+
+.stat {
+  margin-left: auto;
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.stat + .stat {
+  margin-left: 0;
+}
+
+.body {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  flex: 1;
+  min-height: 0;
+}
+
+.side {
+  border-right: 1px solid var(--line);
+  padding: 12px 8px;
+  overflow-y: auto;
+  background: var(--panel);
+}
+
+.side h2 {
+  margin: 4px 8px 8px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dim);
+  font-weight: 600;
+}
+
+.source {
+  display: grid;
+  grid-template-columns: 10px 1fr auto;
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  align-items: center;
+  width: 100%;
+  padding: 6px 8px;
+  margin-bottom: 2px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.source:hover {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+}
+
+.source.on {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.source.all {
+  grid-template-columns: 1fr auto;
+}
+
+.source .dot {
+  grid-row: span 2;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--line);
+}
+
+.source .dot.active {
+  background: var(--ok);
+}
+
+.source .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.source .count {
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.source .when {
+  grid-column: 2 / span 2;
+  color: var(--dim);
+  font-size: 11px;
+}
+
+main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.toolbar input {
+  flex: 1 1 220px;
+  min-width: 160px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.toolbar input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chip,
+.btn {
+  padding: 4px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--dim);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.chip.on,
+.btn.on {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.chip.on.kind-instruct { border-color: var(--kind-instruct); }
+.chip.on.kind-you { border-color: var(--kind-you); }
+.chip.on.kind-tool { border-color: var(--kind-tool); }
+.chip.on.kind-result { border-color: var(--kind-result); }
+.chip.on.kind-malformed { border-color: var(--kind-malformed); }
+
+.stream {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.older,
+.empty {
+  display: block;
+  margin: 12px auto;
+  color: var(--dim);
+  text-align: center;
+}
+
+.older {
+  padding: 6px 12px;
+  border: 1px dashed var(--line);
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 92px 120px 64px 1fr;
+  column-gap: 10px;
+  padding: 3px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+  cursor: pointer;
+}
+
+.row:hover {
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+}
+
+.row.open {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.row time {
+  color: var(--dim);
+}
+
+.row .agent {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.row .kind {
+  color: var(--kind-log);
+}
+
+.row .text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row.kind-instruct .kind { color: var(--kind-instruct); }
+.row.kind-you .kind { color: var(--kind-you); }
+.row.kind-tool .kind { color: var(--kind-tool); }
+.row.kind-result .kind { color: var(--kind-result); }
+.row.kind-malformed .kind { color: var(--kind-malformed); }
+.row.kind-text .text { color: var(--kind-text); }
+
+.row.kind-malformed .text {
+  color: var(--bad);
+}
+
+.detail {
+  grid-column: 1 / -1;
+  margin: 6px 0 4px;
+  cursor: text;
+}
+
+.detail pre {
+  margin: 0 0 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.detail .json {
+  color: var(--dim);
+}
