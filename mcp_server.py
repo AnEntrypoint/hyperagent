@@ -218,6 +218,8 @@ async def tool_resume_project(args: dict) -> str:
            "cwd": target["cwd"], "resume": target_session}
     if fork:
         job["fork"] = True
+    if target["session"].get("selector") in ("name", "path"):
+        job["record_latest"] = True
     await orch.fill_cwds([job])
     present = await orch.peer_present(job["name"])
     live_args: list[str] = []
@@ -250,6 +252,7 @@ async def tool_resume_project(args: dict) -> str:
             return json.dumps({"state": "prompted", "project": job["name"],
                                "cwd": job["cwd"], "harness": job["harness"],
                                "session_id": result.get("forked_session")
+                               or result.get("resolved_session")
                                or target_session,
                                "source_session_id": target_session,
                                "fork": fork, "result": result}, indent=2)
@@ -265,7 +268,8 @@ async def tool_resume_project(args: dict) -> str:
     return json.dumps({"state": "resumed" if info.get("alive") else "not_alive",
                        "project": job["name"], "cwd": job["cwd"],
                        "harness": job["harness"],
-                       "session_id": started.get("forked_session") or target_session,
+                       "session_id": started.get("forked_session")
+                       or started.get("resolved_session") or target_session,
                        "source_session_id": target_session, "fork": fork,
                        "launch_args": info.get("launch_args") or []}, indent=2)
 

@@ -22,7 +22,7 @@ ORCH_DIR = Path(os.environ.get("ORCH_HOME") or (ROOT / ".orch")).resolve()
 HOST = os.environ.get("ORCH_HOST", "127.0.0.1")
 PORT = int(os.environ.get("ORCH_PORT", "8787"))
 NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
-SESSION_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$")
+SESSION_ID_RE = re.compile(r"^[^-\x00\n][^\x00\n]{0,4095}$")
 STATE_FILE = ORCH_DIR / "state.json"
 STATE_LOCK = ORCH_DIR / "state.lock"
 DEFAULT_TIMEOUT = 1800.0
@@ -257,7 +257,7 @@ def safe_name(raw: str) -> str:
 
 def check_session_id(session_id: str) -> str:
     if not SESSION_ID_RE.match(session_id):
-        raise SystemExit(f"bad session id {session_id!r}: use letters, digits, dot, colon, dash")
+        raise SystemExit(f"bad session selector {session_id!r}")
     return session_id
 
 
@@ -362,17 +362,34 @@ def resume_target(project: str | None = None, session_id: str | None = None,
                   cwd: str | None = None, harness: str | None = None) -> dict:
     target = project_target(project, cwd, harness)
     found = harness_sessions(target["harness"], target["cwd"])
+    if session_id:
+        selector = check_session_id(session_id)
+        chosen = next((item for item in found if item["session_id"] == selector), None)
+        if chosen is None:
+            adapter = airc_mods().load(target["harness"])
+            try:
+                kind = adapter.selector_kind(selector)
+            except (ValueError, NotImplementedError) as exc:
+                raise SystemExit(str(exc))
+            if kind == "name":
+                chosen = {"session_id": selector, "path": "", "mtime": 0, "size": 0,
+                          "selector": kind}
+            elif kind == "path":
+                try:
+                    stat = os.stat(selector)
+                except OSError as exc:
+                    raise SystemExit(str(exc))
+                chosen = {"session_id": selector, "path": selector,
+                          "mtime": stat.st_mtime, "size": stat.st_size,
+                          "selector": kind}
+            else:
+                recent = ", ".join(item["session_id"] for item in found[-5:]) or "(none)"
+                raise SystemExit(f"session {selector!r} not found for {target['cwd']}; "
+                                 f"recent: {recent}")
+        return {**target, "session": chosen}
     if not found:
         raise SystemExit(f"no {target['harness']} session transcript for {target['cwd']}")
-    if session_id:
-        chosen = next((item for item in found if item["session_id"] == session_id), None)
-        if chosen is None:
-            recent = ", ".join(item["session_id"] for item in found[-5:])
-            raise SystemExit(f"session {session_id!r} not found for {target['cwd']}; "
-                             f"recent: {recent}")
-    else:
-        chosen = found[-1]
-    return {**target, "session": chosen}
+    return {**target, "session": found[-1]}
 
 
 async def tmux_alive(name: str) -> bool:
@@ -553,11 +570,12 @@ async def run_job(job: dict, timeout: float, idle_exit: float, lock_wait: float,
     result = {"name": name, "harness": harness, "cwd": job["cwd"], "status": status,
               "text": "".join(text_parts), "acked": acked, "pane_tail": tail,
               "duration_s": round(time.time() - started, 1)}
-    if job.get("fork"):
+    if job.get("fork") or job.get("record_latest"):
         session = latest_session(harness, job["cwd"])
         if session:
             record_project(name, job["cwd"], session["session_id"], harness)
-            result["forked_session"] = session["session_id"]
+            key = "forked_session" if job.get("fork") else "resolved_session"
+            result[key] = session["session_id"]
     return result
 
 
@@ -615,11 +633,12 @@ async def start_one(job: dict, settle: float, trust: bool,
                     trusted = await answer_trust(job["name"])
                 await asyncio.sleep(settle)
     result = {**job, "trusted": trusted}
-    if job.get("fork"):
+    if job.get("fork") or job.get("record_latest"):
         session = latest_session(job["harness"], job["cwd"])
         if session:
             record_project(job["name"], job["cwd"], session["session_id"], job["harness"])
-            result["forked_session"] = session["session_id"]
+            key = "forked_session" if job.get("fork") else "resolved_session"
+            result[key] = session["session_id"]
     return result
 
 
@@ -688,6 +707,8 @@ async def cmd_resume(args) -> int:
     target = resume_target(args.name, session_id, args.cwd, args.harness)
     job = {"name": target["name"], "harness": target["harness"], "cwd": target["cwd"],
            "resume": target["session"]["session_id"]}
+    if target["session"].get("selector") in ("name", "path"):
+        job["record_latest"] = True
     if args.continue_last:
         job.pop("resume", None)
         job["continue"] = True
@@ -716,6 +737,7 @@ async def cmd_resume(args) -> int:
         await live_cwds([result])
         if args.json:
             print(json.dumps({"session_id": result.get("forked_session")
+                              or result.get("resolved_session")
                               or target["session"]["session_id"],
                               "source_session_id": target["session"]["session_id"],
                               "fork": bool(job.get("fork")),
@@ -734,6 +756,7 @@ async def cmd_resume(args) -> int:
     payload = {"state": state, "project": job["name"], "cwd": job["cwd"],
                "harness": job["harness"],
                "session_id": started.get("forked_session")
+               or started.get("resolved_session")
                or target["session"]["session_id"],
                "source_session_id": target["session"]["session_id"],
                "fork": bool(job.get("fork")),
@@ -809,7 +832,8 @@ async def fill_cwds(jobs: list[dict]) -> None:
             job["harness"] = check_harness(entry["harness"])
     for job in jobs:
         if job.get("cwd"):
-            session_id = None if job.get("fork") else job.get("resume")
+            keep_source = job.get("fork") or job.get("record_latest")
+            session_id = None if keep_source else job.get("resume")
             record_project(job["name"], job["cwd"], session_id, job.get("harness"))
 
 
@@ -834,6 +858,12 @@ async def cmd_prompt(args) -> int:
                          "see bin/orch projects or pass --cwd")
     if args.session:
         job["resume"] = check_session_id(args.session)
+        try:
+            kind = airc_mods().load(job["harness"]).selector_kind(args.session)
+        except (ValueError, NotImplementedError):
+            kind = None
+        if kind in ("name", "path"):
+            job["record_latest"] = True
     elif args.resume and not await peer_present(job["name"]):
         session = latest_session(job["harness"], job["cwd"])
         if session:

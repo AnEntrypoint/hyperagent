@@ -74,7 +74,10 @@ Each harness answers `sessions(cwd)` and `resume_args` in its mod:
 
 `list_project_sessions` / `bin/orch sessions [NAME] [--harness H] [--all]` return
 session ids with timestamps; the newest is the default and `session_id` / `--session`
-selects a specific one. Resume retires any live hub and leftover `ccb-NAME` tmux
+selects a specific one. Claude also accepts a session name or an absolute `.jsonl`
+transcript path there; codex accepts a name; freebuff accepts only chat ids. A name or
+path resume records the resolved transcript id in the ledger. Resume retires any live
+hub and leftover `ccb-NAME` tmux
 session first, restarts the airc server when it is down, then asks airc for a new hub
 with `resume=<session-id>` (or `continue=1`), and airc launches the harness's resume
 form. The resumed channel binds to that exact session and starts at the end of its

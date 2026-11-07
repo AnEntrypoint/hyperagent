@@ -118,7 +118,8 @@ Include these in every assignment prompt:
 A peer that is not running can continue its saved conversation instead of starting
 fresh. Call `resume_project` with no arguments to resume the last project touched, or
 with `project` for a specific one; add `prompt` to send work in the same call. Pass
-`session_id` to pick an older conversation and `harness` for claude, codex or freebuff;
+`session_id` to pick an older conversation (an id; for claude also a session name or
+absolute `.jsonl` path, for codex a name) and `harness` for claude, codex or freebuff;
 `list_project_sessions` shows the ids per harness. `resume_project` restarts a dead
 airc server and retires any stale hub or tmux session first. `start_projects`,
 `instruct` and `instruct_many` accept `resume: true` and `harness` to resume a dead
