@@ -162,13 +162,19 @@ class Monitor:
                 state["info"] = info
                 if mark and mark != state.get("result_mark"):
                     state.update(result_mark=mark, digest=digest, changed=now,
-                                 reported=True, was_busy=busy, gone=False)
+                                 reported=True, was_busy=busy, gone=False, armed=False)
                     last = last_output(name, info, pane, self.last_chars)
                     yield self.idle_event(name, info, last, 0.0, "result")
                     continue
-                if state.get("was_busy") and not busy and not state["reported"]:
+                if busy:
+                    state["quiet_since"] = None
+                    state["armed"] = True
+                elif state.get("quiet_since") is None:
+                    state["quiet_since"] = now
+                if (state.get("armed") and not busy and not state["reported"]
+                        and now - state["quiet_since"] >= self.idle):
                     state.update(digest=digest, changed=now, reported=True,
-                                 was_busy=busy, gone=False)
+                                 was_busy=busy, gone=False, armed=False)
                     last = last_output(name, info, pane, self.last_chars)
                     yield self.idle_event(name, info, last, 0.0, "pane")
                     continue
@@ -179,7 +185,7 @@ class Monitor:
                 if digest != state["digest"]:
                     state.update(digest=digest, changed=now, reported=False, gone=False)
                     continue
-                if not state["reported"] and now - state["changed"] >= self.idle:
+                if info.get("busy") is None and not state["reported"] and now - state["changed"] >= self.idle:
                     last = last_output(name, info, pane, self.last_chars)
                     yield self.idle_event(name, info, last, now - state["changed"], "idle")
                     state["reported"] = True
