@@ -27,6 +27,9 @@ The `hyperagent` MCP server is the channel to peers.
 | `mcp__hyperagent__turn_result` | collect a background turn started with `wait: false` |
 | `mcp__hyperagent__resume_project` | continue a project's saved conversation in claude, codex or freebuff; no project means the last project |
 | `mcp__hyperagent__list_project_sessions` | list resumable sessions for a project or all projects, per harness |
+| `mcp__hyperagent__list_outputs` | list journaled turn output per session with last-output preview |
+| `mcp__hyperagent__read_output` | read one session journal as a compact transcript |
+| `mcp__hyperagent__search_output` | search every session journal |
 | `mcp__hyperagent__peer_status` | live peers: alive, busy, harness, cwd, pane tail |
 | `mcp__hyperagent__read_pane` | a peer's terminal pane |
 | `mcp__hyperagent__stop_peer` | retire one peer |
@@ -154,6 +157,22 @@ supplies its own list.
 
 ## Wake-up loop
 
-Start a loop that wakes this session every 10 minutes validating that all peers are
-making maximal progress. On each wake, run the cycle above. If loops are not possible,
-use monitors, waits, sleeps, or the CLI to do it.
+Start `bin/watch` in the background before the first cycle. It captures every live
+peer's pane, and when a pane stops animating for `--idle` seconds it prints one line:
+the peer, its session, the last journaled output, and the exact `instruct` arguments
+that feed that output back. Use that line to decide the next assignment; it removes
+the need to poll `peer_status` or re-read a pane. `--once` reports peers that airc
+already marks not busy, and `--text` prints the human form.
+
+Every turn is journaled to `.orch/projects/<slug(cwd)>/<session>.jsonl`, so
+`list_outputs` and `read_output` show what a peer did without touching its pane.
+`bin/orch output NAME --tail 40` is the CLI view.
+
+A client that speaks MCP events can skip `bin/watch`: subscribe with
+`resources/subscribe` or `subscriptions/listen`, set `logging/setLevel`, and receive
+the same idle and gone payloads as `notifications/resources/updated` and
+`notifications/message`; `hyperagent://events` holds the recent stream.
+
+Also start a loop that wakes this session every 10 minutes validating that all peers
+are making maximal progress. On each wake, run the cycle above. If loops are not
+possible, use monitors, waits, sleeps, or the CLI to do it.

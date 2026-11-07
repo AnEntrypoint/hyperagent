@@ -11,13 +11,66 @@ messaging bus. The orchestrator talks to them through the `hyperagent` MCP serve
 enables it without a prompt. `claude mcp list` reports it as connected.
 
 Tools: `list_projects`, `start_projects`, `instruct`, `instruct_many`,
-`turn_result`, `resume_project`, `list_project_sessions`, `peer_status`,
-`read_pane`, `stop_peer`, `server_down`.
+`turn_result`, `resume_project`, `list_project_sessions`, `list_outputs`,
+`read_output`, `search_output`, `peer_status`, `read_pane`, `stop_peer`,
+`server_down`.
 `list_projects` launches nothing. `start_projects` starts only the names given and
 runs Claude Code in each project through airc. `instruct` and `instruct_many` return
 the peer's turn; `wait: false` returns a turn id for `turn_result`.
 `resume_project` continues a project's saved Claude conversation; with no project it
 resumes the last project used. `list_project_sessions` lists resumable sessions.
+
+## Session output journal
+
+Every frame a turn receives from airc is appended to
+`.orch/projects/<slug(cwd)>/<session>.jsonl`, mirroring the `~/.claude/projects`
+layout: one directory per cwd with every non-alphanumeric character replaced by `-`,
+and one JSONL file per harness session. A record carries `ts`, `epoch`, `agent`,
+`harness`, `cwd`, `session` and `kind`; `text` and extra fields follow. Kinds are
+`instruct` (the prompt), `you` (prompt echo), `text`, `tool`, `raw` (an untagged
+frame) and `result` (`status`, `duration_s`, `acked`, `pane_tail`).
+
+The writer binds to a real session id from the job's resume id, the live airc
+`launch_args`, or the newest harness transcript in the cwd, in that order. Until it
+binds it writes to `peer-<name>.jsonl`; on bind that file is renamed and its
+`session` fields are rewritten. `ORCH_JOURNAL` overrides the journal root.
+
+`list_outputs` reads the index, `read_output` renders a compact transcript with
+filters (`kinds`, `tail`, `since`, `format`), and `search_output` greps every
+journal. The same files are MCP resources: `hyperagent://outputs` is the index,
+`hyperagent://outputs/<slug>/<session>` is the raw JSONL, and
+`hyperagent://outputs/<slug>/<session>/view` is the rendered transcript.
+`hyperagent://events` is the recent monitor event stream. The CLI equivalents are
+`bin/orch outputs` and `bin/orch output`.
+
+`run_job` returns `output_path` and `output_session`, and `render_result` prints the
+path; `peer_status` annotates live peers with their latest journal.
+
+## Watcher and MCP events
+
+`bin/watch` starts a local monitor. It polls `GET /sessions`, captures each peer's
+tmux pane, and hashes the pane text. A peer whose pane content stops changing for
+`--idle` seconds (default 20) emits one line with the last journaled text (or the
+pane tail when no journal exists) and a ready `instruct` call whose prompt feeds that
+last output back. It emits `gone` when a live peer disappears. `--once` reports
+peers that airc marks not busy. Output is one-line JSON, or `--text`.
+
+The MCP server runs the same `bin/monitor.py` loop natively when a client asks for
+events. Delivery surfaces:
+
+| MCP surface | what it carries |
+|---|---|
+| `logging/setLevel` + `notifications/message` | every idle and gone event; `notice` for idle, `warning` for gone; queued up to 64 until a level is set |
+| `resources/subscribe` + `notifications/resources/updated` | the session journal URI, `hyperagent://outputs`, or `hyperagent://events` |
+| `subscriptions/listen` | `resourceSubscriptions` plus `resourcesListChanged`; acknowledged with `notifications/subscriptions/acknowledged` and a `io.modelcontextprotocol/subscriptionId` `_meta`; each update carries that id |
+| `notifications/resources/list_changed` | a session URI seen for the first time |
+| `notifications/progress` | tool calls whose `params._meta.progressToken` is set; progress starts at 0 |
+| `server/discover` | supported versions, capabilities and instructions for modern clients |
+
+`notifications/cancelled` with a listen request id ends that stream with a
+`resultType: complete` result. `resources/subscribe` and `resources/unsubscribe` are
+kept alongside `subscriptions/listen` for clients that only implement the 2025-06-18
+surface.
 
 `bin/open` starts Claude Code in this project with `MCP_TOOL_TIMEOUT` set to 30
 minutes, so a turn can be collected in one call. Without it the client's shorter tool
@@ -117,8 +170,11 @@ bin/orch prompt NAME "instruction" --timeout 1800 --idle-exit 120
 bin/orch prompt NAME "instruction" --resume
 bin/orch fanout jobs.json --timeout 1800 --idle-exit 120
 bin/orch pane NAME --lines 40
+bin/orch outputs [NAME] [--all] [--json]
+bin/orch output [NAME] [--agent A] [--session ID] [--tail 40] [--json]
 bin/orch stop NAME
 bin/orch down
+bin/watch [--idle 20] [--poll 1] [--agents A,B] [--once] [--text]
 ```
 
 `start` launches only the names given; a bare `start` is an error and starts nothing.
@@ -137,6 +193,12 @@ Claude transcript channel binds to the newest session file in a project director
 | `ORCH_PORT` | `8787` | airc WebSocket server port |
 | `ORCH_HOST` | `127.0.0.1` | airc WebSocket server host |
 | `ORCH_HOME` | `.orch` | pid file, server log, session locks |
+| `ORCH_JOURNAL` | `$ORCH_HOME/projects` | root of the per-session output journal |
+| `ORCH_WATCH_IDLE` | `20` | MCP monitor idle seconds before an event |
+| `ORCH_WATCH_POLL` | `1` | MCP monitor poll seconds |
+| `ORCH_WATCH_AGENTS` | empty | comma separated peers the MCP monitor keeps |
+| `ORCH_WATCH_LAST_CHARS` | `4000` | last-output characters in an event |
+| `ORCH_PROGRESS_INTERVAL` | `5` | seconds between MCP progress notifications |
 | `MCP_TOOL_TIMEOUT` | set by `bin/open` to 1800000 | client limit for one tool call |
 
 ## airc coupling
@@ -151,5 +213,7 @@ Claude transcript channel binds to the newest session file in a project director
 - No comments in source: intent lives in names, durable facts live here.
 - `mcp_server.py` exposes the MCP tools; `bin/orch` holds the implementation; `bin/open`
   starts Claude Code with a long MCP tool timeout.
+- `bin/journal.py` owns the per-session output files; `bin/monitor.py` owns the pane
+  animation detector shared by `bin/watch` and the MCP server.
 - The dispatcher skill is `.claude/skills/orchestrate/SKILL.md`; open the project with
   `bin/open` and run `/orchestrate`.

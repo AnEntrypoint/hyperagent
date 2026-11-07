@@ -1,0 +1,76 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import asyncio
+import importlib.machinery
+import importlib.util
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "bin"))
+
+import monitor
+
+IDLE_PROMPT = monitor.IDLE_PROMPT
+GONE_PROMPT = monitor.GONE_PROMPT
+
+
+def load_orch():
+    loader = importlib.machinery.SourceFileLoader("hyperagent_orch", str(ROOT / "bin" / "orch"))
+    spec = importlib.util.spec_from_loader(loader.name, loader)
+    module = importlib.util.module_from_spec(spec)
+    loader.exec_module(module)
+    return module
+
+
+orch = load_orch()
+
+
+def emit(event: dict, args) -> None:
+    print(monitor.render(event, args.text), flush=True)
+
+
+async def watch(args) -> int:
+    agents = [item.strip() for item in (args.agents or "").split(",") if item.strip()]
+    watcher = monitor.Monitor(orch, idle=args.idle, poll=args.poll, agents=agents,
+                              last_chars=args.last_chars, prompt=args.prompt,
+                              gone_prompt=args.gone_prompt)
+    if args.once:
+        async for event in watcher.once():
+            emit(event, args)
+        return 0
+    async for event in watcher.stream():
+        emit(event, args)
+    return 0
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="watch",
+        description="Emit one line when a peer's output stops animating")
+    parser.add_argument("--idle", type=float, default=20.0,
+                        help="seconds without a pane change before a peer counts as idle")
+    parser.add_argument("--poll", type=float, default=1.0)
+    parser.add_argument("--agents", default="", help="comma separated peer names")
+    parser.add_argument("--once", action="store_true",
+                        help="one pass over peers that airc reports not busy")
+    parser.add_argument("--text", action="store_true", help="human line instead of JSON")
+    parser.add_argument("--prompt", default=IDLE_PROMPT,
+                        help="instruct prompt template; {last}, {agent}, {session}")
+    parser.add_argument("--gone-prompt", default=GONE_PROMPT)
+    parser.add_argument("--last-chars", type=int, default=4000)
+    return parser
+
+
+def main() -> int:
+    args = build_parser().parse_args()
+    try:
+        return asyncio.run(watch(args))
+    except KeyboardInterrupt:
+        return 130
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -16,6 +16,10 @@ from pathlib import Path
 import aiohttp
 
 ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT / "bin"))
+import journal as outputs
+import monitor
+
 PROTOCOL_VERSION = "2025-06-18"
 DEFAULT_TIMEOUT = 1800.0
 DEFAULT_IDLE = 120.0
@@ -23,6 +27,16 @@ LOCK_WAIT = 1800.0
 DEFAULT_CONCURRENCY = 8
 TURNS: dict[str, dict] = {}
 WRITE_LOCK = asyncio.Lock()
+SUB_ID = "io.modelcontextprotocol/subscriptionId"
+LOG_RANK = {"debug": 0, "info": 1, "notice": 2, "warning": 3, "error": 4,
+            "critical": 5, "alert": 6, "emergency": 7}
+LOG_LEVEL: str | None = None
+LOG_QUEUE: list[dict] = []
+SUBSCRIPTIONS: set[str] = set()
+LISTENS: dict = {}
+EVENT_LOG: list[dict] = []
+KNOWN_OUTPUTS: set[str] = set()
+MONITOR_TASK: asyncio.Task | None = None
 
 
 def load_orch():
@@ -300,7 +314,16 @@ async def tool_list_project_sessions(args: dict) -> str:
 
 async def tool_peer_status(args: dict) -> str:
     await orch.ensure_server()
-    return json.dumps(await orch.fetch_sessions(), indent=2, sort_keys=True)
+    sessions = await orch.fetch_sessions()
+    for name, info in sessions.items():
+        try:
+            row = outputs.find_session(agent=name, cwd=info.get("cwd"))
+        except Exception:
+            row = None
+        if row:
+            info["output_path"] = row["path"]
+            info["output_session"] = row["session"]
+    return json.dumps(sessions, indent=2, sort_keys=True)
 
 
 async def tool_read_pane(args: dict) -> str:
@@ -341,6 +364,148 @@ async def tool_server_down(args: dict) -> str:
         await asyncio.sleep(0.2)
     pid_file.unlink(missing_ok=True)
     return f"stopped airc server pid={pid}; ended {len(sessions)} sessions"
+
+
+def output_cwd(args: dict) -> str | None:
+    cwd = str(args.get("cwd") or "") or None
+    project = str(args.get("project") or "") or None
+    if not cwd and project:
+        cwd = orch.project_target(project, None, str(args.get("harness") or "") or None)["cwd"]
+    return cwd
+
+
+def output_kinds(args: dict) -> list[str] | None:
+    raw = args.get("kinds")
+    if raw is None:
+        return None
+    if isinstance(raw, str):
+        raw = [item.strip() for item in raw.split(",") if item.strip()]
+    wanted = [str(item) for item in raw if item]
+    return wanted or None
+
+
+async def tool_list_outputs(args: dict) -> str:
+    rows = outputs.scan(
+        cwd=output_cwd(args),
+        agent=str(args.get("agent") or "") or None,
+        session_id=str(args.get("session_id") or "") or None,
+        limit=int(args.get("limit") or 50))
+    return json.dumps(rows, indent=2)
+
+
+async def tool_read_output(args: dict) -> str:
+    row = outputs.find_session(
+        agent=str(args.get("agent") or "") or None,
+        cwd=output_cwd(args),
+        session_id=str(args.get("session_id") or "") or None)
+    if row is None:
+        raise ValueError("no session output found")
+    if args.get("since") is None:
+        records = outputs.tail_records(row["path"], int(args.get("tail") or 40),
+                                       kinds=output_kinds(args))
+    else:
+        records = outputs.read_records(
+            row["path"], kinds=output_kinds(args),
+            limit=int(args.get("tail") or 40),
+            since=float(args["since"]))
+    if str(args.get("format") or "text") == "json":
+        return json.dumps({"session": row, "records": records}, indent=2)
+    header = (f"# {row['agent']} {row['session']} harness={row['harness']} "
+              f"cwd={row['cwd']} {row['path']}")
+    return outputs.render_records(
+        records, header=header,
+        max_chars=int(args.get("max_chars") or 20000),
+        per_record=int(args.get("per_record_chars") or 2000))
+
+
+async def tool_search_output(args: dict) -> str:
+    query = str(args.get("query") or "")
+    if not query:
+        raise ValueError("query is required")
+    ignore_case = bool(args.get("ignore_case", True))
+    needle = query.lower() if ignore_case else query
+    limit = int(args.get("limit") or 50)
+    max_chars = int(args.get("max_chars") or 500)
+    rows = outputs.scan(
+        cwd=output_cwd(args),
+        agent=str(args.get("agent") or "") or None,
+        session_id=str(args.get("session_id") or "") or None)
+    found = []
+    for row in rows:
+        for record in outputs.iter_records(row["path"]):
+            text = str(record.get("text") or "")
+            haystack = text.lower() if ignore_case else text
+            if needle not in haystack:
+                continue
+            found.append({"agent": row["agent"], "session": row["session"],
+                          "kind": record.get("kind"), "ts": record.get("ts"),
+                          "text": outputs.truncate(text, max_chars),
+                          "path": row["path"]})
+            if len(found) >= limit:
+                return json.dumps(found, indent=2)
+    return json.dumps(found, indent=2)
+
+
+def resource_uri(row: dict) -> str:
+    return f"hyperagent://outputs/{row['project']}/{row['session']}"
+
+
+def resource_list() -> list[dict]:
+    items = [{"uri": "hyperagent://outputs", "name": "session-output-index",
+              "description": "Every journaled peer session",
+              "mimeType": "application/json"},
+             {"uri": "hyperagent://events", "name": "monitor-events",
+              "description": "Idle and gone events from the peer monitor",
+              "mimeType": "application/x-ndjson"}]
+    for row in outputs.scan(limit=200):
+        items.append({"uri": resource_uri(row),
+                      "name": f"{row['agent']} {row['session']}",
+                      "description": f"{row['harness'] or ''} {row['cwd'] or ''} "
+                                     f"{row['last_kind'] or ''}".strip(),
+                      "mimeType": "application/x-ndjson"})
+    return items
+
+
+def resource_templates() -> list[dict]:
+    return [
+        {"uriTemplate": "hyperagent://outputs/{project}/{session}",
+         "name": "session-output", "description": "Raw journal for one peer session",
+         "mimeType": "application/x-ndjson"},
+        {"uriTemplate": "hyperagent://outputs/{project}/{session}/view",
+         "name": "session-output-view",
+         "description": "Compact rendered journal for one peer session",
+         "mimeType": "text/plain"},
+    ]
+
+
+def read_resource(uri: str) -> tuple[str, str]:
+    bare = uri.rstrip("/")
+    if bare == "hyperagent://events":
+        return "\n".join(json.dumps(event, separators=(",", ":"), ensure_ascii=False)
+                         for event in EVENT_LOG[-100:]), "application/x-ndjson"
+    if bare == "hyperagent://outputs":
+        return json.dumps(outputs.scan(limit=500), indent=2), "application/json"
+    prefix = "hyperagent://outputs/"
+    if not uri.startswith(prefix):
+        raise ValueError(f"unknown resource {uri}")
+    rest = uri[len(prefix):].strip("/")
+    view = rest.endswith("/view")
+    if view:
+        rest = rest[:-len("/view")]
+    parts = rest.split("/")
+    if len(parts) != 2 or not all(parts):
+        raise ValueError(f"bad resource {uri}")
+    project, session = parts
+    rows = [row for row in outputs.scan(session_id=session) if row["project"] == project]
+    if not rows:
+        raise ValueError(f"no session output {project}/{session}")
+    row = rows[0]
+    if view:
+        records = outputs.tail_records(row["path"], 200)
+        header = f"# {row['agent']} {row['session']} {row['path']}"
+        return outputs.render_records(records, header=header), "text/plain"
+    return Path(row["path"]).read_text(encoding="utf-8", errors="replace"), "application/x-ndjson"
+
 
 
 TOOLS = [
@@ -462,6 +627,45 @@ TOOLS = [
     {"name": "server_down",
      "description": "Stop the airc server and every peer it owns.",
      "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False}},
+    {"name": "list_outputs",
+     "description": "List journaled session output files with agent, session, harness, cwd, "
+                    "size, last record time and a short last-output preview.",
+     "inputSchema": {"type": "object",
+                     "properties": {"project": {"type": "string"},
+                                    "cwd": {"type": "string"},
+                                    "agent": {"type": "string"},
+                                    "session_id": {"type": "string"},
+                                    "limit": {"type": "number"}},
+                     "additionalProperties": False}},
+    {"name": "read_output",
+     "description": "Read one journaled session output as a compact transcript, newest records "
+                    "last. Filter by kinds, tail count, since epoch, or format=json.",
+     "inputSchema": {"type": "object",
+                     "properties": {"project": {"type": "string"},
+                                    "cwd": {"type": "string"},
+                                    "agent": {"type": "string"},
+                                    "session_id": {"type": "string"},
+                                    "kinds": {"type": "array", "items": {"type": "string"},
+                                              "description": "text, tool, you, instruct, result, raw"},
+                                    "tail": {"type": "number"},
+                                    "since": {"type": "number", "description": "epoch seconds"},
+                                    "max_chars": {"type": "number"},
+                                    "per_record_chars": {"type": "number"},
+                                    "format": {"type": "string", "enum": ["text", "json"]}},
+                     "additionalProperties": False}},
+    {"name": "search_output",
+     "description": "Search every journaled session output for a substring and return matching "
+                    "records with agent, session, kind, time and path.",
+     "inputSchema": {"type": "object",
+                     "properties": {"query": {"type": "string"},
+                                    "project": {"type": "string"},
+                                    "cwd": {"type": "string"},
+                                    "agent": {"type": "string"},
+                                    "session_id": {"type": "string"},
+                                    "limit": {"type": "number"},
+                                    "max_chars": {"type": "number"},
+                                    "ignore_case": {"type": "boolean"}},
+                     "required": ["query"], "additionalProperties": False}},
 ]
 
 HANDLERS = {
@@ -476,6 +680,9 @@ HANDLERS = {
     "read_pane": tool_read_pane,
     "stop_peer": tool_stop_peer,
     "server_down": tool_server_down,
+    "list_outputs": tool_list_outputs,
+    "read_output": tool_read_output,
+    "search_output": tool_search_output,
 }
 
 INSTRUCTIONS = (
@@ -483,8 +690,14 @@ INSTRUCTIONS = (
     "start_projects starts only the names given and runs Claude Code in each project through airc. "
     "instruct and instruct_many prompt peers and return their turns; wait=false returns a turn_id "
     "for turn_result. resume_project continues a project's last conversation in claude, codex or "
-    "freebuff (or a named one) after its peer stopped; list_project_sessions shows the candidates. Peers keep their "
-    "conversation across prompts and stay alive until stop_peer or server_down.")
+    "freebuff (or a named one) after its peer stopped; list_project_sessions shows the candidates. "
+    "Peers keep their conversation across prompts and stay alive until stop_peer or server_down. "
+    "Every turn is journaled per session under .orch/projects; list_outputs, read_output and "
+    "search_output are the MCP views, and resources under hyperagent://outputs read the same files. "
+    "The peer monitor emits idle and gone events: subscribe with resources/subscribe or "
+    "subscriptions/listen (resourceSubscriptions, resourcesListChanged), follow logging/setLevel "
+    "for notifications/message, and read hyperagent://events for the recent event stream. "
+    "Run bin/watch locally for the same events as lines.")
 
 
 async def send(message: dict) -> None:
@@ -493,25 +706,210 @@ async def send(message: dict) -> None:
         sys.stdout.flush()
 
 
+def capabilities() -> dict:
+    return {"tools": {"listChanged": False},
+            "resources": {"subscribe": True, "listChanged": True},
+            "logging": {}}
+
+
+def valid_resource_uri(uri: str) -> bool:
+    bare = uri.rstrip("/")
+    return (bare in ("hyperagent://outputs", "hyperagent://events")
+            or bare.startswith("hyperagent://outputs/"))
+
+
+def listen_wants_resource(spec: dict, uri: str) -> bool:
+    wanted = spec.get("resourceSubscriptions") or []
+    return uri in wanted or "hyperagent://outputs" in wanted or "hyperagent://events" in wanted
+
+
+def event_output_uri(event: dict) -> str | None:
+    session = event.get("session")
+    cwd = event.get("cwd")
+    if not session or not cwd:
+        return None
+    return f"hyperagent://outputs/{outputs.slug(str(cwd))}/{session}"
+
+
+async def log_message(level: str, data: dict) -> None:
+    entry = {"level": level, "logger": "hyperagent", "data": data}
+    if LOG_LEVEL is None:
+        LOG_QUEUE.append(entry)
+        del LOG_QUEUE[:-64]
+        return
+    if LOG_RANK.get(level, 4) < LOG_RANK.get(LOG_LEVEL, 4):
+        return
+    await send({"jsonrpc": "2.0", "method": "notifications/message", "params": entry})
+
+
+async def emit_event(event: dict) -> None:
+    event = dict(event)
+    uri = event_output_uri(event)
+    if uri:
+        event["output"] = uri
+    EVENT_LOG.append(event)
+    del EVENT_LOG[:-200]
+    new_output = bool(uri and uri not in KNOWN_OUTPUTS)
+    if uri:
+        KNOWN_OUTPUTS.add(uri)
+    await log_message("warning" if event.get("event") == "gone" else "notice", event)
+    for listen_id, spec in list(LISTENS.items()):
+        meta = {SUB_ID: listen_id}
+        if uri and listen_wants_resource(spec, uri):
+            await send({"jsonrpc": "2.0", "method": "notifications/resources/updated",
+                        "params": {"uri": uri, "_meta": meta}})
+        if new_output and spec.get("resourcesListChanged"):
+            await send({"jsonrpc": "2.0", "method": "notifications/resources/list_changed",
+                        "params": {"_meta": meta}})
+    for subscribed in list(SUBSCRIPTIONS):
+        if subscribed in (uri, "hyperagent://outputs"):
+            await send({"jsonrpc": "2.0", "method": "notifications/resources/updated",
+                        "params": {"uri": subscribed}})
+        elif subscribed == "hyperagent://events" and uri:
+            await send({"jsonrpc": "2.0", "method": "notifications/resources/updated",
+                        "params": {"uri": uri}})
+
+
+async def monitor_loop() -> None:
+    agents = [item.strip() for item in (os.environ.get("ORCH_WATCH_AGENTS") or "").split(",")
+              if item.strip()]
+    watcher = monitor.Monitor(
+        orch,
+        idle=float(os.environ.get("ORCH_WATCH_IDLE") or 20.0),
+        poll=float(os.environ.get("ORCH_WATCH_POLL") or 1.0),
+        agents=agents,
+        last_chars=int(os.environ.get("ORCH_WATCH_LAST_CHARS") or 4000))
+    try:
+        async for event in watcher.stream():
+            await emit_event(event)
+    except asyncio.CancelledError:
+        raise
+    except (Exception, SystemExit) as exc:
+        await log_message("error", {"error": f"{type(exc).__name__}: {exc}"})
+
+
+async def ensure_monitor() -> None:
+    global MONITOR_TASK
+    if MONITOR_TASK is None or MONITOR_TASK.done():
+        MONITOR_TASK = asyncio.create_task(monitor_loop())
+
+
+async def progress_loop(token, name: str, step: int = 1) -> None:
+    started = time.time()
+    interval = float(os.environ.get("ORCH_PROGRESS_INTERVAL") or 5.0)
+    while True:
+        await asyncio.sleep(interval)
+        await send({"jsonrpc": "2.0", "method": "notifications/progress",
+                    "params": {"progressToken": token, "progress": step,
+                               "message": f"{name} {round(time.time() - started)}s"}})
+        step += 1
+
+
 async def handle(message: dict) -> None:
+    global LOG_LEVEL
     method = message.get("method")
     request_id = message.get("id")
     params = message.get("params") or {}
     if method == "initialize":
         await send({"jsonrpc": "2.0", "id": request_id, "result": {
             "protocolVersion": params.get("protocolVersion") or PROTOCOL_VERSION,
-            "capabilities": {"tools": {"listChanged": False}},
+            "capabilities": capabilities(),
+            "serverInfo": {"name": "hyperagent", "version": "0.1.0"},
+            "instructions": INSTRUCTIONS}})
+        return
+    if method == "server/discover":
+        await send({"jsonrpc": "2.0", "id": request_id, "result": {
+            "resultType": "complete",
+            "supportedVersions": ["2025-11-25", PROTOCOL_VERSION],
+            "capabilities": capabilities(),
             "serverInfo": {"name": "hyperagent", "version": "0.1.0"},
             "instructions": INSTRUCTIONS}})
         return
     if method in ("notifications/initialized", "initialized", "exit",
-                  "notifications/cancelled", "notifications/progress"):
+                  "notifications/progress"):
+        return
+    if method == "notifications/cancelled":
+        cancelled = params.get("requestId")
+        if isinstance(cancelled, (str, int)) and cancelled in LISTENS:
+            LISTENS.pop(cancelled, None)
+            await send({"jsonrpc": "2.0", "id": cancelled,
+                        "result": {"resultType": "complete"}})
+        return
+    if method == "logging/setLevel":
+        level = str(params.get("level") or "")
+        if level not in LOG_RANK:
+            await send({"jsonrpc": "2.0", "id": request_id,
+                        "error": {"code": -32602,
+                                  "message": f"unknown log level: {level}"}})
+            return
+        LOG_LEVEL = level
+        queued, LOG_QUEUE[:] = list(LOG_QUEUE), []
+        for entry in queued:
+            if LOG_RANK.get(entry.get("level"), 4) >= LOG_RANK[level]:
+                await send({"jsonrpc": "2.0", "method": "notifications/message",
+                            "params": entry})
+        await ensure_monitor()
+        await send({"jsonrpc": "2.0", "id": request_id, "result": {}})
+        return
+    if method in ("resources/subscribe", "resources/unsubscribe"):
+        uri = str(params.get("uri") or "")
+        if not valid_resource_uri(uri):
+            await send({"jsonrpc": "2.0", "id": request_id,
+                        "error": {"code": -32602, "message": f"unknown resource {uri}"}})
+            return
+        if method == "resources/subscribe":
+            SUBSCRIPTIONS.add(uri)
+        else:
+            SUBSCRIPTIONS.discard(uri)
+        await ensure_monitor()
+        await send({"jsonrpc": "2.0", "id": request_id, "result": {}})
+        if method == "resources/subscribe":
+            await send({"jsonrpc": "2.0", "method": "notifications/resources/updated",
+                        "params": {"uri": uri}})
+        return
+    if method == "subscriptions/listen":
+        spec = params.get("notifications") or {}
+        if not isinstance(spec, dict):
+            await send({"jsonrpc": "2.0", "id": request_id,
+                        "error": {"code": -32602,
+                                  "message": "notifications must be an object"}})
+            return
+        LISTENS[request_id] = spec
+        await send({"jsonrpc": "2.0", "method": "notifications/subscriptions/acknowledged",
+                    "params": {"_meta": {SUB_ID: request_id}, "notifications": spec}})
+        meta = {SUB_ID: request_id}
+        for subscribed in spec.get("resourceSubscriptions") or []:
+            await send({"jsonrpc": "2.0", "method": "notifications/resources/updated",
+                        "params": {"uri": subscribed, "_meta": meta}})
+        if spec.get("resourcesListChanged"):
+            await send({"jsonrpc": "2.0", "method": "notifications/resources/list_changed",
+                        "params": {"_meta": meta}})
+        await ensure_monitor()
         return
     if method == "ping":
         await send({"jsonrpc": "2.0", "id": request_id, "result": {}})
         return
     if method == "tools/list":
         await send({"jsonrpc": "2.0", "id": request_id, "result": {"tools": TOOLS}})
+        return
+    if method == "resources/list":
+        await send({"jsonrpc": "2.0", "id": request_id,
+                    "result": {"resources": resource_list()}})
+        return
+    if method == "resources/templates/list":
+        await send({"jsonrpc": "2.0", "id": request_id,
+                    "result": {"resourceTemplates": resource_templates()}})
+        return
+    if method == "resources/read":
+        uri = str(params.get("uri") or "")
+        try:
+            text, mime = read_resource(uri)
+        except (OSError, ValueError) as exc:
+            await send({"jsonrpc": "2.0", "id": request_id,
+                        "error": {"code": -32602, "message": str(exc)}})
+            return
+        await send({"jsonrpc": "2.0", "id": request_id,
+                    "result": {"contents": [{"uri": uri, "mimeType": mime, "text": text}]}})
         return
     if method == "tools/call":
         name = params.get("name")
@@ -522,6 +920,13 @@ async def handle(message: dict) -> None:
                 "content": [{"type": "text", "text": f"unknown tool {name!r}"}],
                 "isError": True}})
             return
+        token = (params.get("_meta") or {}).get("progressToken")
+        ticker = None
+        if token is not None:
+            await send({"jsonrpc": "2.0", "method": "notifications/progress",
+                        "params": {"progressToken": token, "progress": 0,
+                                   "message": f"{name} 0s"}})
+            ticker = asyncio.create_task(progress_loop(token, str(name)))
         try:
             text = await handler(arguments)
             await send({"jsonrpc": "2.0", "id": request_id, "result": {
@@ -530,6 +935,11 @@ async def handle(message: dict) -> None:
             await send({"jsonrpc": "2.0", "id": request_id, "result": {
                 "content": [{"type": "text", "text": f"{type(exc).__name__}: {exc}"}],
                 "isError": True}})
+        finally:
+            if ticker is not None:
+                ticker.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await ticker
         return
     if request_id is not None:
         await send({"jsonrpc": "2.0", "id": request_id,
@@ -556,6 +966,14 @@ async def main() -> None:
     for task in list(pending):
         task.cancel()
     await asyncio.gather(*pending, return_exceptions=True)
+    with contextlib.suppress(BrokenPipeError):
+        for listen_id in list(LISTENS):
+            await send({"jsonrpc": "2.0", "method": "notifications/cancelled",
+                        "params": {"requestId": listen_id}})
+    if MONITOR_TASK is not None:
+        MONITOR_TASK.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await MONITOR_TASK
 
 
 if __name__ == "__main__":

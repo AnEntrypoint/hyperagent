@@ -17,6 +17,9 @@ from urllib.parse import urlencode
 
 import aiohttp
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import journal as output_journal
+
 ROOT = Path(__file__).resolve().parents[1]
 ORCH_DIR = Path(os.environ.get("ORCH_HOME") or (ROOT / ".orch")).resolve()
 HOST = os.environ.get("ORCH_HOST", "127.0.0.1")
@@ -270,6 +273,30 @@ def latest_session(harness: str, cwd: str) -> dict | None:
     return found[-1] if found else None
 
 
+def session_from_launch_args(args: list[str] | tuple[str, ...]) -> str | None:
+    values = list(args)
+    for index, value in enumerate(values):
+        if value in ("--resume", "-r", "--session", "resume", "--continue"):
+            following = values[index + 1] if index + 1 < len(values) else ""
+            if following and not following.startswith("-"):
+                return following
+    return None
+
+
+async def resolve_output_session(job: dict) -> str | None:
+    if job.get("resume"):
+        return job["resume"]
+    try:
+        live = (await fetch_sessions()).get(job["name"]) or {}
+        found = session_from_launch_args(live.get("launch_args") or [])
+        if found:
+            return found
+    except Exception:
+        pass
+    session = latest_session(job["harness"], job["cwd"])
+    return session["session_id"] if session else None
+
+
 def read_state() -> dict:
     try:
         data = json.loads(STATE_FILE.read_text())
@@ -513,6 +540,22 @@ async def run_job(job: dict, timeout: float, idle_exit: float, lock_wait: float,
                   tools: bool, trust: bool) -> dict:
     name, harness = job["name"], job["harness"]
     started = time.time()
+    writer: output_journal.Journal | None = None
+    bound_at = 0.0
+
+    async def write_output(kind: str, text: str = "", **fields) -> None:
+        nonlocal writer, bound_at
+        if writer is None:
+            writer = output_journal.Journal(name, job.get("cwd") or str(ROOT), harness,
+                                            job.get("resume"))
+        if writer.session_id is None and time.time() - bound_at >= 1.0:
+            bound_at = time.time()
+            found = await resolve_output_session(job)
+            if found:
+                writer.bind(found)
+        writer.append(kind, text, **fields)
+
+    await write_output("instruct", job.get("prompt") or "")
     text_parts: list[str] = []
     status = "died"
     acked = False
@@ -570,21 +613,38 @@ async def run_job(job: dict, timeout: float, idle_exit: float, lock_wait: float,
                             kind, payload = TAG[frame[0]], frame[2:]
                             if kind == "text":
                                 text_parts.append(payload)
-                            elif kind == "tool" and tools:
-                                text_parts.append(f"\n[tool] {payload}\n")
+                                await write_output("text", payload)
+                            elif kind == "tool":
+                                if tools:
+                                    text_parts.append(f"\n[tool] {payload}\n")
+                                await write_output("tool", payload)
                             elif kind == "you":
                                 acked = True
+                                await write_output("you", payload)
                         else:
                             text_parts.append(frame)
+                            await write_output("raw", frame)
                 finally:
                     reader.cancel()
                     with contextlib.suppress(asyncio.CancelledError):
                         await reader
     if status in ("timeout", "blocked"):
         tail = pane_tail(await capture(name))
+    if writer is None:
+        writer = output_journal.Journal(name, job.get("cwd") or str(ROOT), harness,
+                                        job.get("resume"))
+    if writer.session_id is None:
+        found = await resolve_output_session(job)
+        if found:
+            writer.bind(found)
+    writer.append("result", "", status=status, duration_s=round(time.time() - started, 1),
+                  acked=acked, pane_tail=tail)
+    writer.flush()
     result = {"name": name, "harness": harness, "cwd": job["cwd"], "status": status,
               "text": "".join(text_parts), "acked": acked, "pane_tail": tail,
-              "duration_s": round(time.time() - started, 1)}
+              "duration_s": round(time.time() - started, 1),
+              "output_path": str(writer.path),
+              "output_session": writer.session_id or writer.fallback_id}
     if job.get("fork") or job.get("record_latest"):
         session = latest_session(harness, job["cwd"])
         if session:
@@ -605,6 +665,8 @@ def render_result(result: dict, tools: bool) -> str:
         if result["pane_tail"]:
             lines.append("[orch] pane tail:")
             lines.extend(f"| {line}" for line in result["pane_tail"])
+    if result.get("output_path"):
+        lines.append(f"[orch] output {result['output_path']}")
     return "\n".join(lines)
 
 
@@ -955,6 +1017,38 @@ async def cmd_pane(args) -> int:
     return 0 if lines else 3
 
 
+async def cmd_outputs(args) -> int:
+    cwd = None
+    if not args.all:
+        cwd = project_target(args.name, None, None)["cwd"]
+    rows = output_journal.scan(cwd=cwd, limit=args.limit)
+    if args.json:
+        print(json.dumps(rows, indent=2))
+    else:
+        for row in rows:
+            print(f"{row['agent']}\t{row['session']}\t{row['last_kind']}\t"
+                  f"{row['bytes']}\t{row['last_ts']}\t{row['path']}")
+        print(f"{len(rows)} session outputs", file=sys.stderr)
+    return 0 if rows else 3
+
+
+async def cmd_output(args) -> int:
+    cwd = None
+    if args.name:
+        cwd = project_target(args.name, None, None)["cwd"]
+    row = output_journal.find_session(agent=args.agent, cwd=cwd, session_id=args.session)
+    if row is None:
+        raise SystemExit("no session output found")
+    kinds = set(args.kind) if args.kind else None
+    records = output_journal.tail_records(row["path"], args.tail, kinds=kinds)
+    if args.json:
+        print(json.dumps(records, indent=2))
+    else:
+        header = f"# {row['agent']} {row['session']} {row['path']}"
+        print(output_journal.render_records(records, header=header))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="orch",
                                      description="Drive airc harness sessions as orchestrated peers")
@@ -1053,6 +1147,22 @@ def build_parser() -> argparse.ArgumentParser:
     pane.add_argument("name")
     pane.add_argument("--lines", type=int, default=40)
     pane.set_defaults(func=cmd_pane)
+
+    outputs = sub.add_parser("outputs", help="list journaled session output files")
+    outputs.add_argument("name", nargs="?", help="project name; omitted uses the last project")
+    outputs.add_argument("--all", action="store_true")
+    outputs.add_argument("--limit", type=int, default=50)
+    outputs.add_argument("--json", action="store_true")
+    outputs.set_defaults(func=cmd_outputs)
+
+    output = sub.add_parser("output", help="read one journaled session output")
+    output.add_argument("name", nargs="?", help="project name; omitted searches every project")
+    output.add_argument("--agent")
+    output.add_argument("--session")
+    output.add_argument("--tail", type=int, default=40)
+    output.add_argument("--kind", action="append")
+    output.add_argument("--json", action="store_true")
+    output.set_defaults(func=cmd_output)
 
     return parser
 
