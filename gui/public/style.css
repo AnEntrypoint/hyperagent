@@ -431,3 +431,106 @@ main {
   margin: 0;
   color: var(--dim);
 }
+
+.stream.transcript {
+  padding: 8px 0 28px;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.block {
+  display: grid;
+  grid-template-columns: 84px 18px 1fr;
+  column-gap: 6px;
+  align-items: start;
+  padding: 3px 16px;
+}
+
+.block time {
+  padding-top: 3px;
+  color: var(--dim);
+  font-size: 11px;
+}
+
+.block .gutter {
+  color: var(--dim);
+  text-align: center;
+}
+
+.block .msg {
+  margin: 0;
+  font: inherit;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.block .body {
+  position: relative;
+  min-width: 0;
+}
+
+.block .tag {
+  display: inline-block;
+  margin-bottom: 2px;
+  color: var(--kind-you);
+  font-size: 11px;
+}
+
+.block .copy {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 0 6px;
+  border: 0;
+  background: transparent;
+  color: var(--dim);
+  font-size: 11px;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.block:hover .copy {
+  opacity: 1;
+}
+
+.block.prompt {
+  margin-top: 14px;
+  background: color-mix(in srgb, var(--text) 9%, transparent);
+}
+
+.block.prompt .gutter {
+  color: var(--accent);
+}
+
+.block.prompt .msg {
+  color: #f0f6fc;
+}
+
+.block.reply .msg {
+  padding-right: 48px;
+}
+
+.block.tools {
+  color: var(--dim);
+}
+
+.block.end .msg {
+  color: var(--dim);
+}
+
+.block.end .gutter.ok {
+  color: var(--ok);
+}
+
+.block.end .gutter.fail {
+  color: var(--bad);
+}
+
+.stream.transcript mark {
+  padding: 0 1px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--warn) 35%, transparent);
+  color: inherit;
+}

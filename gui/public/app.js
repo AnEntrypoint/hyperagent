@@ -6,6 +6,8 @@ const root = document.getElementById("app");
 
 const KINDS = ["instruct", "you", "tool", "result", "log", "raw", "malformed", "text"];
 const DEFAULT_KINDS = KINDS.filter((kind) => kind !== "text");
+const TRANSCRIPT_KINDS = new Set(["instruct", "text", "tool", "result"]);
+const BLOCK_TYPES = { instruct: "prompt", text: "reply", result: "end" };
 const KIND_LABELS = {
   instruct: "prompt",
   you: "echo",
@@ -18,10 +20,11 @@ const KIND_LABELS = {
 };
 const SHORTCUTS = [
   ["/", "filter text"],
-  ["j  k", "next or previous record"],
+  ["v", "transcript or records view"],
+  ["j  k", "next or previous record (records view)"],
   ["p", "pause or resume the stream"],
   ["f", "follow the newest record"],
-  ["w", "wrap long lines"],
+  ["w", "wrap long lines (records view)"],
   ["Esc", "deselect, or close this help"],
   ["?", "this help"],
 ];
@@ -45,6 +48,7 @@ const state = {
   reveal: false,
   agent: "",
   query: "",
+  view: "transcript",
   kinds: new Set(DEFAULT_KINDS),
   wrap: false,
   help: false,
@@ -113,7 +117,11 @@ function isKindShown(kind) {
 
 function passes(record, query) {
   if (state.agent && record.agent !== state.agent) return false;
-  if (!isKindShown(record.kind)) return false;
+  if (state.view === "transcript") {
+    if (!TRANSCRIPT_KINDS.has(record.kind)) return false;
+  } else if (!isKindShown(record.kind)) {
+    return false;
+  }
   if (!query) return true;
   const haystack = `${record.agent} ${record.kind} ${record.status ?? ""} ${record.text ?? ""}`;
   return haystack.toLowerCase().includes(query);
@@ -199,6 +207,13 @@ function toggleWrap() {
   scheduleRender();
 }
 
+function toggleView() {
+  state.view = state.view === "transcript" ? "records" : "transcript";
+  state.limit = PAGE_SIZE;
+  writeHash();
+  scheduleRender();
+}
+
 function toggleHelp() {
   state.help = !state.help;
   scheduleRender();
@@ -242,6 +257,7 @@ function writeHash() {
   const params = new URLSearchParams();
   if (state.query) params.set("q", state.query);
   if (state.agent) params.set("agent", state.agent);
+  if (state.view !== "transcript") params.set("view", state.view);
   const customKinds = state.kinds.size !== DEFAULT_KINDS.length || DEFAULT_KINDS.some((kind) => !state.kinds.has(kind));
   if (customKinds) params.set("kinds", [...state.kinds].join(","));
   const text = params.toString();
@@ -252,6 +268,7 @@ function readHash() {
   const params = new URLSearchParams(location.hash.slice(1));
   state.query = params.get("q") ?? "";
   state.agent = params.get("agent") ?? "";
+  state.view = params.get("view") === "records" ? "records" : "transcript";
   if (params.has("kinds")) {
     state.kinds = new Set(params.get("kinds").split(",").filter((kind) => KINDS.includes(kind)));
   }
@@ -339,14 +356,69 @@ function row(record) {
     </div>`;
 }
 
+function blocks(records) {
+  const items = [];
+  for (const record of records) {
+    const last = items[items.length - 1];
+    if (record.kind === "tool") {
+      const name = record.text || "tool";
+      if (last?.type === "tools" && last.agent === record.agent) {
+        last.count += 1;
+        last.names.set(name, (last.names.get(name) ?? 0) + 1);
+      } else {
+        items.push({ type: "tools", key: record.id, agent: record.agent, epoch: record.epoch, count: 1, names: new Map([[name, 1]]) });
+      }
+      continue;
+    }
+    items.push({ type: BLOCK_TYPES[record.kind], key: record.id, agent: record.agent, epoch: record.epoch, record });
+  }
+  return items;
+}
+
+function block(item) {
+  const query = state.query.trim().toLowerCase();
+  if (item.type === "tools") {
+    const names = [...item.names].map(([name, count]) => (count > 1 ? `${name} ×${count}` : name)).join(", ");
+    return html`
+      <div key=${item.key} class="block tools">
+        <time>${stamp(item.epoch)}</time>
+        <span class="gutter">·</span>
+        <span class="msg">Ran ${item.count} ${item.count === 1 ? "tool" : "tools"}: ${names}</span>
+      </div>`;
+  }
+  if (item.type === "end") {
+    const ok = item.record.status === "turn_end";
+    return html`
+      <div key=${item.key} class="block end">
+        <time>${stamp(item.epoch)}</time>
+        <span class=${`gutter ${ok ? "ok" : "fail"}`}>${ok ? "✓" : "✗"}</span>
+        <span class="msg">${item.record.status ?? "?"} · ${item.record.duration_s ?? "?"}s</span>
+      </div>`;
+  }
+  const text = item.record.text ?? "";
+  return html`
+    <div key=${item.key} class=${`block ${item.type}`}>
+      <time>${stamp(item.epoch)}</time>
+      <span class="gutter">${item.type === "prompt" ? "❯" : "●"}</span>
+      <div class="body">
+        ${state.agent ? null : html`<span class="tag">${item.agent}</span>`}
+        <pre class="msg">${highlight(text, query)}</pre>
+        <button class="copy" onclick=${() => copy(text, "message")}>copy</button>
+      </div>
+    </div>`;
+}
+
 function stream(matches, visible) {
   const hidden = matches.length - visible.length;
+  const transcript = state.view === "transcript";
   let empty = "No records match the current filters.";
   if (state.records.length === 0) empty = "Waiting for journal records…";
+  const classes = ["stream", state.wrap && !transcript ? "wrap" : "", transcript ? "transcript" : ""].filter(Boolean).join(" ");
+  const body = transcript ? blocks(visible).map(block) : visible.map(row);
   return html`
-    <section class=${`stream${state.wrap ? " wrap" : ""}`} onscroll=${onScroll}>
+    <section class=${classes} onscroll=${onScroll}>
       ${hidden > 0 ? html`<button class="older" onclick=${() => { state.limit += PAGE_SIZE; scheduleRender(); }}>Show ${hidden} older</button>` : null}
-      ${visible.length ? visible.map(row) : html`<p class="empty">${empty}</p>`}
+      ${body.length ? body : html`<p class="empty">${empty}</p>`}
     </section>`;
 }
 
@@ -390,18 +462,21 @@ function sidebar() {
 }
 
 function toolbar() {
+  const transcript = state.view === "transcript";
   return html`
     <div class="toolbar">
       <input id="query" type="search" placeholder="Filter text  ( / )" value=${state.query} oninput=${onQuery} />
-      <div class="chips">
-        ${KINDS.map((kind) => html`
-          <button key=${kind} class=${`chip kind-${kind}${state.kinds.has(kind) ? " on" : ""}`} onclick=${() => toggleKind(kind)}>${KIND_LABELS[kind]}</button>`)}
-      </div>
+      <button class=${`btn${transcript ? " on" : ""}`} onclick=${toggleView}>${transcript ? "Transcript" : "Records"} ( v )</button>
+      ${transcript ? null : html`
+        <div class="chips">
+          ${KINDS.map((kind) => html`
+            <button key=${kind} class=${`chip kind-${kind}${state.kinds.has(kind) ? " on" : ""}`} onclick=${() => toggleKind(kind)}>${KIND_LABELS[kind]}</button>`)}
+        </div>`}
       <button class=${`btn${state.paused ? " on" : ""}`} onclick=${() => setPaused(!state.paused)}>
         ${state.paused ? `Resume · ${state.pending.length} new` : "Pause ( p )"}
       </button>
       <button class=${`btn${state.follow ? " on" : ""}`} onclick=${() => setFollow(!state.follow)}>Follow ( f )</button>
-      <button class=${`btn${state.wrap ? " on" : ""}`} onclick=${toggleWrap}>Wrap ( w )</button>
+      ${transcript ? null : html`<button class=${`btn${state.wrap ? " on" : ""}`} onclick=${toggleWrap}>Wrap ( w )</button>`}
       <button class="btn" onclick=${exportVisible}>Export</button>
       <button class=${`btn${state.help ? " on" : ""}`} onclick=${toggleHelp}>Keys ( ? )</button>
     </div>`;
@@ -508,6 +583,8 @@ function onKey(event) {
     setPaused(!state.paused);
   } else if (event.key === "f") {
     setFollow(!state.follow);
+  } else if (event.key === "v") {
+    toggleView();
   } else if (event.key === "w") {
     toggleWrap();
   } else if (event.key === "j") {
