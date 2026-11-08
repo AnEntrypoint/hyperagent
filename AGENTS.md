@@ -6,7 +6,7 @@ messaging bus. The orchestrator talks to them through the `hyperagent` MCP serve
 
 ## MCP server
 
-`.mcp.json` registers the `hyperagent` stdio server (`python3 mcp_server.py`), and
+`.mcp.json` registers the `hyperagent` stdio server (`build/hyperagent mcp`, built with `cmake -B build -G Ninja && cmake --build build`), and
 `.claude/settings.json` lists it in `enabledMcpjsonServers` so opening the project
 enables it without a prompt. `claude mcp list` reports it as connected.
 

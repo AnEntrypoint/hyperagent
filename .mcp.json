@@ -1,9 +1,9 @@
 {
   "mcpServers": {
     "hyperagent": {
-      "command": "python3",
+      "command": "build/hyperagent",
       "args": [
-        "mcp_server.py"
+        "mcp"
       ]
     }
   }
