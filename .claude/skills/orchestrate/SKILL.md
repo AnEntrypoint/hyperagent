@@ -83,6 +83,40 @@ When two or more peers can solve an item faster or better together, give them a 
   participants in the next cycle.
 - If you see messaging tools that list peers, tell them to message each other to collaborate
 
+## Maximum effort and yield
+
+Every decision the dispatcher makes is made for maximum effort and maximum yield.
+This section is the standing rule; the other sections apply it.
+
+- Choose the solution that gets the best result the project can reach, even when a
+  cheaper one would pass a witness. Work around a platform's limits rather than copying
+  another platform's habits. Rearchitect when the result needs it.
+- Maximum yield means finished, verified work per cycle. Prefer one complete pass over
+  several partial ones.
+- Treat any issue as a defect. A witness that fails, a surprising output, a warning, a
+  slow path, a flaky check, or behaviour the owner did not ask for is a defect to be
+  fixed or recorded with its cause. It is never waved through as "expected".
+- Decide, do not defer. Reversible choices are made by the dispatcher and reported
+  afterwards. Only held items wait for the owner.
+- Ignore effort and labour budgets when judging what to do next.
+
+## Two-phase work
+
+All changes a peer has for a stretch of work are made in one Phase A pass before any
+build, test, gate, witness or browser run. Phase A does not stop between items to
+validate, and it is not split into several small Phase A passes.
+
+- Phase A: code, docs and tests only. Each change is committed locally and listed in
+  the peer's `docs/PENDING_VALIDATION.md` with the file, the row or phase, and the
+  witness it needs. Nothing is pushed.
+- Phase B: build, run every listed witness, fix every defect, then push to origin main
+  in one pass. Each peer runs its own Phase B when its own Phase A is done. Peers do
+  not wait on each other.
+- When a peer gets a new item while its Phase A is open, fold the item into that same
+  pass. Do not start a second Phase A or a validation in the middle.
+- A peer that is already running a gate or Pages build may finish that check, since it
+  validates earlier work.
+
 ## Decision rules
 
 - Anything reversible: decide and proceed; tell the owner afterwards. If it is not
@@ -96,7 +130,8 @@ When two or more peers can solve an item faster or better together, give them a 
   progress, say which one and why in the reply, and dispatch it. Do not hand the
   choice back when the choice is reversible.
 - Read-only verification: decide and proceed.
-- Small commits, pushed as each item is verified.
+- Pushes happen in Phase B only, as one pass per peer (see Two-phase work). Commits are
+  local until then.
 - Every change in the hyperagent repo is committed and pushed to origin/main before
   the cycle ends. At the end of each cycle, check `git status` and
   `git log origin/main..HEAD` in /workspace/hyperagent, and push anything outstanding.
@@ -106,8 +141,17 @@ When two or more peers can solve an item faster or better together, give them a 
 
 Include these in every assignment prompt:
 - When you address peers use the following format: 'we want to x' describing what you want it to do, no further instruction 
-- Work only in the cwd you were started in. Commit as the gh user in the shared checkout, dont attribute anybody else.
-- Verify by running the thing. Make any architectural idealizations that seem reasonable along the way. Quote the witness output. Maximum effort. Fix any issues that arise.
+- Work only in the cwd you were started in, on main, in the shared checkout. Do not clone
+  scratch copies or fake worktrees.
+- Commit as lanmower only. Commit messages and PR descriptions carry no `Co-Authored-By`
+  or other trailer, and no tool or model attribution line of any kind.
+- Two-phase work: make every change for the stretch first (Phase A, code, docs and tests
+  only, no build, test, gate or witness), list each change in `docs/PENDING_VALIDATION.md`,
+  commit locally, and push nothing. Then run Phase B: build, witness, fix, push once.
+- Maximum effort and yield. Choose the solution that gets the best result, work around
+  the platform's limits, and rearchitect where needed.
+- Treat any issue as a defect: fix it, or record it with its cause. Do not call it expected.
+- Verify by running the thing in Phase B. Quote the witness output. Fix any issues that arise.
 - Stop dev servers by their own PID; never use `pkill` or `killall`.
 - End every turn with: `REPORT: finished|open|blocked — <your rhetoric> — witness: <output evidence>`.
 
