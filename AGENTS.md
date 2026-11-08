@@ -239,3 +239,14 @@ Claude transcript channel binds to the newest session file in a project director
   animation detector shared by `bin/watch` and the MCP server.
 - The dispatcher skill is `.claude/skills/orchestrate/SKILL.md`; open the project with
   `bin/open` and run `/orchestrate`.
+
+## C++ port (`src/`)
+
+- Build: `cmake -B build -G Ninja && cmake --build build`; target `hyperagent` (C++20; Boost.Beast/Asio headers, nlohmann-json, CLI11, sqlite3, OpenSSL). Boost.System is header-only here, so it is linked only when its target exists.
+- Layout: `src/main.cpp` (CLI11 dispatch); `src/core/` (`text`, `json`, `files`, `paths`, `clock`, `process`, `http`); `src/journal/` (`Journal` writer, `records` readers, `command`); `src/monitor/` (`Monitor` state machine behind `SessionSource`, `command` replay); `src/watch/` (ccbridge `/sessions` source and loop); `src/pending/` (`orch`, `mcp`, `gui` stubs, exit 3 until ported).
+- Journal bytes: records are written compact with insertion order (`ordered_json`), Python float repr and unescaped UTF-8. `core::json::dumps(value, spaced)` gives Python's default `json.dumps` text.
+- Text is counted in code points, as Python `len` and slicing do, and `splitlines` uses Python's separator set.
+- A session without a `busy` field falls back to airc's busy markers (`esc to interrupt` for claude and codex, `Starting your model session` for freebuff) rather than loading the airc mods.
+- `ORCH_JOURNAL`, `ORCH_HOME`, `ORCH_HOST`, `ORCH_PORT` mean the same as in `bin/orch`. The repo root is found by walking up from the executable to a directory holding `CMakeLists.txt` and `AGENTS.md`; `HYPERAGENT_ROOT` overrides it.
+- Parity fixtures: `tests/fixtures/journal/root` (journal root) and `tests/fixtures/monitor/replay.json` (ticks for `hyperagent monitor --replay`, run with `ORCH_JOURNAL` pointing at the journal fixture).
+- `bin/journal.py`, `bin/monitor.py` and `bin/watch` remain the reference until the orch port takes over.
