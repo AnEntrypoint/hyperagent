@@ -171,7 +171,7 @@ async def tool_instruct(args: dict) -> str:
     idle_s = number(args, "idle_exit_s", DEFAULT_IDLE)
     tools = flag(args, "tools", False)
     trust = flag(args, "trust", True)
-    if flag(args, "wait", True):
+    if flag(args, "wait", False):
         result = await orch.run_job(job, timeout_s, idle_s, LOCK_WAIT, tools, trust)
         return orch.render_result(result, tools)
     turn_id = start_turn(job, timeout_s, idle_s, tools, trust)
@@ -197,7 +197,7 @@ async def tool_instruct_many(args: dict) -> str:
                                 flag(args, "fork", False))
         prepared.append((job, number(entry, "timeout_s", timeout_s),
                          number(entry, "idle_exit_s", idle_s)))
-    if flag(args, "wait", True):
+    if flag(args, "wait", False):
         results = await asyncio.gather(
             *(orch.run_job(job, t, i, LOCK_WAIT, tools, trust) for job, t, i in prepared))
         return "\n\n".join(orch.render_result(result, tools) for result in results)
@@ -264,7 +264,7 @@ async def tool_resume_project(args: dict) -> str:
     trust = flag(args, "trust", True)
     if prompt:
         job["prompt"] = prompt
-        if flag(args, "wait", True):
+        if flag(args, "wait", False):
             result = await orch.run_job(job, timeout_s, idle_s, LOCK_WAIT, tools, trust)
             return json.dumps({"state": "prompted", "project": job["name"],
                                "cwd": job["cwd"], "harness": job["harness"],
@@ -544,7 +544,7 @@ TOOLS = [
                                     "idle_exit_s": {"type": "number"},
                                     "tools": {"type": "boolean"},
                                     "wait": {"type": "boolean",
-                                             "description": "false returns a turn_id instead of waiting"},
+                                             "description": "true blocks until the turn ends; false (default) returns a turn_id at once"},
                                     "harness": {"type": "string",
                                                 "description": "claude, codex or freebuff; defaults to the project's remembered harness"},
                                     "resume": {"type": "boolean",
@@ -568,7 +568,8 @@ TOOLS = [
                                     "timeout_s": {"type": "number"},
                                     "idle_exit_s": {"type": "number"},
                                     "tools": {"type": "boolean"},
-                                    "wait": {"type": "boolean"},
+                                    "wait": {"type": "boolean",
+                                             "description": "true blocks until every turn ends; false (default) returns turn_ids at once"},
                                     "harness": {"type": "string"},
                                     "resume": {"type": "boolean"},
                                     "fork": {"type": "boolean"},
@@ -600,7 +601,8 @@ TOOLS = [
                                     "timeout_s": {"type": "number"},
                                     "idle_exit_s": {"type": "number"},
                                     "tools": {"type": "boolean"},
-                                    "wait": {"type": "boolean"},
+                                    "wait": {"type": "boolean",
+                                             "description": "true blocks until the prompted turn ends; false (default) returns a turn_id at once"},
                                     "fork": {"type": "boolean",
                                              "description": "fork the resumed session instead of reusing its id"},
                                     "trust": {"type": "boolean"}},
