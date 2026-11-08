@@ -3,6 +3,7 @@
 #include "journal/command.hpp"
 #include "monitor/command.hpp"
 #include "pending/pending.hpp"
+#include "watch/command.hpp"
 
 int main(int argc, char** argv)
 {
@@ -12,6 +13,7 @@ int main(int argc, char** argv)
 
     hyperagent::journal::add_command(app);
     hyperagent::monitor::add_command(app);
+    hyperagent::watch::add_command(app);
 
     hyperagent::pending::add_command(app, "orch", "orchestrator CLI (bin/orch)");
     hyperagent::pending::add_command(app, "mcp", "MCP server (mcp_server.py)");

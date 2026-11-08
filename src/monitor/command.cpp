@@ -92,11 +92,6 @@ std::set<std::string> split_agents(const std::string& value)
     return agents;
 }
 
-void emit(const Value& event, bool text_mode)
-{
-    std::cout << render(event, text_mode) << std::endl;
-}
-
 }
 
 void add_monitor_options(CLI::App* command, CommandOptions& options)
@@ -138,14 +133,14 @@ void add_command(CLI::App& app)
         if (options->once) {
             source.select(0);
             for (const auto& event : monitor.once()) {
-                emit(event, options->text);
+                print_event(event, options->text);
             }
             return;
         }
         for (std::size_t tick = 0; tick < source.size(); ++tick) {
             source.select(tick);
             for (const auto& event : monitor.poll()) {
-                emit(event, options->text);
+                print_event(event, options->text);
             }
         }
     });

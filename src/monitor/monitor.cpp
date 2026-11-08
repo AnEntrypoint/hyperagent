@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <iostream>
 #include <map>
 #include <openssl/evp.h>
 #include <stdexcept>
@@ -145,6 +146,11 @@ std::string render(const Value& event, bool text_mode)
     head += " last=" + core::json::dumps(Value(last_text));
     head += " instruct=" + core::json::dumps(event["instruct"]["arguments"], core::json::spaced);
     return head;
+}
+
+void print_event(const Value& event, bool text_mode)
+{
+    std::cout << render(event, text_mode) << std::endl;
 }
 
 Monitor::Monitor(SessionSource& source, Options options, Clock clock)
