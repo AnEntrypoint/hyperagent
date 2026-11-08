@@ -6,7 +6,7 @@
 #include "journal/command.hpp"
 #include "monitor/command.hpp"
 #include "orch/command.hpp"
-#include "pending/pending.hpp"
+#include "mcp/command.hpp"
 #include "watch/command.hpp"
 
 int main(int argc, char** argv)
@@ -22,7 +22,7 @@ int main(int argc, char** argv)
     hyperagent::cli::open::add_command(app);
 
     hyperagent::orch::add_command(app);
-    hyperagent::pending::add_command(app, "mcp", "MCP server (mcp_server.py)");
+    hyperagent::mcp::add_command(app);
     hyperagent::gui::add_command(app);
 
     CLI11_PARSE(app, argc, argv);

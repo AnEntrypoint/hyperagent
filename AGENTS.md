@@ -10,6 +10,31 @@ messaging bus. The orchestrator talks to them through the `hyperagent` MCP serve
 `.claude/settings.json` lists it in `enabledMcpjsonServers` so opening the project
 enables it without a prompt. `claude mcp list` reports it as connected.
 
+`hyperagent mcp` (`src/mcp/`) is the C++ port of `mcp_server.py` and serves the same tools,
+tool schemas, INSTRUCTIONS, resources, events and protocol features (`initialize`,
+`server/discover`, `tools/list`, `tools/call`, `logging/setLevel`, `resources/subscribe`,
+`subscriptions/listen`, `notifications/progress`). `mcp_server.py` stays the reference until
+parity passes; `.mcp.json` still points at it, and switching it to the binary is a separate
+step.
+
+Known deviations of `hyperagent mcp` from `mcp_server.py`:
+
+- Peer and journal tools call the orch internals (`orch.hpp`, `turn.hpp`, `projects.hpp`,
+  `ccbridge.hpp`) directly rather than the CLI.
+- Tools outside the synchronous set (`list_projects`, `list_project_sessions`,
+  `list_outputs`, `read_output`, `search_output`) run on worker threads. Responses to
+  concurrent requests can arrive in a different order from Python's; the ids correlate them,
+  and sorted outputs are identical.
+- At EOF in-flight tools get a 2 s grace; Python cancels them at once.
+- The monitor runs on one thread per server and emits from there.
+- Resource subscriptions keep insertion order; Python's set order is arbitrary.
+- `search_output` lowercases Latin-1, Greek and Cyrillic only (simple Unicode lowercase).
+- `server_down` checks the server with `server_alive(1)` where Python uses 0.5 s.
+- The default `cmake -B build` has no build type and compiles at -O0; the journal tools run
+  about 14x slower there than in a Release build (`list_outputs` 1.35 s at -O0, 0.10 s in
+  Release, 0.19 s in Python; `search_output` 2.29 s, 0.12 s and 0.22 s). Use
+  `-DCMAKE_BUILD_TYPE=Release` for MCP work.
+
 Tools: `list_projects`, `start_projects`, `instruct`, `instruct_many`,
 `turn_result`, `resume_project`, `list_project_sessions`, `list_outputs`,
 `read_output`, `search_output`, `peer_status`, `read_pane`, `stop_peer`,
@@ -86,10 +111,9 @@ surface.
 `bin/open` starts Claude Code in this project with `MCP_TOOL_TIMEOUT` set to 30
 minutes, so a turn can be collected in one call. Without it the client's shorter tool
 timeout can cut a long turn; use `wait: false` plus `turn_result` then. `hyperagent open`
-is its C++ port: it sets `MCP_TIMEOUT` (60000) and `MCP_TOOL_TIMEOUT` (1800000) only when
-unset, changes to the repo root, and then runs the `hyperagent mcp` entry point. Until that
-subcommand is ported it exits 3 with "not yet ported" and launches nothing; `bin/open` stays
-the working launcher until then.
+(`src/cli/open.cpp`) is not wired yet: it exits 3 and launches nothing. Its intended
+behaviour is to set `MCP_TIMEOUT` (60000) and `MCP_TOOL_TIMEOUT` (1800000) only when unset,
+change to the repo root, and then run `hyperagent mcp`; `bin/open` stays the working launcher.
 
 `mcp_server.py` needs only aiohttp, declared in `requirements.txt` (on a PEP 668 system
 Python install it with `sudo apt install python3-aiohttp`), and imports `bin/orch` as its
@@ -239,8 +263,8 @@ Claude transcript channel binds to the newest session file in a project director
 ## Source facts
 
 - No comments in source: intent lives in names, durable facts live here.
-- `mcp_server.py` exposes the MCP tools; `bin/orch` holds the implementation; `bin/open`
-  starts Claude Code with a long MCP tool timeout (C++: `hyperagent open`).
+- `mcp_server.py` (reference) and `hyperagent mcp` expose the MCP tools; `bin/orch` holds the
+  implementation; `bin/open` starts Claude Code with a long MCP tool timeout (C++: `hyperagent open`).
 - `bin/journal.py` owns the per-session output files; `bin/monitor.py` owns the pane
   animation detector shared by `bin/watch` and the MCP server.
 - The dispatcher skill is `.claude/skills/orchestrate/SKILL.md`; open the project with
@@ -249,7 +273,7 @@ Claude transcript channel binds to the newest session file in a project director
 ## C++ port (`src/`)
 
 - Build: `cmake -B build -G Ninja && cmake --build build`; target `hyperagent` (C++20; Boost.Beast/Asio headers, nlohmann-json, CLI11, sqlite3, OpenSSL). Boost.System is header-only here, so it is linked only when its target exists.
-- Layout: `src/main.cpp` (CLI11 dispatch); `src/core/` (`text`, `json`, `files`, `paths`, `clock`, `process`, `http`); `src/journal/` (`Journal` writer, `records` readers, `command`); `src/monitor/` (`Monitor` state machine behind `SessionSource`, `command` replay); `src/watch/` (ccbridge `/sessions` source and loop); `src/cli/` (`ccbridge` install, `open`, `https` client); `src/gui/` (`command` options and startup, `server` Beast HTTP with SSE and static files, `feed` `JournalFeed` over the `tail` readers and a `hub` of subscribers, `reload` watcher for `gui/public`, `wire` Python-style JSON with ASCII escapes); `src/orch/` (the `orch` port: `config`, `state`, `projects`, `harness` (airc mods), `ccbridge` (HTTP and server lifecycle), `websocket`, `lock`, `turn` (run_job), `orch` (the function API for the MCP port), `command` (CLI11)); `src/pending/` (`mcp` stub, exit 3 until ported).
+- Layout: `src/main.cpp` (CLI11 dispatch); `src/core/` (`text`, `json`, `files`, `paths`, `clock`, `process`, `http`); `src/journal/` (`Journal` writer, `records` readers, `command`); `src/monitor/` (`Monitor` state machine behind `SessionSource`, `command` replay); `src/watch/` (ccbridge `/sessions` source and loop); `src/cli/` (`ccbridge` install, `open`, `https` client); `src/gui/` (`command` options and startup, `server` Beast HTTP with SSE and static files, `feed` `JournalFeed` over the `tail` readers and a `hub` of subscribers, `reload` watcher for `gui/public`, `wire` Python-style JSON with ASCII escapes); `src/orch/` (the `orch` port: `config`, `state`, `projects`, `harness` (airc mods), `ccbridge` (HTTP and server lifecycle), `websocket`, `lock`, `turn` (run_job), `orch` (the function API for the MCP port), `command` (CLI11)); `src/mcp/` (`hyperagent mcp`: `server` JSON-RPC loop, `tools`, `peers`, `outputs` resources, `turns`, `events`, `args` Python-compatible JSON and argument coercion, `schema` generated from `mcp_server.py`, `command`).
 - The C++ GUI reads the same journal bytes as `gui/server.py`: `tail` replays the backward block scan of `read_last_lines`, the 500-per-source and 1500-total backfill, and the `<source>@<offset>` ids. Its server log is `orch_home()/server.log`, so `ORCH_HOME` moves it. That is kept on purpose: `bin/orch` writes the airc server log under `ORCH_HOME` (line 184, read back at line 209) and the C++ `ccbridge` does the same, so the viewer follows that path. `gui/server.py` always reads `REPO/.orch/server.log` and its journal root ignores `ORCH_HOME`; the two agree only when `ORCH_HOME` is unset. It has no server.py restart: `/api/reload` still sends `change` with `restart: false`, and a rebuild plus restart replaces the Python HMR. Responses are HTTP/1.0 with Python's header order (`Server`, `Date`, then the response fields); a 501 reason phrase is the error message, as in `HTTP/1.0 501 Unsupported method ('POST')`. The one header difference is that Python appends `Python/<version>` to `Server`, and the C++ server sends `orch-gui` only. Journal lines are parsed by `core::json::parse_python`, which accepts NaN, Infinity, -Infinity, float literals that overflow to Infinity, and lone `\uD800`-`\uDFFF` escapes as Python's `json.loads` does; a lone surrogate is kept as WTF-8 and written back as a `\udXXX` escape. The strict `core::json::parse` used by the other readers still rejects these. The Python journal writer uses `ensure_ascii=False`, so it cannot write a lone surrogate (UnicodeEncodeError), which is why the journal does not contain them today. `tests/fixtures/gui/` is the parity fixture: `journal/root` holds the NaN, Infinity and lone surrogate lines, and `expected-snapshot.json` is the `gui/server.py` backfill with `airc/server` records removed (drop `src == "airc/server"` from both sides, then compare `json.dumps(records, indent=1)`).
 - Journal bytes: records are written compact with insertion order (`ordered_json`), Python float repr and unescaped UTF-8. `core::json::dumps(value, spaced)` gives Python's default `json.dumps` text.
 - Text is counted in code points, as Python `len` and slicing do, and `splitlines` uses Python's separator set.

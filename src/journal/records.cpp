@@ -59,6 +59,19 @@ std::string stem_of(const Path& path)
     return name;
 }
 
+std::vector<Path> journal_files_in_directory_order(const Path& directory)
+{
+    std::vector<Path> ordered;
+    std::error_code ignored;
+    for (const auto& entry : std::filesystem::directory_iterator(directory, ignored)) {
+        const Path path = entry.path();
+        if (path.extension() == ".jsonl" && core::files::is_regular_file(path)) {
+            ordered.push_back(path);
+        }
+    }
+    return ordered;
+}
+
 std::vector<Path> journal_files_newest_first(const Path& directory)
 {
     std::vector<std::pair<double, Path>> found;
@@ -240,7 +253,7 @@ std::vector<Value> scan(const std::optional<Path>& root, const std::optional<std
         if (!std::filesystem::is_directory(directory, ignored)) {
             continue;
         }
-        for (const auto& path : journal_files_newest_first(directory)) {
+        for (const auto& path : journal_files_in_directory_order(directory)) {
             if (wanted_session && stem_of(path) != *wanted_session) {
                 continue;
             }
