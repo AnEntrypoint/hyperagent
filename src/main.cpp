@@ -1,5 +1,7 @@
 #include <CLI/CLI.hpp>
 
+#include "cli/ccbridge.hpp"
+#include "cli/open.hpp"
 #include "journal/command.hpp"
 #include "monitor/command.hpp"
 #include "pending/pending.hpp"
@@ -14,6 +16,8 @@ int main(int argc, char** argv)
     hyperagent::journal::add_command(app);
     hyperagent::monitor::add_command(app);
     hyperagent::watch::add_command(app);
+    hyperagent::cli::ccbridge::add_command(app);
+    hyperagent::cli::open::add_command(app);
 
     hyperagent::pending::add_command(app, "orch", "orchestrator CLI (bin/orch)");
     hyperagent::pending::add_command(app, "mcp", "MCP server (mcp_server.py)");
