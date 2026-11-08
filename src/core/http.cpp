@@ -12,8 +12,8 @@ namespace http = beast::http;
 namespace net = boost::asio;
 using tcp = net::ip::tcp;
 
-Response get(const std::string& host, const std::string& port, const std::string& target,
-             std::chrono::seconds timeout)
+Response request(const std::string& method, const std::string& host, const std::string& port,
+                 const std::string& target, std::chrono::seconds timeout)
 {
     net::io_context context;
     tcp::resolver resolver(context);
@@ -22,11 +22,11 @@ Response get(const std::string& host, const std::string& port, const std::string
     stream.expires_after(timeout);
     stream.connect(resolver.resolve(host, port));
 
-    http::request<http::empty_body> request{http::verb::get, target, 11};
-    request.set(http::field::host, host + ":" + port);
-    request.set(http::field::user_agent, "hyperagent");
-    request.set(http::field::connection, "close");
-    http::write(stream, request);
+    http::request<http::empty_body> outgoing{http::string_to_verb(method), target, 11};
+    outgoing.set(http::field::host, host + ":" + port);
+    outgoing.set(http::field::user_agent, "hyperagent");
+    outgoing.set(http::field::connection, "close");
+    http::write(stream, outgoing);
 
     beast::flat_buffer buffer;
     http::response<http::string_body> response;
@@ -35,6 +35,12 @@ Response get(const std::string& host, const std::string& port, const std::string
     beast::error_code ignored;
     stream.socket().shutdown(tcp::socket::shutdown_both, ignored);
     return Response{static_cast<std::uint16_t>(response.result_int()), response.body()};
+}
+
+Response get(const std::string& host, const std::string& port, const std::string& target,
+             std::chrono::seconds timeout)
+{
+    return request("GET", host, port, target, timeout);
 }
 
 }
