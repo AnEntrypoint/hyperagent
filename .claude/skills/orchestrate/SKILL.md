@@ -126,7 +126,7 @@ absolute `.jsonl` path, for codex a name) and `harness` for claude, codex or fre
 A session id missing from the project's store is looked up globally; freebuff has no
 global lookup. The ledger prefers the last session actually used when no id is given;
 `list_project_sessions` shows the ids per harness. `resume_project` restarts a dead
-airc server and retires any stale hub or tmux session first. `start_projects`,
+airc server and retires any stale hub first. `start_projects`,
 `instruct` and `instruct_many` accept `resume: true` and `harness` to resume a dead
 peer's latest session automatically. Add `fork: true` to resume without reusing the
 source session id; the ledger records the new one.

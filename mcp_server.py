@@ -338,19 +338,16 @@ async def tool_read_pane(args: dict) -> str:
 
 async def tool_stop_peer(args: dict) -> str:
     name = orch.check_name(str(args.get("name") or ""))
-    if await orch.server_alive():
-        async with aiohttp.ClientSession() as http:
-            async with http.delete(orch.base_url() + f"/sessions/{name}",
-                                   timeout=aiohttp.ClientTimeout(total=30)) as response:
-                if response.status == 200:
-                    return f"stopped {name}"
-                if response.status != 404:
-                    raise RuntimeError(f"stop {name} failed: HTTP {response.status}")
-    proc = await asyncio.create_subprocess_exec(
-        "tmux", "kill-session", "-t", f"ccb-{name}",
-        stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL)
-    code = await proc.wait()
-    return f"no hub {name}; tmux kill-session ccb-{name} exit={code}"
+    if not await orch.server_alive():
+        return f"server down; {name} has no hub"
+    async with aiohttp.ClientSession() as http:
+        async with http.delete(orch.base_url() + f"/sessions/{name}",
+                               timeout=aiohttp.ClientTimeout(total=30)) as response:
+            if response.status == 200:
+                return f"stopped {name}"
+            if response.status == 404:
+                return f"no hub {name}"
+            raise RuntimeError(f"stop {name} failed: HTTP {response.status}")
 
 
 async def tool_server_down(args: dict) -> str:
@@ -625,7 +622,7 @@ TOOLS = [
                      "properties": {"name": {"type": "string"}, "lines": {"type": "number"}},
                      "required": ["name"], "additionalProperties": False}},
     {"name": "stop_peer",
-     "description": "Retire one peer session and its tmux session.",
+     "description": "Retire one peer session.",
      "inputSchema": {"type": "object", "properties": {"name": {"type": "string"}},
                      "required": ["name"], "additionalProperties": False}},
     {"name": "server_down",

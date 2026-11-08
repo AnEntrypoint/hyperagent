@@ -60,7 +60,7 @@
 <h2>01 — Scope</h2>
 <p>This project opens as a Claude Code session with the <code>hyperagent</code> MCP server attached.
 The server starts peer Claude Code sessions in the projects beside this one, prompts them, and
-returns their turns. Peers are unmodified interactive harnesses running in tmux through
+returns their turns. Peers are unmodified interactive harnesses running in ccbridge PTYs through
 <a href="https://github.com/AnEntrypoint/airc">airc</a>. They are <strong>not</strong> Claude sessions in this
 session tree, so <code>ListAgents</code> and <code>SendMessage</code> never reach them.</p>
 
@@ -68,13 +68,13 @@ session tree, so <code>ListAgents</code> and <code>SendMessage</code> never reac
 <table>
   <tr><th>Direction</th><th>Mechanism</th><th>Result</th></tr>
   <tr><td>Tool call</td><td>Claude Code calls <code>mcp__hyperagent__*</code>; the stdio server runs <code>bin/orch</code></td><td>one orchestration layer for MCP and CLI</td></tr>
-  <tr><td>Prompt in</td><td>airc pastes text into the peer's tmux pane with bracketed paste and Enter</td><td>the peer treats it as a human typing</td></tr>
+  <tr><td>Prompt in</td><td>ccbridge writes the text into the peer's PTY with bracketed paste and Enter</td><td>the peer treats it as a human typing</td></tr>
   <tr><td>Reply out</td><td>airc reads the harness's own transcript, never the TUI screen</td><td>clean text with no spinner or ANSI damage</td></tr>
   <tr><td>Turn end</td><td>Claude's <code>system/turn_duration</code> record</td><td>one <code>e:</code> frame per turn</td></tr>
-  <tr><td>Status</td><td><code>GET /sessions</code> plus tmux pane tail</td><td><code>alive</code>, <code>busy</code>, <code>cwd</code>, last pane lines</td></tr>
+  <tr><td>Status</td><td><code>GET /sessions</code> with the pane tail</td><td><code>alive</code>, <code>busy</code>, <code>cwd</code>, last pane lines</td></tr>
 </table>
 <p>A session is created the first time its name connects and survives tool calls, so a peer keeps
-its context across dispatch cycles. The tmux session is <code>ccb-NAME</code>.</p>
+its context across dispatch cycles.</p>
 
 <h2>03 — MCP tools</h2>
 <table>
@@ -130,8 +130,7 @@ preferred over the newest local one.</p>
 <p>With no <code>project</code>, the last project touched is used; that ledger lives in
 <code>.orch/state.json</code> and remembers each project's cwd and harness. With no
 <code>session_id</code>, the project's newest session in that harness is resumed.
-<code>list_project_sessions</code> shows the candidates per harness. Resume retires a live hub or
-leftover <code>ccb-NAME</code> tmux session, restarts the airc server when needed, and launches the
+<code>list_project_sessions</code> shows the candidates per harness. Resume retires a live hub, restarts the airc server when needed, and launches the
 harness's resume form. The resumed store is read from its end, so a turn returns only the new
 reply, not the saved history. <code>start_projects</code>, <code>instruct</code> and
 <code>instruct_many</code> accept <code>resume: true</code> and <code>harness</code> to do this
@@ -191,7 +190,7 @@ The server is registered by <code>.mcp.json</code> and enabled by <code>.claude/
 (<code>enabledMcpjsonServers</code>). Then run <code>/orchestrate</code>. The CLI equivalent is
 <code>bin/orch</code>: <code>projects</code>, <code>start NAME</code>, <code>prompt</code>,
 <code>fanout</code>, <code>status</code>, <code>pane</code>, <code>stop</code>, <code>down</code>.</p>
-<p>The airc checkout defaults to <code>../airc</code> (<code>AIRC_DIR</code>), projects come from the parent
+<p>The airc checkout defaults to <code>../airc</code> (<code>AIRC_DIR</code>) for harness mods, the ccbridge binary comes from <code>CCBRIDGE_BIN</code> or <code>bin/ccbridge-latest</code>, projects come from the parent
 folder (<code>ORCH_PARENT</code>), and the server listens on <code>127.0.0.1:8787</code>
 (<code>ORCH_HOST</code> / <code>ORCH_PORT</code>).</p>
 

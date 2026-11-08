@@ -131,42 +131,21 @@ async def pane_idle_ready(harness: str, name: str) -> bool:
 
 async def capture(name: str) -> str:
     try:
-        proc = await asyncio.create_subprocess_exec(
-            "tmux", "capture-pane", "-t", f"ccb-{name}", "-p",
-            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL)
-        out, _ = await proc.communicate()
-        return out.decode("utf-8", "replace")
+        info = (await fetch_sessions()).get(name) or {}
     except Exception:
         return ""
+    return "\n".join(info.get("pane_tail") or [])
 
 
-async def press(name: str, *keys: str) -> None:
-    try:
-        proc = await asyncio.create_subprocess_exec(
-            "tmux", "send-keys", "-t", f"ccb-{name}", *keys,
-            stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL)
-        await proc.wait()
-    except Exception:
-        pass
-
-
-async def answer_trust(name: str, timeout: float = 8.0) -> bool:
+async def trust_dialog_open(name: str, timeout: float = 4.0) -> bool:
     started = time.time()
-    answered = False
-    while time.time() - started < timeout:
+    while True:
         pane = await capture(name)
-        dialog = TRUST_TEXT in pane and TRUST_HINT in pane
-        if dialog and not answered:
-            await press(name, "Down", "Enter")
-            answered = True
-            await asyncio.sleep(1.5)
-            continue
-        if answered and not dialog:
+        if TRUST_TEXT in pane and TRUST_HINT in pane:
             return True
-        if not answered and pane.strip() and time.time() - started > 3.0:
+        if time.time() - started >= timeout:
             return False
         await asyncio.sleep(0.3)
-    return answered
 
 
 async def hub_exists(name: str) -> bool:
@@ -187,10 +166,20 @@ async def server_alive(timeout: float = 1.0) -> bool:
         return False
 
 
+def ccbridge_binary() -> str:
+    if os.environ.get("CCBRIDGE_BIN"):
+        return os.environ["CCBRIDGE_BIN"]
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "bin" / "ccbridge-latest")],
+        capture_output=True, text=True)
+    lines = result.stdout.strip().splitlines()
+    if result.returncode or not lines:
+        raise SystemExit(f"cannot install ccbridge: {result.stderr.strip()}")
+    return lines[-1]
+
+
 def spawn_server() -> subprocess.Popen:
-    server = airc_root() / "server.py"
-    if not server.is_file():
-        raise SystemExit(f"airc server not found at {server}; set AIRC_DIR")
+    binary = ccbridge_binary()
     ORCH_DIR.mkdir(parents=True, exist_ok=True)
     log = open(ORCH_DIR / "server.log", "ab")
     env = dict(os.environ)
@@ -204,8 +193,8 @@ def spawn_server() -> subprocess.Popen:
     else:
         env.pop("AIRC_CLAUDE_MODEL", None)
     proc = subprocess.Popen(
-        [sys.executable, str(server), "--host", HOST, "--port", str(PORT)],
-        cwd=str(airc_root()), stdout=log, stderr=log, start_new_session=True, env=env)
+        [binary, "serve", "--host", HOST, "--port", str(PORT)],
+        cwd=str(ROOT), stdout=log, stderr=log, start_new_session=True, env=env)
     (ORCH_DIR / "server.pid").write_text(str(proc.pid))
     return proc
 
@@ -477,15 +466,8 @@ def resume_target(project: str | None = None, session_id: str | None = None,
     return {**target, "session": found[-1]}
 
 
-async def tmux_alive(name: str) -> bool:
-    proc = await asyncio.create_subprocess_exec(
-        "tmux", "has-session", "-t", f"ccb-{name}",
-        stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL)
-    return await proc.wait() == 0
-
-
 async def peer_present(name: str) -> bool:
-    return await hub_exists(name) or await tmux_alive(name)
+    return await hub_exists(name)
 
 
 async def retire(name: str) -> dict:
@@ -495,11 +477,7 @@ async def retire(name: str) -> dict:
             async with http.delete(base_url() + f"/sessions/{name}",
                                    timeout=aiohttp.ClientTimeout(total=30)) as response:
                 stopped_hub = response.status == 200
-    proc = await asyncio.create_subprocess_exec(
-        "tmux", "kill-session", "-t", f"ccb-{name}",
-        stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL)
-    killed_tmux = await proc.wait() == 0
-    return {"hub": stopped_hub, "tmux": killed_tmux}
+    return {"hub": stopped_hub}
 
 
 def is_project(path: Path) -> bool:
@@ -614,8 +592,9 @@ async def run_job(job: dict, timeout: float, idle_exit: float, lock_wait: float,
                     ws_url(name, job["cwd"], harness, job.get("resume"),
                            bool(job.get("continue")), bool(job.get("fork"))),
                     heartbeat=30, max_msg_size=16 << 20) as ws:
-                if trust and not existing and await answer_trust(name):
-                    print(f"[orch] {name}: accepted folder trust", file=sys.stderr)
+                if trust and not existing and await trust_dialog_open(name):
+                    print(f"[orch] {name}: folder-trust dialog is open; a person must confirm it in the pane",
+                          file=sys.stderr)
                 await ws.send_str(job["prompt"])
                 sent = time.time()
                 retries = 0
@@ -773,7 +752,7 @@ async def start_one(job: dict, settle: float, trust: bool,
                            bool(job.get("continue")), bool(job.get("fork"))),
                     heartbeat=30) as ws:
                 if trust and not existing:
-                    trusted = await answer_trust(job["name"])
+                    trusted = not await trust_dialog_open(job["name"])
                 await asyncio.sleep(settle)
     result = {**job, "trusted": trusted, "restarted": restarted}
     if job.get("fork") or job.get("record_latest"):
@@ -826,7 +805,7 @@ async def cmd_start(args) -> int:
         state = "started" if live and live.get("alive") else "not alive"
         if not live or not live.get("alive"):
             failed += 1
-        suffix = " trust=accepted" if job.get("trusted") else ""
+        suffix = " trust=clear" if job.get("trusted") else ""
         print(f"{job['name']}: {state} harness={job['harness']} "
               f"cwd={job.get('cwd') or ROOT}{suffix}")
     print(f"{len(results) - failed}/{len(results)} peers alive")
@@ -1052,27 +1031,19 @@ async def cmd_fanout(args) -> int:
 async def cmd_stop(args) -> int:
     name = check_name(args.name)
     if not await server_alive():
-        proc = await asyncio.create_subprocess_exec(
-            "tmux", "kill-session", "-t", f"ccb-{name}",
-            stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL)
-        code = await proc.wait()
-        print(f"server down; tmux kill-session ccb-{name} exit={code}")
-        return 0 if code == 0 else 3
+        print(f"server down; {name} has no hub")
+        return 0
     async with aiohttp.ClientSession() as http:
         async with http.delete(base_url() + f"/sessions/{name}",
                                timeout=aiohttp.ClientTimeout(total=30)) as response:
             if response.status == 200:
                 print(f"stopped {name}")
                 return 0
-            if response.status != 404:
-                print(f"stop {name} failed: HTTP {response.status}")
-                return 3
-    proc = await asyncio.create_subprocess_exec(
-        "tmux", "kill-session", "-t", f"ccb-{name}",
-        stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL)
-    code = await proc.wait()
-    print(f"no hub {name}; tmux kill-session ccb-{name} exit={code}")
-    return 0 if code == 0 else 3
+            if response.status == 404:
+                print(f"no hub {name}")
+                return 0
+            print(f"stop {name} failed: HTTP {response.status}")
+            return 3
 
 
 async def cmd_pane(args) -> int:

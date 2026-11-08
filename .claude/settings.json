@@ -19,8 +19,6 @@
       "Bash(bin/watch:*)",
       "Bash(./bin/watch:*)",
       "Bash(python3 bin/orch:*)",
-      "Bash(tmux capture-pane:*)",
-      "Bash(tmux ls:*)",
       "mcp__hyperagent__list_projects",
       "mcp__hyperagent__start_projects",
       "mcp__hyperagent__instruct",

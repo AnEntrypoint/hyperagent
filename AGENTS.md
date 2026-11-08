@@ -55,8 +55,8 @@ path; `peer_status` annotates live peers with their latest journal.
 
 ## Watcher and MCP events
 
-`bin/watch` starts a local monitor. It polls `GET /sessions`, captures each peer's
-tmux pane, and hashes the pane text. An event fires as the turn finishes, not after
+`bin/watch` starts a local monitor. It polls `GET /sessions`, reads each peer's
+`pane_tail`, and hashes the pane text. An event fires as the turn finishes, not after
 a quiet window: a new `result` record in the session journal is the primary trigger,
 and a pane that goes from busy to not busy is the second. Both report `idle_s: 0`
 with `trigger: "result"` or `"pane"`. The `--idle` seconds (default 20) are only the
@@ -95,7 +95,7 @@ stdout, and only the launcher and diagnostics write to stderr.
 ## Peers are airc sessions
 
 `bin/orch` talks to the airc WebSocket server at `ws://127.0.0.1:8787/ws`. Each peer
-is an airc hub named `NAME` whose tmux session is `ccb-NAME` and whose clean output is
+is a ccbridge hub named `NAME` whose PTY is owned by the ccbridge server and whose clean output is
 the harness's own transcript. Prompts are pasted into the terminal by airc; replies are
 read from the transcript, never scraped from the TUI. A hub is created on first connect
 and survives client disconnects, so one peer keeps its conversation across cycles.
@@ -114,12 +114,11 @@ project when it is a git worktree or contains a project marker: `AGENTS.md`,
 `pom.xml`, `build.gradle`, `meson.build`, `deno.json`, a solution/project file, or
 `src/`. Peer names are sanitized directory names; a collision gets a numeric suffix.
 
-On first creation Claude Code may show its folder-trust dialog, whose default choice
-exits. The MCP server and `bin/orch` answer it by sending `Down` then `Enter`
-(selecting "Yes, I trust this folder") and waiting for the dialog to clear.
-`trust: false` / `--no-trust` disables that and leaves the decision to a person. A
-listed hub whose tmux session died counts as absent: the server recreates it and trust
-is checked again.
+On first creation Claude Code may show its folder-trust dialog. ccbridge has no raw
+keypress channel, so the MCP server and `bin/orch` cannot select its default answer. They
+detect the dialog in the pane (`trust_dialog_open`) and report it; a person confirms it in
+the pane. A hub whose PTY died counts as absent: the server recreates it and trust is
+checked again.
 
 ## Project resume
 
@@ -147,8 +146,7 @@ transcript dirs, codex across the thread index), and the channel binds the trans
 that lookup returns. An unqualified resume prefers the ledger's remembered session id
 over the newest local transcript, so a globally resumed session stays the project's
 last session. Resume retires any live
-hub and leftover `ccb-NAME` tmux
-session first, restarts the airc server when it is down, then asks airc for a new hub
+hub first, restarts the airc server when it is down, then asks airc for a new hub
 with `resume=<session-id>` (or `continue=1`), and airc launches the harness's resume
 form. The resumed channel binds to that exact session and starts at the end of its
 store, so the reply contains only the new turn. Freebuff's JSON store is seeded with
@@ -200,7 +198,8 @@ Claude transcript channel binds to the newest session file in a project director
 
 | variable | default | meaning |
 |---|---|---|
-| `AIRC_DIR` | `../airc` | checkout whose `server.py` and `mods/` are used |
+| `AIRC_DIR` | `../airc` | checkout whose `mods/` (harness names, transcript readers) are used |
+| `CCBRIDGE_BIN` | unset | ccbridge binary to serve; unset runs `bin/ccbridge-latest`, which installs the newest GitHub release |
 | `ORCH_PARENT` | parent of this project | directory whose projects become peers |
 | `ORCH_PORT` | `8787` | airc WebSocket server port |
 | `ORCH_HOST` | `127.0.0.1` | airc WebSocket server host |
@@ -217,7 +216,7 @@ Claude transcript channel binds to the newest session file in a project director
 
 - Claude turn completion is the `system`/`turn_duration` transcript record.
 - `GET /sessions` reports `alive`, `busy`, `cwd`, `harness`, `clients` and `pane_tail`.
-- `DELETE /sessions/{name}` stops one hub and its tmux session.
+- `DELETE /sessions/{name}` stops one hub and its PTY.
 - `server_down` / `bin/orch down` ends every peer.
 
 ## Log GUI
