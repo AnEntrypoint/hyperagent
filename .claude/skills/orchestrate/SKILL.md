@@ -1,6 +1,6 @@
 ---
 name: orchestrate
-description: "Dispatch loop for the hyperagent session. Peer agents are Claude Code (or codex/freebuff) sessions started and prompted directly through airc by the hyperagent MCP tools. Peers are the projects beside this one. Use when coordinating project agents: collect their remaining work, decide, assign, and keep every agent working."
+description: "Dispatch loop for the hyperagent session. Peer agents are sessions started and prompted directly through tools. Peers are the projects beside this one. Use when coordinating project agents: collect their remaining work, decide, assign, and keep every agent working."
 ---
 
 # Orchestrate dispatch (airc MCP)
@@ -47,14 +47,6 @@ orchestrator's channel.
 
 ## Projects
 
-Every immediate subdirectory of the parent path is a candidate, except this folder and
-hidden directories. A directory counts as a project when it is a git worktree or
-carries a project marker: `AGENTS.md`, `CLAUDE.md`, `package.json`,
-`pyproject.toml`, `setup.py`, `Cargo.toml`, `go.mod`, `CMakeLists.txt`, `Makefile`,
-`requirements.txt`, `Gemfile`, `composer.json`, `pom.xml`, `build.gradle`,
-`meson.build`, `deno.json`, a solution/project file, or `src/`. Pass `all: true` to
-`list_projects` to include unmarked directories.
-
 Each peer's name is its project directory name. `start_projects` starts only the
 names you give; nothing starts implicitly. Peers stay alive between cycles, so start a
 name once.
@@ -80,8 +72,7 @@ decision to a person.
 
 ## Peer collaboration
 
-Peers cannot message each other over the bus. When two or more peers can solve an item
-faster or better together, give them a shared contract instead:
+When two or more peers can solve an item faster or better together, give them a shared contract:
 - Name the shared goal, the owner of the result, and the done condition.
 - Send each participant the same brief: who else is involved, what each one owns, and
   the file or directory where results go.
@@ -90,6 +81,7 @@ faster or better together, give them a shared contract instead:
 - The result owner reports the outcome in its `REPORT:` line.
 - Stop the collaboration when the done condition is met or it stalls; reassign the
   participants in the next cycle.
+- If you see messaging tools that list peers, tell them to message each other to collaborate
 
 ## Decision rules
 
@@ -106,18 +98,11 @@ faster or better together, give them a shared contract instead:
 ## Standing instructions for peers
 
 Include these in every assignment prompt:
-- Work only in the cwd you were started in. Commit as lanmower in the shared checkout,
-  no clones or worktrees.
-- Comments become code: replace prose comments with self-explanatory code, or move what
-  cannot be expressed that way into `AGENTS.md`.
-- Verify by running the thing. Quote the witness output.
+- When you address peers use the following format: 'we want to x' describing what you want it to do, no further instruction 
+- Work only in the cwd you were started in. Commit as the gh user in the shared checkout, dont attribute anybody else.
+- Verify by running the thing. Make any architectural idealizations that seem reasonable along the way. Quote the witness output. Maximum effort. Fix any issues that arise.
 - Stop dev servers by their own PID; never use `pkill` or `killall`.
-- Do not message other agents. Return findings in your report.
-- Any complaint about gm (slow path, large output, extra steps, wrong behaviour) goes
-  in your report to the orchestrator, which relays it to gm. Do not work around gm
-  silently.
-- End every turn with exactly one line:
-  `REPORT: finished|open|blocked — <one line> — witness: <output evidence>`.
+- End every turn with: `REPORT: finished|open|blocked — <your rhetoric> — witness: <output evidence>`.
 
 ## Resume
 
