@@ -111,10 +111,11 @@ class Tail:
     def last_records(self, count):
         if self.complete_end == 0:
             return []
-        return [
-            self.make_record(self.source, position, line)
-            for position, line in read_last_lines(self.path, self.complete_end, count)
-        ]
+        try:
+            lines = read_last_lines(self.path, self.complete_end, count)
+        except FileNotFoundError:
+            return []
+        return [self.make_record(self.source, position, line) for position, line in lines]
 
 
 def journal_record(source, position, line):
@@ -191,6 +192,8 @@ class Journal:
                 found[path] = f"{path.parent.name}/{path.stem}"
         found[SERVER_LOG] = "airc/server"
         with self.lock:
+            for path in [known for known in self.tails if known not in found]:
+                del self.tails[path]
             for path, source in found.items():
                 if path in self.tails:
                     continue
