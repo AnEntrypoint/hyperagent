@@ -92,8 +92,15 @@ When two or more peers can solve an item faster or better together, give them a 
 - Every blocked item is driven towards unblocking if possible.
 - Always decide to drive deeper progress. Ignore effort; there is no budget on labor.
   If progress can be made, choose it.
+- When the owner's question has several options, pick the one that makes the most
+  progress, say which one and why in the reply, and dispatch it. Do not hand the
+  choice back when the choice is reversible.
 - Read-only verification: decide and proceed.
 - Small commits, pushed as each item is verified.
+- Every change in the hyperagent repo is committed and pushed to origin/main before
+  the cycle ends. At the end of each cycle, check `git status` and
+  `git log origin/main..HEAD` in /workspace/hyperagent, and push anything outstanding.
+  Untracked files that are not part of the orchestrator's work are left alone.
 
 ## Standing instructions for peers
 
