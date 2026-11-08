@@ -20,6 +20,7 @@
 #include "journal/records.hpp"
 #include "orch/ccbridge.hpp"
 #include "orch/config.hpp"
+#include "orch/help.hpp"
 #include "orch/orch.hpp"
 #include "orch/projects.hpp"
 
@@ -580,6 +581,10 @@ void add_command(CLI::App& app)
                                   *as_json);
             }));
         });
+    }
+
+    for (auto* command : orch->get_subcommands([](CLI::App*) { return true; })) {
+        command->formatter(help::make_formatter());
     }
 }
 
