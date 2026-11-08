@@ -1,0 +1,83 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import os
+import platform
+import subprocess
+import sys
+import tarfile
+import zipfile
+from pathlib import Path
+
+REPO = "AnEntrypoint/airc"
+ROOT = Path(__file__).resolve().parent.parent
+INSTALL_ROOT = Path(os.environ.get("CCBRIDGE_HOME", ROOT / ".orch" / "ccbridge"))
+TARGETS = {
+    ("Linux", "x86_64"): "linux-x64",
+    ("Linux", "aarch64"): "linux-arm64",
+    ("Darwin", "arm64"): "macos-arm64",
+    ("Darwin", "x86_64"): "macos-x64",
+    ("Windows", "AMD64"): "windows-x64",
+    ("Windows", "ARM64"): "windows-arm64",
+}
+
+
+def target() -> str:
+    key = (platform.system(), platform.machine())
+    if key not in TARGETS:
+        raise SystemExit(f"no ccbridge release target for {key[0]} {key[1]}")
+    return TARGETS[key]
+
+
+def gh(*args: str) -> str:
+    result = subprocess.run(["gh", *args], capture_output=True, text=True)
+    if result.returncode:
+        raise SystemExit(f"gh {' '.join(args[:2])} failed: {result.stderr.strip()}")
+    return result.stdout.strip()
+
+
+def latest_tag() -> str:
+    return gh("release", "view", "--repo", REPO, "--json", "tagName", "--jq", ".tagName")
+
+
+def fetch(tag: str, name: str, into: Path) -> Path:
+    into.mkdir(parents=True, exist_ok=True)
+    gh("release", "download", tag, "--repo", REPO, "--pattern", name, "--dir", str(into), "--clobber")
+    return into / name
+
+
+def unpack(archive: Path, into: Path) -> None:
+    if archive.name.endswith(".zip"):
+        with zipfile.ZipFile(archive) as bundle:
+            bundle.extractall(into)
+    else:
+        with tarfile.open(archive, "r:gz") as bundle:
+            bundle.extractall(into, filter="data")
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Install the latest ccbridge release for this machine")
+    parser.add_argument("--check", action="store_true", help="print the latest tag and exit")
+    arguments = parser.parse_args()
+
+    tag = latest_tag()
+    if arguments.check:
+        print(tag)
+        return 0
+
+    stem = f"ccbridge-{target()}"
+    suffix = ".zip" if platform.system() == "Windows" else ".tar.gz"
+    destination = INSTALL_ROOT / tag
+    if not (destination / stem / "bin").is_dir():
+        archive = fetch(tag, stem + suffix, INSTALL_ROOT / "downloads")
+        unpack(archive, destination)
+    binary = destination / stem / "bin" / ("ccbridge.exe" if platform.system() == "Windows" else "ccbridge")
+    if not binary.is_file():
+        raise SystemExit(f"release {tag} has no binary at {binary}")
+    print(binary)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
