@@ -2,8 +2,8 @@
 
 #include <sys/stat.h>
 
+#include <cstddef>
 #include <fstream>
-#include <iterator>
 #include <system_error>
 
 namespace hyperagent::core::files {
@@ -14,7 +14,13 @@ std::optional<std::string> read_bytes(const std::filesystem::path& path)
     if (!stream) {
         return std::nullopt;
     }
-    return std::string(std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>());
+    stream.seekg(0, std::ios::end);
+    const auto size = static_cast<std::size_t>(stream.tellg());
+    stream.seekg(0, std::ios::beg);
+    std::string bytes(size, '\0');
+    stream.read(bytes.data(), static_cast<std::streamsize>(size));
+    bytes.resize(static_cast<std::size_t>(stream.gcount()));
+    return bytes;
 }
 
 std::optional<std::string> read_tail_bytes(const std::filesystem::path& path, std::uintmax_t max_bytes)
@@ -27,7 +33,10 @@ std::optional<std::string> read_tail_bytes(const std::filesystem::path& path, st
     const auto size = static_cast<std::uintmax_t>(stream.tellg());
     const std::uintmax_t start = size > max_bytes ? size - max_bytes : 0;
     stream.seekg(static_cast<std::streamoff>(start), std::ios::beg);
-    return std::string(std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>());
+    std::string bytes(static_cast<std::size_t>(size - start), '\0');
+    stream.read(bytes.data(), static_cast<std::streamsize>(bytes.size()));
+    bytes.resize(static_cast<std::size_t>(stream.gcount()));
+    return bytes;
 }
 
 void ensure_parent_directory(const std::filesystem::path& path)
