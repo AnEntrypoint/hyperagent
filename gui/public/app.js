@@ -10,6 +10,7 @@ const TRANSCRIPT_KINDS = new Set(["instruct", "text", "tool", "result"]);
 const BLOCK_TYPES = { instruct: "prompt", text: "reply", result: "end" };
 const VIEWS = ["overview", "transcript", "records"];
 const VIEW_LABELS = { overview: "Overview", transcript: "Transcript", records: "Records" };
+const VIEW_KEYS = { o: "overview", t: "transcript", r: "records" };
 const KIND_LABELS = {
   instruct: "prompt",
   you: "echo",
@@ -37,11 +38,15 @@ const ACTIVE_SECONDS = 60;
 const HOUR_SECONDS = 3600;
 const BIN_SECONDS = 60;
 const BINS = 30;
+const DIGEST_TICK_SECONDS = 5;
 const FEED_SIZE = 40;
 const CARD_CHARS = 280;
 const SUMMARY_CHARS = 240;
 const FLASH_MS = 1500;
+const HEARTBEAT_TICKS = 10;
 const ERROR_PATTERN = /Traceback|Error|error/;
+const FULL_STAMP = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "medium" });
+const DAY_STAMP = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" });
 
 const state = {
   records: [],
@@ -64,10 +69,22 @@ const state = {
   flash: "",
   eventsPerSecond: 0,
   arrivals: 0,
+  ticks: 0,
   unsorted: false,
+  version: 0,
+  drawer: false,
 };
 
+const memo = new Map();
 let frame = 0;
+
+function remember(name, key, compute) {
+  const hit = memo.get(name);
+  if (hit && hit.key === key) return hit.value;
+  const value = compute();
+  memo.set(name, { key, value });
+  return value;
+}
 
 function scheduleRender() {
   if (!frame) {
@@ -85,7 +102,7 @@ function stamp(epoch) {
 }
 
 function fullStamp(epoch) {
-  return new Date(epoch * 1000).toLocaleString();
+  return FULL_STAMP.format(new Date(epoch * 1000));
 }
 
 function ago(seconds) {
@@ -140,7 +157,8 @@ function passes(record, query) {
 
 function matching() {
   const query = state.query.trim().toLowerCase();
-  return state.records.filter((record) => passes(record, query));
+  const key = [state.version, query, state.agent, state.view, [...state.kinds].join(",")].join("|");
+  return remember("matching", key, () => state.records.filter((record) => passes(record, query)));
 }
 
 function noteAgent(record) {
@@ -195,6 +213,7 @@ function flushSorted() {
     state.unsorted = false;
   }
   trim(state.records);
+  state.version += 1;
 }
 
 function setPaused(paused) {
@@ -220,6 +239,11 @@ function toggleWrap() {
 
 function toggleHelp() {
   state.help = !state.help;
+  scheduleRender();
+}
+
+function toggleDrawer() {
+  state.drawer = !state.drawer;
   scheduleRender();
 }
 
@@ -287,6 +311,7 @@ function changeFilter(mutate) {
 
 function setView(view) {
   state.view = view;
+  state.drawer = false;
   if (view === "overview") state.agent = "";
   state.limit = PAGE_SIZE;
   writeHash();
@@ -296,6 +321,7 @@ function setView(view) {
 function drill(name) {
   state.agent = name;
   state.view = "transcript";
+  state.drawer = false;
   state.limit = PAGE_SIZE;
   writeHash();
   scheduleRender();
@@ -357,9 +383,8 @@ function detail(record) {
     </div>`;
 }
 
-function row(record) {
+function row(record, query) {
   const open = state.selected === record.id;
-  const query = state.query.trim().toLowerCase();
   return html`
     <div key=${record.id} class=${`row kind-${record.kind}${open ? " open" : ""}`} onclick=${() => select(record.id)}>
       <time title=${fullStamp(record.epoch)}>${stamp(record.epoch)}</time>
@@ -389,8 +414,7 @@ function blocks(records) {
   return items;
 }
 
-function block(item, tagged) {
-  const query = state.query.trim().toLowerCase();
+function block(item, tagged, query) {
   if (item.type === "tools") {
     const names = [...item.names].map(([name, count]) => (count > 1 ? `${name} ×${count}` : name)).join(", ");
     return html`
@@ -425,10 +449,13 @@ function block(item, tagged) {
 function stream(matches, visible) {
   const hidden = matches.length - visible.length;
   const transcript = state.view === "transcript";
+  const query = state.query.trim().toLowerCase();
   let empty = "No records match the current filters.";
   if (state.records.length === 0) empty = "Waiting for journal records…";
   const classes = ["stream", state.wrap && !transcript ? "wrap" : "", transcript ? "transcript" : ""].filter(Boolean).join(" ");
-  const body = transcript ? blocks(visible).map((item) => block(item, !state.agent)) : visible.map(row);
+  const body = transcript
+    ? blocks(visible).map((item) => block(item, !state.agent, query))
+    : visible.map((record) => row(record, query));
   return html`
     <section class=${classes} onscroll=${onScroll}>
       ${hidden > 0 ? html`<button class="older" onclick=${() => { state.limit += PAGE_SIZE; scheduleRender(); }}>Show ${hidden} older</button>` : null}
@@ -436,60 +463,61 @@ function stream(matches, visible) {
     </section>`;
 }
 
-function digests(now) {
-  const map = new Map();
-  for (const record of state.records) {
-    let info = map.get(record.agent);
-    if (!info) {
-      info = {
-        name: record.agent,
-        session: record.session ?? "",
-        last: 0,
-        prompt: null,
-        reply: null,
-        result: null,
-        turns: 0,
-        tools: 0,
-        errors: 0,
-        hourTurns: 0,
-        hourTools: 0,
-        hourErrors: 0,
-        logErrors: 0,
-        bins: new Array(BINS).fill(0),
-      };
-      map.set(record.agent, info);
-    }
-    const age = now - record.epoch;
-    info.last = Math.max(info.last, record.epoch);
-    if (record.session) info.session = record.session;
-    if (record.kind === "log") {
-      if (age < HOUR_SECONDS && ERROR_PATTERN.test(record.text ?? "")) info.logErrors += 1;
-      continue;
-    }
-    if (!TRANSCRIPT_KINDS.has(record.kind)) continue;
-    if (record.kind === "instruct") info.prompt = record;
-    if (record.kind === "text") info.reply = record;
-    if (record.kind === "tool") info.tools += 1;
-    if (record.kind === "result") {
-      info.result = record;
-      info.turns += 1;
-      if (record.status !== "turn_end") info.errors += 1;
-    }
-    if (age < HOUR_SECONDS) {
-      if (record.kind === "tool") info.hourTools += 1;
-      if (record.kind === "result") {
-        info.hourTurns += 1;
-        if (record.status !== "turn_end") info.hourErrors += 1;
-      }
-    }
-    const bin = Math.floor(age / BIN_SECONDS);
-    if (bin >= 0 && bin < BINS) info.bins[BINS - 1 - bin] += 1;
+function digestFor(record, map, now) {
+  let info = map.get(record.agent);
+  if (!info) {
+    info = {
+      name: record.agent,
+      session: record.session ?? "",
+      last: 0,
+      prompt: null,
+      reply: null,
+      result: null,
+      turns: 0,
+      tools: 0,
+      errors: 0,
+      hourTurns: 0,
+      hourTools: 0,
+      hourErrors: 0,
+      logErrors: 0,
+      bins: new Array(BINS).fill(0),
+    };
+    map.set(record.agent, info);
   }
-  return map;
+  const age = now - record.epoch;
+  info.last = Math.max(info.last, record.epoch);
+  if (record.session) info.session = record.session;
+  if (record.kind === "log") {
+    if (age < HOUR_SECONDS && ERROR_PATTERN.test(record.text ?? "")) info.logErrors += 1;
+    return;
+  }
+  if (!TRANSCRIPT_KINDS.has(record.kind)) return;
+  if (record.kind === "instruct") info.prompt = record;
+  if (record.kind === "text") info.reply = record;
+  if (record.kind === "tool") info.tools += 1;
+  if (record.kind === "result") {
+    info.result = record;
+    info.turns += 1;
+    if (record.status !== "turn_end") info.errors += 1;
+  }
+  if (age < HOUR_SECONDS) {
+    if (record.kind === "tool") info.hourTools += 1;
+    if (record.kind === "result") {
+      info.hourTurns += 1;
+      if (record.status !== "turn_end") info.hourErrors += 1;
+    }
+  }
+  const bin = Math.floor(age / BIN_SECONDS);
+  if (bin >= 0 && bin < BINS) info.bins[BINS - 1 - bin] += 1;
 }
 
-function firstLine(text) {
-  return (text ?? "").slice(0, CARD_CHARS);
+function digests(now) {
+  const key = `${state.version}:${Math.floor(now / DIGEST_TICK_SECONDS)}`;
+  return remember("digests", key, () => {
+    const map = new Map();
+    for (const record of state.records) digestFor(record, map, now);
+    return map;
+  });
 }
 
 function card(info, now) {
@@ -504,8 +532,8 @@ function card(info, now) {
         <span class="name">${info.name}</span>
         <span class="seen">${ago(now - info.last)}</span>
       </header>
-      ${info.prompt ? html`<div class="line prompt"><span class="gutter">❯</span><span class="clip">${firstLine(info.prompt.text)}</span></div>` : null}
-      ${info.reply ? html`<div class="line reply"><span class="gutter">●</span><span class="clip">${firstLine(info.reply.text)}</span></div>` : null}
+      ${info.prompt ? html`<div class="line prompt"><span class="gutter">❯</span><span class="clip">${info.prompt.text.slice(0, CARD_CHARS)}</span></div>` : null}
+      ${info.reply ? html`<div class="line reply"><span class="gutter">●</span><span class="clip">${info.reply.text.slice(0, CARD_CHARS)}</span></div>` : null}
       <div class="spark">${bars}</div>
       <footer class="meta">
         <span>${info.turns} turns</span>
@@ -514,6 +542,17 @@ function card(info, now) {
         ${result ? html`<span class=${result.status === "turn_end" ? "ok" : "bad"}>${result.status ?? "?"} · ${result.duration_s ?? "?"}s</span>` : null}
       </footer>
     </article>`;
+}
+
+function feed() {
+  return remember("feed", state.version, () => {
+    const records = [];
+    for (let index = state.records.length - 1; index >= 0 && records.length < FEED_SIZE * 4; index -= 1) {
+      const record = state.records[index];
+      if (TRANSCRIPT_KINDS.has(record.kind) && record.agent !== SERVER) records.push(record);
+    }
+    return records.slice(0, FEED_SIZE).reverse();
+  });
 }
 
 function overview(now) {
@@ -527,7 +566,6 @@ function overview(now) {
   const tools = agents.reduce((sum, info) => sum + info.hourTools, 0);
   const failed = agents.reduce((sum, info) => sum + info.hourErrors, 0);
   const serverErrors = server?.logErrors ?? 0;
-  const feed = state.records.filter((record) => TRANSCRIPT_KINDS.has(record.kind) && record.agent !== SERVER).slice(-FEED_SIZE);
   return html`
     <section class="overview">
       <p class="bluf">
@@ -538,7 +576,7 @@ function overview(now) {
       </p>
       <div class="cards">${agents.map((info) => card(info, now))}</div>
       <h3>Latest</h3>
-      <div class="feed">${blocks(feed).map((item) => block(item, true))}</div>
+      <div class="feed">${blocks(feed()).map((item) => block(item, true, ""))}</div>
     </section>`;
 }
 
@@ -576,7 +614,7 @@ function sidebar(now) {
   const agents = [...state.agents.entries()].sort((left, right) => right[1].last - left[1].last);
   const overviewOn = state.view === "overview";
   return html`
-    <aside class="side">
+    <aside class=${`side${state.drawer ? " open" : ""}`}>
       <h2>Agents</h2>
       <button class=${`source all${overviewOn ? " on" : ""}`} onclick=${() => setView("overview")}>
         <span class="name">overview</span>
@@ -616,11 +654,12 @@ function toolbar() {
     </div>`;
 }
 
-function header(now, matchCount) {
+function header(matchCount) {
   const labels = { live: "live", connecting: "connecting", down: "reconnecting" };
   const shown = state.view === "overview" ? null : html`<span class="stat">${matchCount} shown</span>`;
   return html`
     <header>
+      <button class=${`btn menu${state.drawer ? " on" : ""}`} onclick=${toggleDrawer} aria-expanded=${state.drawer}>Agents</button>
       <div class="brand">hyperagent <span>logs</span></div>
       <span class=${`live ${state.live}`}>${labels[state.live]}</span>
       <span class="stat">${state.eventsPerSecond}/s</span>
@@ -642,7 +681,7 @@ function content(now, matches, visible) {
 function view(now, matches, visible) {
   return html`
     <div class="app">
-      ${header(now, matches.length)}
+      ${header(matches.length)}
       <div class="body">
         ${sidebar(now)}
         <main>
@@ -722,8 +761,8 @@ function onKey(event) {
     if (event.key === "Escape" || event.key === "?") toggleHelp();
     return;
   }
-  if (event.key in { o: 1, t: 1, r: 1 }) {
-    setView({ o: "overview", t: "transcript", r: "records" }[event.key]);
+  if (Object.hasOwn(VIEW_KEYS, event.key)) {
+    setView(VIEW_KEYS[event.key]);
   } else if (event.key === "/") {
     event.preventDefault();
     document.getElementById("query")?.focus();
@@ -749,9 +788,12 @@ function onKey(event) {
 }
 
 function tick() {
-  state.eventsPerSecond = state.arrivals;
+  const rate = state.arrivals;
   state.arrivals = 0;
-  scheduleRender();
+  state.ticks += 1;
+  const changed = rate !== state.eventsPerSecond;
+  state.eventsPerSecond = rate;
+  if (changed || state.view === "overview" || state.ticks % HEARTBEAT_TICKS === 0) scheduleRender();
 }
 
 readHash();
