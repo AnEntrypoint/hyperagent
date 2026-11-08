@@ -1,0 +1,4 @@
+{"ts":"2025-11-08T12:00:00.000Z","epoch":1762604400.0,"agent":"beta","harness":"codex","cwd":"/data/workspace/hyperagent/tests/fixtures/alpha","session":"s-2","kind":"instruct","text":"Other peer"}
+{"ts":"2025-11-08T12:00:01.000Z","epoch":1762604401.0,"agent":"beta","harness":"codex","cwd":"/data/workspace/hyperagent/tests/fixtures/alpha","session":"s-2","kind":"text","text":"beta says hi"}
+{"ts":"2025-11-08T12:00:02.000Z","epoch":1762604402.0,"agent":"beta","harness":"codex","cwd":"/data/workspace/hyperagent/tests/fixtures/alpha","session":"s-2","kind":"result","status":"done","duration_s":0.25}
+{"ts":"2025-11-08T12:00:03.000Z","epoch":1762604403.0,"agent":"beta","harness":"codex","cwd":"/data/workspace/hyperagent/tests/fixtures/alpha","session":"s-2","kind":"raw","text":"raw frame"}

@@ -1,0 +1,3 @@
+{"ts":"2025-11-08T13:00:00.000Z","epoch":1762607600.0,"agent":"alpha","harness":"claude","cwd":"/data/workspace/hyperagent/tests/fixtures/alpha","session":"peer-alpha","kind":"instruct","text":"fallback prompt"}
+{"ts":"2025-11-08T13:00:01.000Z","epoch":1762607601.0,"agent":"alpha","harness":"claude","cwd":"/data/workspace/hyperagent/tests/fixtures/alpha","session":"peer-alpha","kind":"tool","text":"Bash ls"}
+{"ts":"2025-11-08T13:00:02.000Z","epoch":1762607602.0,"agent":"alpha","harness":"claude","cwd":"/data/workspace/hyperagent/tests/fixtures/alpha","session":"peer-alpha","kind":"text","text":"tail text after tool"}

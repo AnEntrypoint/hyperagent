@@ -1,0 +1,11 @@
+{"ts":"2025-11-08T11:06:40.100Z","epoch":1762600000.1,"agent":"alpha","harness":"claude","cwd":"/data/workspace/hyperagent/tests/fixtures/alpha","session":"s-1","kind":"instruct","text":"Fix the parser"}
+{"ts":"2025-11-08T11:06:40.200Z","epoch":1762600000.2,"agent":"alpha","harness":"claude","cwd":"/data/workspace/hyperagent/tests/fixtures/alpha","session":"s-1","kind":"you","text":"Fix the parser"}
+{"ts":"2025-11-08T11:06:41.000Z","epoch":1762600001.0,"agent":"alpha","harness":"claude","cwd":"/data/workspace/hyperagent/tests/fixtures/alpha","session":"s-1","kind":"text","text":"Let me look. "}
+not json at all
+{"ts":"2025-11-08T11:06:42.000Z","epoch":1762600002.0,"agent":"alpha","harness":"claude","cwd":"/data/workspace/hyperagent/tests/fixtures/alpha","session":"s-1","kind":"tool","text":"Read src/parser.py"}
+{"ts":"2025-11-08T11:06:43.000Z","epoch":1762600003.0,"agent":"alpha","harness":"claude","cwd":"/data/workspace/hyperagent/tests/fixtures/alpha","session":"s-1","kind":"text","text":"Done: ✓ café\nline two   after separator\r\nlast"}
+{"ts":"2025-11-08T11:06:44.000Z","epoch":1762600004.5,"agent":"alpha","harness":"claude","cwd":"/data/workspace/hyperagent/tests/fixtures/alpha","session":"s-1","kind":"result","status":0,"duration_s":12.5,"acked":true}
+{"ts":"2025-11-08T11:06:45.000Z","epoch":1762600005.0,"agent":"alpha","harness":"claude","cwd":"/data/workspace/hyperagent/tests/fixtures/alpha","session":"s-1","kind":"text","text":""}
+{"ts":"2025-11-08T11:06:46.000Z","epoch":1762600006.0,"agent":"alpha","harness":"claude","cwd":"/data/workspace/hyperagent/tests/fixtures/alpha","session":"s-1","kind":"text","text":"Final answer part one, "}
+{"ts":"2025-11-08T11:06:46.500Z","epoch":1762600006.5,"agent":"alpha","harness":"claude","cwd":"/data/workspace/hyperagent/tests/fixtures/alpha","session":"s-1","kind":"text","text":"part two {braces} \"quoted\" \\ tab\there"}
+{"ts":"2025-11-08T11:06:47.000Z","epoch":1762600007.0,"agent":"alpha","harness":"claude","cwd":"/data/workspace/hyperagent/tests/fixtures/alpha","session":"s-1","kind":"result","status":"ok","duration_s":3.0,"text":"result body"}

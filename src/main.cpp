@@ -1,5 +1,6 @@
 #include <CLI/CLI.hpp>
 
+#include "journal/command.hpp"
 #include "pending/pending.hpp"
 
 int main(int argc, char** argv)
@@ -7,6 +8,8 @@ int main(int argc, char** argv)
     CLI::App app{"hyperagent: server-side tools for the projects beside this repo", "hyperagent"};
     app.set_version_flag("--version", HYPERAGENT_VERSION);
     app.require_subcommand(1);
+
+    hyperagent::journal::add_command(app);
 
     hyperagent::pending::add_command(app, "orch", "orchestrator CLI (bin/orch)");
     hyperagent::pending::add_command(app, "mcp", "MCP server (mcp_server.py)");
