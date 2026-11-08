@@ -1,0 +1,6 @@
+id: "prd-mw7rr3vfd549"
+kind: "prd"
+title: "gm: relay of jayzee complaint (orchestrator, 2026-11-08)"
+body: "Reported by jayzee via the orchestrator, to be resolved by gm:\n1. run_code output is cut silently: a body's output was cut at 19,840 of 22,123 characters with a note to read the rest by page. The cut hid part of a spoint grep result and forced a narrower re-run. Return the full output, or cut only with an explicit marker the caller can act on."
+status: "open"
+createdAt: "2026-11-08T11:48:42.459Z"

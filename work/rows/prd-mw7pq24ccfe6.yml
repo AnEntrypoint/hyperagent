@@ -1,0 +1,6 @@
+id: "prd-mw7pq24ccfe6"
+kind: "prd"
+title: "gm: relay of oscraft complaints (orchestrator, 2026-11-08)"
+body: "Reported by oscraft via the orchestrator, to be resolved by gm:\n1. next_context re-lists events that were already delivered, with full bodies, so each step's output grows with the run.\n2. read_file truncates at about 3.3 KB per call, so reading a 90-line file takes several paged reads.\n3. job_status with waitMs returned empty output after about 30 s while the job was still running, so the peer had to poll.\nWitness source: oscraft turn 4a8d089bcafe, report REPORT: open, origin/main f632e713."
+status: "open"
+createdAt: "2026-11-08T10:51:54.300Z"

@@ -1,0 +1,6 @@
+id: "prd-mw7xg2xi684f"
+kind: "prd"
+title: "gm: relay of thebird complaint (orchestrator, 2026-11-08, cycle 7)"
+body: "Reported by thebird via the orchestrator, to be resolved by gm:\n1. next_context is a direct tool, not a verb inside run_code. Calling it from run_code fails with not a function, and that keeps raising a rules notice. Document this in run_code's description, or make the notice name the direct tool."
+status: "open"
+createdAt: "2026-11-08T14:28:05.718Z"
