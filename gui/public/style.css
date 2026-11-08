@@ -467,6 +467,7 @@ main {
 }
 
 .block .body {
+  display: block;
   position: relative;
   min-width: 0;
 }
@@ -770,7 +771,6 @@ main {
 }
 
 .stream.transcript {
-  max-width: 1200px;
   width: 100%;
   margin: 0 auto;
 }

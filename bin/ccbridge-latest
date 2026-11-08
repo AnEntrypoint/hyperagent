@@ -2,15 +2,19 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import platform
+import shutil
 import subprocess
 import sys
 import tarfile
+import urllib.request
 import zipfile
 from pathlib import Path
 
 REPO = "AnEntrypoint/airc"
+API = f"https://api.github.com/repos/{REPO}/releases/latest"
 ROOT = Path(__file__).resolve().parent.parent
 INSTALL_ROOT = Path(os.environ.get("CCBRIDGE_HOME", ROOT / ".orch" / "ccbridge"))
 TARGETS = {
@@ -37,13 +41,25 @@ def gh(*args: str) -> str:
     return result.stdout.strip()
 
 
+def http_get(url: str) -> bytes:
+    request = urllib.request.Request(url, headers={"User-Agent": "hyperagent-ccbridge-latest"})
+    with urllib.request.urlopen(request, timeout=60) as response:
+        return response.read()
+
+
 def latest_tag() -> str:
-    return gh("release", "view", "--repo", REPO, "--json", "tagName", "--jq", ".tagName")
+    if shutil.which("gh"):
+        return gh("release", "view", "--repo", REPO, "--json", "tagName", "--jq", ".tagName")
+    return json.loads(http_get(API))["tag_name"]
 
 
 def fetch(tag: str, name: str, into: Path) -> Path:
     into.mkdir(parents=True, exist_ok=True)
-    gh("release", "download", tag, "--repo", REPO, "--pattern", name, "--dir", str(into), "--clobber")
+    if shutil.which("gh"):
+        gh("release", "download", tag, "--repo", REPO, "--pattern", name, "--dir", str(into), "--clobber")
+    else:
+        url = f"https://github.com/{REPO}/releases/download/{tag}/{name}"
+        (into / name).write_bytes(http_get(url))
     return into / name
 
 

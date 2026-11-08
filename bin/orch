@@ -196,7 +196,13 @@ def spawn_server() -> subprocess.Popen:
         [binary, "serve", "--host", HOST, "--port", str(PORT)],
         cwd=str(ROOT), stdout=log, stderr=log, start_new_session=True, env=env)
     (ORCH_DIR / "server.pid").write_text(str(proc.pid))
+    (ORCH_DIR / "server.binary").write_text(binary)
     return proc
+
+
+def server_binary() -> str:
+    path = ORCH_DIR / "server.binary"
+    return path.read_text().strip() if path.is_file() else "unknown"
 
 
 def server_log() -> str:
@@ -711,7 +717,7 @@ def render_result(result: dict, tools: bool) -> str:
 async def cmd_up(args) -> int:
     await ensure_server()
     sessions = await fetch_sessions()
-    print(f"airc server up at {base_url()} ({len(sessions)} sessions)")
+    print(f"airc server up at {base_url()} ({len(sessions)} sessions) binary={server_binary()}")
     return 0
 
 

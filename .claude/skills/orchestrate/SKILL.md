@@ -113,6 +113,9 @@ Include these in every assignment prompt:
 - Verify by running the thing. Quote the witness output.
 - Stop dev servers by their own PID; never use `pkill` or `killall`.
 - Do not message other agents. Return findings in your report.
+- Any complaint about gm (slow path, large output, extra steps, wrong behaviour) goes
+  in your report to the orchestrator, which relays it to gm. Do not work around gm
+  silently.
 - End every turn with exactly one line:
   `REPORT: finished|open|blocked — <one line> — witness: <output evidence>`.
 
