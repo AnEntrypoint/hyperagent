@@ -11,6 +11,22 @@ namespace hyperagent::gui::wire {
 
 namespace {
 
+std::uint32_t byte_at(const std::string& raw, std::size_t offset)
+{
+    return static_cast<unsigned char>(raw[offset]);
+}
+
+bool is_encoded_surrogate(const std::string& raw, std::size_t offset)
+{
+    return offset + 2 < raw.size() && byte_at(raw, offset) == 0xED && byte_at(raw, offset + 1) >= 0xA0
+        && byte_at(raw, offset + 1) <= 0xBF && (byte_at(raw, offset + 2) & 0xC0) == 0x80;
+}
+
+std::uint32_t encoded_surrogate(const std::string& raw, std::size_t offset)
+{
+    return 0xD000 | ((byte_at(raw, offset + 1) & 0x3F) << 6) | (byte_at(raw, offset + 2) & 0x3F);
+}
+
 void append_unit(std::string& out, std::uint32_t unit)
 {
     char escaped[8];
@@ -33,6 +49,9 @@ std::string dumps_ascii(const Value& value)
         } else if (byte < 0x80) {
             append_unit(out, byte);
             ++offset;
+        } else if (is_encoded_surrogate(raw, offset)) {
+            append_unit(out, encoded_surrogate(raw, offset));
+            offset += 3;
         } else {
             const core::text::Decoded decoded = core::text::decode_at(raw, offset);
             if (decoded.code_point >= 0x10000) {

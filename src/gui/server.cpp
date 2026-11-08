@@ -11,6 +11,7 @@
 #include <boost/asio/write.hpp>
 #include <boost/beast/core.hpp>
 
+#include "core/clock.hpp"
 #include "core/files.hpp"
 #include "gui/constants.hpp"
 
@@ -23,13 +24,15 @@ using tcp = net::ip::tcp;
 
 namespace {
 
-constexpr std::string_view event_stream_header =
-    "HTTP/1.1 200 OK\r\n"
-    "Server: orch-gui\r\n"
-    "Content-Type: text/event-stream\r\n"
-    "Cache-Control: no-store\r\n"
-    "Connection: close\r\n"
-    "\r\n";
+std::string event_stream_header()
+{
+    return "HTTP/1.0 200 OK\r\n"
+           "Server: orch-gui\r\n"
+           "Date: " + core::clock::http_date() + "\r\n"
+           "Content-Type: text/event-stream\r\n"
+           "Cache-Control: no-store\r\n"
+           "\r\n";
+}
 
 std::string route_of(std::string_view target)
 {
@@ -179,13 +182,13 @@ void Server::serve_static(Socket& socket, const std::string& relative)
         send_error(socket, http::status::not_found, "Not Found", "Nothing matches the given URI");
         return;
     }
-    http::response<http::string_body> response{http::status::ok, 11};
+    http::response<http::string_body> response{http::status::ok, 10};
     response.set(http::field::server, "orch-gui");
+    response.set(http::field::date, core::clock::http_date());
     response.set(http::field::content_type, content_type_of(target.filename().string()));
-    response.set(http::field::cache_control, "no-store");
-    response.set(http::field::connection, "close");
     response.body() = *body;
     response.prepare_payload();
+    response.set(http::field::cache_control, "no-store");
     beast::error_code write_error;
     http::write(socket, response, write_error);
 }
@@ -198,7 +201,7 @@ bool Server::is_inside_public(const std::filesystem::path& target) const
 
 void Server::stream(Socket& socket, Hub& hub, const std::function<std::string()>& initial)
 {
-    if (!write_all(socket, event_stream_header)) {
+    if (!write_all(socket, event_stream_header())) {
         return;
     }
     const auto subscriber = hub.subscribe();
@@ -235,10 +238,12 @@ void Server::send_error(Socket& socket, http::status status, const std::string& 
                              + "</p>\n        <p>Message: " + message + ".</p>\n"
                              "        <p>Error code explanation: " + code + " - " + explanation
                              + ".</p>\n    </body>\n</html>\n";
-    http::response<http::string_body> response{status, 11};
+    http::response<http::string_body> response{status, 10};
+    response.reason(message);
     response.set(http::field::server, "orch-gui");
-    response.set(http::field::content_type, "text/html;charset=utf-8");
+    response.set(http::field::date, core::clock::http_date());
     response.set(http::field::connection, "close");
+    response.set(http::field::content_type, "text/html;charset=utf-8");
     response.body() = body;
     response.prepare_payload();
     beast::error_code ec;

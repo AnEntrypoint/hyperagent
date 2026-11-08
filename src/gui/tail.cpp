@@ -99,7 +99,7 @@ std::vector<Segment> read_last_lines(const std::filesystem::path& path, std::uin
 Value journal_record(const std::string& source, std::uintmax_t position, std::string_view line)
 {
     const std::string text = core::text::sanitize_utf8(line);
-    std::optional<Value> parsed = core::json::parse(text);
+    std::optional<Value> parsed = core::json::parse_python(text);
     Value record;
     if (parsed && parsed->is_object()) {
         record = std::move(*parsed);

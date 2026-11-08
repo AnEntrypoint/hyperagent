@@ -44,4 +44,19 @@ std::string iso_stamp(double epoch)
     return buffer;
 }
 
+std::string http_date()
+{
+    const std::time_t moment = std::time(nullptr);
+    std::tm utc{};
+    gmtime_r(&moment, &utc);
+    static constexpr const char* days[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+    static constexpr const char* months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                                             "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+    char buffer[64];
+    std::snprintf(buffer, sizeof buffer, "%s, %02d %s %04d %02d:%02d:%02d GMT",
+                  days[utc.tm_wday], utc.tm_mday, months[utc.tm_mon], utc.tm_year + 1900,
+                  utc.tm_hour, utc.tm_min, utc.tm_sec);
+    return buffer;
+}
+
 }

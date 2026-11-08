@@ -1,0 +1,57 @@
+[
+ {
+  "agent": "beta",
+  "epoch": 1700000000.5,
+  "kind": "you",
+  "session": "g-1",
+  "text": "Infinity first, before alpha",
+  "src": "-data-workspace-hyperagent-tests-fixtures-gui-beta/g-1",
+  "id": "-data-workspace-hyperagent-tests-fixtures-gui-beta/g-1@0"
+ },
+ {
+  "agent": "alpha",
+  "epoch": 1700000001.5,
+  "kind": "result",
+  "session": "g-1",
+  "nan": NaN,
+  "pos": Infinity,
+  "neg": -Infinity,
+  "text": "NaN, Infinity and -Infinity inside strings stay text",
+  "src": "-data-workspace-hyperagent-tests-fixtures-gui-alpha/g-1",
+  "id": "-data-workspace-hyperagent-tests-fixtures-gui-alpha/g-1@0"
+ },
+ {
+  "agent": "alpha",
+  "epoch": 1700000002.25,
+  "kind": "text",
+  "session": "g-1",
+  "text": "lone \ud83d and \udc00 kept, pair \ud83d\ude00 joined",
+  "src": "-data-workspace-hyperagent-tests-fixtures-gui-alpha/g-1",
+  "id": "-data-workspace-hyperagent-tests-fixtures-gui-alpha/g-1@174"
+ },
+ {
+  "agent": "alpha",
+  "epoch": 1700000003.125,
+  "kind": "tool",
+  "session": "g-1",
+  "values": [
+   NaN,
+   -Infinity,
+   Infinity,
+   -0.0,
+   2.5e-05
+  ],
+  "escaped": "quote \" and backslash \\ then \ud800 tail",
+  "src": "-data-workspace-hyperagent-tests-fixtures-gui-alpha/g-1",
+  "id": "-data-workspace-hyperagent-tests-fixtures-gui-alpha/g-1@299"
+ },
+ {
+  "agent": "alpha",
+  "epoch": 1700000004,
+  "kind": "text",
+  "session": "g-1",
+  "key\ud800": "lone key",
+  "src": "-data-workspace-hyperagent-tests-fixtures-gui-alpha/g-1",
+  "id": "-data-workspace-hyperagent-tests-fixtures-gui-alpha/g-1@468"
+ }
+]

@@ -5,7 +5,9 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <functional>
+#include <limits>
 #include <utility>
 #include <vector>
 
@@ -261,10 +263,242 @@ std::string python_dumps(const Value& value, PythonStyle style)
     return out;
 }
 
+namespace {
+
+constexpr std::string_view decoded_marker{"\0\1", 2};
+constexpr std::string_view escaped_marker{"\\u0000\\u0001"};
+
+bool is_hex_digit(char symbol)
+{
+    return (symbol >= '0' && symbol <= '9') || (symbol >= 'a' && symbol <= 'f') || (symbol >= 'A' && symbol <= 'F');
+}
+
+bool is_hex4(std::string_view text)
+{
+    return text.size() == 4 && std::all_of(text.begin(), text.end(), is_hex_digit);
+}
+
+std::uint32_t hex4_value(std::string_view text)
+{
+    std::uint32_t value = 0;
+    std::from_chars(text.data(), text.data() + text.size(), value, 16);
+    return value;
+}
+
+bool is_surrogate(std::uint32_t unit)
+{
+    return unit >= 0xD800 && unit <= 0xDFFF;
+}
+
+bool is_high_surrogate(std::uint32_t unit)
+{
+    return unit >= 0xD800 && unit <= 0xDBFF;
+}
+
+bool is_low_surrogate(std::uint32_t unit)
+{
+    return unit >= 0xDC00 && unit <= 0xDFFF;
+}
+
+std::string token_literal(std::string_view payload)
+{
+    return "\"" + std::string(escaped_marker) + std::string(payload) + "\"";
+}
+
+bool is_digit(char symbol)
+{
+    return symbol >= '0' && symbol <= '9';
+}
+
+std::size_t digits_end(std::string_view text, std::size_t at)
+{
+    while (at < text.size() && is_digit(text[at])) {
+        ++at;
+    }
+    return at;
+}
+
+std::size_t number_length(std::string_view text)
+{
+    std::size_t at = text.starts_with('-') ? 1 : 0;
+    const std::size_t integral_end = digits_end(text, at);
+    if (integral_end == at) {
+        return 0;
+    }
+    at = integral_end;
+    if (at + 1 < text.size() && text[at] == '.' && is_digit(text[at + 1])) {
+        at = digits_end(text, at + 1);
+    }
+    if (at < text.size() && (text[at] == 'e' || text[at] == 'E')) {
+        std::size_t exponent = at + 1;
+        if (exponent < text.size() && (text[exponent] == '+' || text[exponent] == '-')) {
+            ++exponent;
+        }
+        const std::size_t exponent_end = digits_end(text, exponent);
+        if (exponent_end > exponent) {
+            at = exponent_end;
+        }
+    }
+    return at;
+}
+
+std::string bridge_python_tokens(std::string_view text)
+{
+    std::string out;
+    out.reserve(text.size() + 32);
+    bool in_string = false;
+    std::size_t at = 0;
+    while (at < text.size()) {
+        const std::string_view rest = text.substr(at);
+        if (!in_string) {
+            if (rest.front() == '"') {
+                in_string = true;
+                out.push_back('"');
+                at += 1;
+            } else if (rest.starts_with("-Infinity")) {
+                out += token_literal("-Infinity");
+                at += 9;
+            } else if (rest.starts_with("Infinity")) {
+                out += token_literal("Infinity");
+                at += 8;
+            } else if (rest.starts_with("NaN")) {
+                out += token_literal("NaN");
+                at += 3;
+            } else if (const std::size_t length = number_length(rest); length > 0) {
+                const std::string literal(rest.substr(0, length));
+                const double value = std::strtod(literal.c_str(), nullptr);
+                if (std::isinf(value) && literal.find_first_of(".eE") != std::string::npos) {
+                    out += token_literal(value < 0 ? "-Infinity" : "Infinity");
+                } else {
+                    out += literal;
+                }
+                at += length;
+            } else {
+                out.push_back(rest.front());
+                at += 1;
+            }
+            continue;
+        }
+        if (rest.front() == '"') {
+            in_string = false;
+            out.push_back('"');
+            at += 1;
+        } else if (rest.size() >= 2 && rest[0] == '\\' && rest[1] != 'u') {
+            out.append(rest.substr(0, 2));
+            at += 2;
+        } else if (rest.size() >= 6 && rest.starts_with("\\u") && is_hex4(rest.substr(2, 4))) {
+            const std::uint32_t unit = hex4_value(rest.substr(2, 4));
+            if (is_high_surrogate(unit) && rest.size() >= 12 && rest.substr(6, 2) == "\\u"
+                && is_hex4(rest.substr(8, 4)) && is_low_surrogate(hex4_value(rest.substr(8, 4)))) {
+                out.append(rest.substr(0, 12));
+                at += 12;
+            } else if (is_surrogate(unit)) {
+                out.append(escaped_marker);
+                out.append(rest.substr(2, 4));
+                at += 6;
+            } else {
+                out.append(rest.substr(0, 6));
+                at += 6;
+            }
+        } else {
+            out.push_back(rest.front());
+            at += 1;
+        }
+    }
+    return out;
+}
+
+void append_surrogate(std::string& out, std::uint32_t unit)
+{
+    out.push_back(static_cast<char>(0xE0 | (unit >> 12)));
+    out.push_back(static_cast<char>(0x80 | ((unit >> 6) & 0x3F)));
+    out.push_back(static_cast<char>(0x80 | (unit & 0x3F)));
+}
+
+std::string restore_surrogates(std::string_view text)
+{
+    std::string out;
+    out.reserve(text.size());
+    std::size_t at = 0;
+    while (at < text.size()) {
+        const std::size_t found = text.find(decoded_marker, at);
+        if (found == std::string_view::npos) {
+            out.append(text.substr(at));
+            break;
+        }
+        out.append(text.substr(at, found - at));
+        const std::size_t digits_at = found + decoded_marker.size();
+        const std::string_view digits = text.substr(digits_at, 4);
+        if (is_hex4(digits) && is_surrogate(hex4_value(digits))) {
+            append_surrogate(out, hex4_value(digits));
+            at = digits_at + 4;
+        } else {
+            out.append(decoded_marker);
+            at = digits_at;
+        }
+    }
+    return out;
+}
+
+std::optional<Value> special_value(std::string_view text)
+{
+    if (!text.starts_with(decoded_marker)) {
+        return std::nullopt;
+    }
+    const std::string_view payload = text.substr(decoded_marker.size());
+    if (payload == "NaN") {
+        return Value(std::numeric_limits<double>::quiet_NaN());
+    }
+    if (payload == "Infinity") {
+        return Value(std::numeric_limits<double>::infinity());
+    }
+    if (payload == "-Infinity") {
+        return Value(-std::numeric_limits<double>::infinity());
+    }
+    return std::nullopt;
+}
+
+void restore_tokens(Value& value)
+{
+    if (value.is_string()) {
+        const std::string& text = value.get_ref<const std::string&>();
+        if (std::optional<Value> special = special_value(text)) {
+            value = std::move(*special);
+        } else if (text.find(decoded_marker) != std::string::npos) {
+            value = restore_surrogates(text);
+        }
+    } else if (value.is_array()) {
+        for (auto& item : value) {
+            restore_tokens(item);
+        }
+    } else if (value.is_object()) {
+        Value restored = Value::object();
+        for (auto&& [key, item] : value.items()) {
+            restore_tokens(item);
+            restored[restore_surrogates(key)] = std::move(item);
+        }
+        value = std::move(restored);
+    }
+}
+
+}
+
 std::optional<Value> parse(std::string_view text)
 {
     try {
         return Value::parse(text);
+    } catch (const nlohmann::json::exception&) {
+        return std::nullopt;
+    }
+}
+
+std::optional<Value> parse_python(std::string_view text)
+{
+    try {
+        const std::string bridged = bridge_python_tokens(text);
+        Value value = Value::parse(bridged);
+        restore_tokens(value);
+        return value;
     } catch (const nlohmann::json::exception&) {
         return std::nullopt;
     }

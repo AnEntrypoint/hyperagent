@@ -1,0 +1,4 @@
+{"agent":"alpha","epoch":1700000001.5,"kind":"result","session":"g-1","nan":NaN,"pos":Infinity,"neg":-Infinity,"text":"NaN, Infinity and -Infinity inside strings stay text"}
+{"agent":"alpha","epoch":1700000002.25,"kind":"text","session":"g-1","text":"lone \ud83d and \udc00 kept, pair 😀 joined"}
+{"agent":"alpha","epoch":1700000003.125,"kind":"tool","session":"g-1","values":[NaN,-Infinity,1e999,-0.0,2.5e-5],"escaped":"quote \" and backslash \\ then \ud800 tail"}
+{"agent":"alpha","epoch":1700000004,"kind":"text","session":"g-1","key\ud800":"lone key"}
