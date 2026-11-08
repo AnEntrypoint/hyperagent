@@ -1,8 +1,11 @@
 #include "cli/open.hpp"
 
+#include <unistd.h>
+
 #include <cstdlib>
 #include <filesystem>
-#include <iostream>
+#include <string>
+#include <vector>
 
 #include "core/paths.hpp"
 
@@ -12,26 +15,32 @@ namespace {
 
 void set_default_environment(const char* name, const char* value)
 {
-#ifdef _WIN32
-    if (std::getenv(name) == nullptr) {
-        _putenv_s(name, value);
-    }
-#else
     ::setenv(name, value, 0);
-#endif
+}
+
+[[noreturn]] void exec_claude(const std::vector<std::string>& args)
+{
+    std::vector<char*> argv;
+    argv.push_back(const_cast<char*>("claude"));
+    for (const auto& arg : args) {
+        argv.push_back(const_cast<char*>(arg.c_str()));
+    }
+    argv.push_back(nullptr);
+    ::execvp("claude", argv.data());
+    std::_Exit(127);
 }
 
 }
 
 void add_command(CLI::App& app)
 {
-    auto* command = app.add_subcommand("open", "set the MCP timeouts and start the hyperagent MCP server (bin/open)");
-    command->callback([]() {
+    auto* command = app.add_subcommand("open", "set the MCP timeouts and launch claude in the repo root");
+    command->allow_extras();
+    command->callback([command]() {
         set_default_environment("MCP_TIMEOUT", "60000");
         set_default_environment("MCP_TOOL_TIMEOUT", "1800000");
         std::filesystem::current_path(core::paths::repo_root());
-        std::cerr << "hyperagent open: the mcp subcommand is not yet ported to C++; nothing was launched\n";
-        std::exit(3);
+        exec_claude(command->remaining());
     });
 }
 
