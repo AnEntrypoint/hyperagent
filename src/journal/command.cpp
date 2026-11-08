@@ -108,6 +108,34 @@ void add_result(CLI::App& journal)
     });
 }
 
+void add_records(CLI::App& journal)
+{
+    auto file = std::make_shared<std::string>();
+    auto kinds = std::make_shared<std::vector<std::string>>();
+    auto limit = std::make_shared<std::size_t>(0);
+    auto since = std::make_shared<double>(0.0);
+    auto* command = journal.add_subcommand("records", "every record of a journal file as a JSON array");
+    command->add_option("file", *file, "journal .jsonl file")->required();
+    command->add_option("--kind", *kinds, "keep only this kind (repeatable)");
+    command->add_option("--limit", *limit, "keep only the last N records");
+    command->add_option("--since", *since, "keep records with epoch at or after this value");
+    command->callback([file, kinds, limit, since, command]() {
+        std::optional<double> cutoff;
+        if (command->count("--since") > 0) {
+            cutoff = *since;
+        }
+        std::optional<std::size_t> keep;
+        if (*limit > 0) {
+            keep = *limit;
+        }
+        Value records = Value::array();
+        for (const auto& record : read_records(*file, *kinds, keep, cutoff)) {
+            records.push_back(record);
+        }
+        print_json(records);
+    });
+}
+
 void add_tail(CLI::App& journal)
 {
     auto file = std::make_shared<std::string>();
@@ -208,6 +236,7 @@ void add_command(CLI::App& app)
     add_output(*journal);
     add_response(*journal);
     add_result(*journal);
+    add_records(*journal);
     add_tail(*journal);
     add_render(*journal);
     add_write(*journal);
