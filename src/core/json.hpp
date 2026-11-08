@@ -30,6 +30,7 @@ struct PythonStyle {
 
 std::string python_dumps(const Value& value, PythonStyle style = {});
 std::optional<Value> parse(std::string_view text);
+std::optional<Value> parse_python(std::string_view text);
 std::optional<Value> read_file(const std::filesystem::path& path);
 void write_file(const std::filesystem::path& path, const Value& value);
 
