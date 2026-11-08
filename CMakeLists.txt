@@ -28,6 +28,7 @@ target_link_libraries(hyperagent PRIVATE
     nlohmann_json::nlohmann_json
     CLI11::CLI11
     ${SQLite3_LIBRARY}
+    OpenSSL::SSL
     OpenSSL::Crypto
     Threads::Threads)
 if(TARGET Boost::system)
