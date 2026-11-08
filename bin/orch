@@ -156,6 +156,14 @@ async def hub_exists(name: str) -> bool:
         return False
 
 
+async def hub_stopped(name: str) -> bool:
+    try:
+        info = (await fetch_sessions()).get(name) or {}
+        return not info.get("alive")
+    except Exception:
+        return False
+
+
 async def server_alive(timeout: float = 1.0) -> bool:
     try:
         async with aiohttp.ClientSession() as session:
@@ -619,6 +627,9 @@ async def run_job(job: dict, timeout: float, idle_exit: float, lock_wait: float,
                             frame = await asyncio.wait_for(queue.get(), min(remaining, 5.0))
                         except asyncio.TimeoutError:
                             now = time.time()
+                            if await hub_stopped(name):
+                                status = "stopped"
+                                break
                             if (not acked and not text_parts and retries < PROMPT_RETRIES
                                     and now - sent >= PROMPT_RETRY_AFTER
                                     and await pane_idle_ready(harness, name)):

@@ -248,6 +248,17 @@ std::optional<std::string> resolve_output_session(const Value& job, double since
     return text_of(core::json::member(&session, "session_id"));
 }
 
+bool hub_stopped(const std::string& name)
+{
+    try {
+        const Value sessions = ccbridge::fetch_sessions();
+        const Value* info = ccbridge::hub_info(sessions, name);
+        return info == nullptr || !core::json::truthy(core::json::member(info, "alive"));
+    } catch (const std::exception&) {
+        return false;
+    }
+}
+
 bool trust_dialog_open(const std::string& name, double timeout_seconds)
 {
     const auto started = Clock::now();
@@ -480,6 +491,10 @@ Value run_job(const Value& job, const TurnOptions& options)
             const auto event = peer.next(std::chrono::milliseconds(static_cast<long>(wait * 1000.0)));
             if (event.kind == websocket::EventKind::timeout) {
                 const double now = epoch_now();
+                if (hub_stopped(name)) {
+                    status = "stopped";
+                    break;
+                }
                 if (!acked && text_parts.empty() && retries < config::prompt_retries
                     && now - sent >= config::prompt_retry_after && pane_idle_ready(harness_name, name)) {
                     peer.send_text(prompt);
