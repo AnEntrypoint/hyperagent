@@ -303,6 +303,8 @@ def resumes_saved_session(args: list[str] | tuple[str, ...]) -> bool:
 
 def session_first_stamp(path: str) -> float | None:
     for record in output_journal.iter_records(path):
+        if not isinstance(record, dict):
+            continue
         stamp = record.get("timestamp")
         if stamp:
             try:
