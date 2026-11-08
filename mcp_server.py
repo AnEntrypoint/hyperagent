@@ -150,6 +150,8 @@ async def tool_start_projects(args: dict) -> str:
         info = sessions.get(job["name"]) or {}
         state = "started" if info.get("alive") else "not alive"
         suffix = " trust=accepted" if job.get("trusted") else ""
+        if job.get("restarted"):
+            suffix += " restarted=stale-resume"
         if job.get("resume"):
             suffix += f" resume={job['resume']}"
         lines.append(f"{job['name']}: {state} harness={job['harness']} "

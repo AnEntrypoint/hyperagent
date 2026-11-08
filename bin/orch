@@ -294,6 +294,10 @@ def session_from_launch_args(args: list[str] | tuple[str, ...]) -> str | None:
     return None
 
 
+def resumes_saved_session(args: list[str] | tuple[str, ...]) -> bool:
+    return any(value in ("--resume", "-r", "--continue", "--fork-session") for value in args)
+
+
 def session_first_stamp(path: str) -> float | None:
     for record in output_journal.iter_records(path):
         stamp = record.get("timestamp")
@@ -739,9 +743,16 @@ async def start_one(job: dict, settle: float, trust: bool,
                      lock_wait: float = DEFAULT_TIMEOUT) -> dict:
     trusted = False
     async with session_lock(job["name"], lock_wait):
+        restarted = False
         if job.get("resume") or job.get("continue"):
             await retire(job["name"])
         existing = await hub_exists(job["name"])
+        if existing and not (job.get("resume") or job.get("continue")):
+            live = (await fetch_sessions()).get(job["name"]) or {}
+            if resumes_saved_session(live.get("launch_args") or []):
+                await retire(job["name"])
+                existing = False
+                restarted = True
         async with aiohttp.ClientSession() as http:
             async with http.ws_connect(
                     ws_url(job["name"], job["cwd"], job["harness"], job.get("resume"),
@@ -750,7 +761,7 @@ async def start_one(job: dict, settle: float, trust: bool,
                 if trust and not existing:
                     trusted = await answer_trust(job["name"])
                 await asyncio.sleep(settle)
-    result = {**job, "trusted": trusted}
+    result = {**job, "trusted": trusted, "restarted": restarted}
     if job.get("fork") or job.get("record_latest"):
         session = latest_session(job["harness"], job["cwd"])
         if session:
