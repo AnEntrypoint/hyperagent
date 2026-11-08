@@ -36,4 +36,6 @@ if(TARGET Boost::system)
 endif()
 target_compile_options(hyperagent PRIVATE -Wall -Wextra -Wpedantic)
 
+add_subdirectory(tests/fake_claude)
+
 install(TARGETS hyperagent RUNTIME DESTINATION bin)

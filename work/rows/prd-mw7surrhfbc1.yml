@@ -1,0 +1,6 @@
+id: "prd-mw7surrhfbc1"
+kind: "prd"
+title: "gm: relay of jayzee run_shell and truncation reports (orchestrator, 2026-11-08, cycle 6)"
+body: "Reported by jayzee via the orchestrator, to be resolved by gm:\n1. Promise.all over six gm.run_shell calls returned an undefined element, so the body threw \"cannot read property 'output' of undefined\". Sequential calls worked. Check whether Promise.all can yield undefined for a run_shell call.\n2. Truncation still recurs without a consistent top-level flag: a run_code body printing an upload handler was cut at 19840 of 20556 characters, and an inner read_file of docs/IDEAL.md was cut at 19969 of 164855 bytes while the top-level truncated flag stayed false. Report truncation at the top level, every time.\n3. next_context re-delivered job-end notices from earlier steps at the start of a step. Stop re-delivering events that were already cleared."
+status: "open"
+createdAt: "2026-11-08T12:19:33.005Z"

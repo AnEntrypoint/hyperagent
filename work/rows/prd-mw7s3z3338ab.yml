@@ -1,0 +1,6 @@
+id: "prd-mw7s3z3338ab"
+kind: "prd"
+title: "gm: relay of spoint complaint (orchestrator, 2026-11-08)"
+body: "Reported by spoint via the orchestrator, to be resolved by gm:\n1. Every finish returned a rulesNotice asking for a read of skill://gm/SKILL.md, and the read only happened after the run had ended. The skill says to read it before finish. Deliver the rulesNotice before the finish call, not after."
+status: "open"
+createdAt: "2026-11-08T11:58:42.783Z"

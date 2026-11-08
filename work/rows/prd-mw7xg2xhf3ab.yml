@@ -1,0 +1,6 @@
+id: "prd-mw7xg2xhf3ab"
+kind: "prd"
+title: "gm: relay of fx complaint (orchestrator, 2026-11-08, cycle 7)"
+body: "Reported by fx via the orchestrator, to be resolved by gm:\n1. git_status and git_log fail with exit 128 when called from run_code in a project, because their cwd is / and not the repo. git -C <repo> works, so the failure is confined to the verbs. Reproduce with gm.git_status() and gm.git_log() in a project with a clean tree.\n2. A long-running background job started with job_start and no timeoutMs is killed at 300 s and reports killed with no exit line. Set the default or report the limit in the verb description."
+status: "open"
+createdAt: "2026-11-08T14:28:05.717Z"
