@@ -1,0 +1,34 @@
+cmake_minimum_required(VERSION 3.21)
+project(hyperagent VERSION 0.1.0 LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
+find_package(Threads REQUIRED)
+find_package(Boost 1.84 REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
+find_package(CLI11 CONFIG REQUIRED)
+find_package(SQLite3 REQUIRED)
+find_package(OpenSSL REQUIRED)
+
+file(GLOB_RECURSE HYPERAGENT_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
+
+add_executable(hyperagent ${HYPERAGENT_SOURCES})
+target_include_directories(hyperagent PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_compile_definitions(hyperagent PRIVATE HYPERAGENT_VERSION="${PROJECT_VERSION}")
+target_link_libraries(hyperagent PRIVATE
+    Boost::headers
+    nlohmann_json::nlohmann_json
+    CLI11::CLI11
+    SQLite::SQLite3
+    OpenSSL::Crypto
+    Threads::Threads)
+if(TARGET Boost::system)
+    target_link_libraries(hyperagent PRIVATE Boost::system)
+endif()
+target_compile_options(hyperagent PRIVATE -Wall -Wextra -Wpedantic)
+
+install(TARGETS hyperagent RUNTIME DESTINATION bin)
