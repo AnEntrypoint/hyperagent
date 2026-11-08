@@ -43,6 +43,7 @@ std::string pane_text(const std::string& pane, std::size_t count = 8);
 std::string make_prompt(const std::string& template_text, const std::string& agent, const std::string& last,
                         const Value& session);
 std::string render(const Value& event, bool text_mode);
+void print_event(const Value& event, bool text_mode);
 
 class Monitor {
 public:
