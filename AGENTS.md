@@ -87,7 +87,8 @@ surface.
 minutes, so a turn can be collected in one call. Without it the client's shorter tool
 timeout can cut a long turn; use `wait: false` plus `turn_result` then.
 
-`mcp_server.py` has no dependencies beyond aiohttp and imports `bin/orch` as its
+`mcp_server.py` needs only aiohttp, declared in `requirements.txt` (on a PEP 668 system
+Python install it with `sudo apt install python3-aiohttp`), and imports `bin/orch` as its
 implementation. Stdout is the JSON-RPC channel: tool handlers must never print to
 stdout, and only the launcher and diagnostics write to stderr.
 
