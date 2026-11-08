@@ -35,6 +35,7 @@ KINDS = "text,tool,you"
 TAG = {"t": "text", "u": "tool", "y": "you"}
 PROMPT_RETRY_AFTER = 12.0
 PROMPT_RETRIES = 2
+LOCAL_COMMAND_SETTLE = 5.0
 PARENT = Path(os.environ.get("ORCH_PARENT") or ROOT.parent).resolve()
 PROJECT_MARKERS = (
     "AGENTS.md", "CLAUDE.md", "package.json", "pyproject.toml", "setup.py",
@@ -110,6 +111,13 @@ def is_busy(harness: str, pane: str) -> bool:
         return airc_mods().load(harness).pane_busy(pane)
     except Exception:
         return False
+
+
+def local_command_done(harness: str, prompt: str, pane: str) -> bool:
+    if not prompt.startswith("/") or is_busy(harness, pane):
+        return False
+    _, found, after = pane.rpartition(prompt)
+    return bool(found) and "⎿" in after
 
 
 async def pane_idle_ready(harness: str, name: str) -> bool:
@@ -632,6 +640,12 @@ async def run_job(job: dict, timeout: float, idle_exit: float, lock_wait: float,
                                 retries += 1
                                 last = now
                                 continue
+                            if now - sent >= LOCAL_COMMAND_SETTLE:
+                                pane = await capture(name)
+                                if local_command_done(harness, job["prompt"], pane):
+                                    tail = pane_tail(pane)
+                                    status = "turn_end"
+                                    break
                             if idle_exit > 0 and now - last >= idle_exit:
                                 pane = await capture(name)
                                 if not is_busy(harness, pane):
