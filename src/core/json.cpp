@@ -1,10 +1,16 @@
 #include "core/json.hpp"
 
+#include <algorithm>
 #include <charconv>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <functional>
+#include <utility>
+#include <vector>
+
 #include "core/files.hpp"
+#include "core/text.hpp"
 
 namespace hyperagent::core::json {
 
@@ -139,6 +145,119 @@ std::string dumps(const Value& value, Separators separators)
 {
     std::string out;
     write_value(out, value, separators);
+    return out;
+}
+
+std::string python_dumps(const Value& value, PythonStyle style)
+{
+    std::string out;
+    const bool pretty = style.indent >= 0;
+    const std::string_view item_separator = pretty ? "," : ", ";
+    const std::string_view key_separator = ": ";
+
+    const auto newline = [&](int depth) {
+        if (!pretty) {
+            return;
+        }
+        out.push_back('\n');
+        out.append(static_cast<std::size_t>(depth * style.indent), ' ');
+    };
+
+    const auto write_text = [&](std::string_view text) {
+        out.push_back('"');
+        for (std::size_t offset = 0; offset < text.size();) {
+            const auto decoded = core::text::decode_at(text, offset);
+            offset += decoded.size;
+            const char32_t point = decoded.code_point;
+            switch (point) {
+            case '"': out += "\\\""; continue;
+            case '\\': out += "\\\\"; continue;
+            case '\n': out += "\\n"; continue;
+            case '\r': out += "\\r"; continue;
+            case '\t': out += "\\t"; continue;
+            case '\b': out += "\\b"; continue;
+            case '\f': out += "\\f"; continue;
+            default: break;
+            }
+            const bool escape = point < 0x20 || (style.ensure_ascii && point >= 0x7f);
+            if (!escape) {
+                out.append(text.substr(offset - decoded.size, decoded.size));
+                continue;
+            }
+            char escaped[16];
+            if (point >= 0x10000) {
+                const char32_t shifted = point - 0x10000;
+                const unsigned high = 0xD800 + static_cast<unsigned>(shifted >> 10);
+                const unsigned low = 0xDC00 + static_cast<unsigned>(shifted & 0x3FF);
+                std::snprintf(escaped, sizeof escaped, "\\u%04x\\u%04x", high, low);
+            } else {
+                std::snprintf(escaped, sizeof escaped, "\\u%04x", static_cast<unsigned>(point));
+            }
+            out += escaped;
+        }
+        out.push_back('"');
+    };
+
+    std::function<void(const Value&, int)> write = [&](const Value& node, int depth) {
+        if (node.is_null()) {
+            out += "null";
+        } else if (node.is_boolean()) {
+            out += node.get<bool>() ? "true" : "false";
+        } else if (node.is_number_integer()) {
+            out += std::to_string(node.get<std::int64_t>());
+        } else if (node.is_number_unsigned()) {
+            out += std::to_string(node.get<std::uint64_t>());
+        } else if (node.is_number_float()) {
+            out += float_repr(node.get<double>());
+        } else if (node.is_string()) {
+            write_text(node.get_ref<const std::string&>());
+        } else if (node.is_array()) {
+            if (node.empty()) {
+                out += "[]";
+                return;
+            }
+            out.push_back('[');
+            bool first = true;
+            for (const auto& item : node) {
+                if (!first) {
+                    out += item_separator;
+                }
+                first = false;
+                newline(depth + 1);
+                write(item, depth + 1);
+            }
+            newline(depth);
+            out.push_back(']');
+        } else {
+            if (node.empty()) {
+                out += "{}";
+                return;
+            }
+            std::vector<std::pair<std::string, const Value*>> items;
+            for (const auto& [key, item] : node.items()) {
+                items.emplace_back(key, &item);
+            }
+            if (style.sort_keys) {
+                std::stable_sort(items.begin(), items.end(),
+                                 [](const auto& left, const auto& right) { return left.first < right.first; });
+            }
+            out.push_back('{');
+            bool first = true;
+            for (const auto& [key, item] : items) {
+                if (!first) {
+                    out += item_separator;
+                }
+                first = false;
+                newline(depth + 1);
+                write_text(key);
+                out += key_separator;
+                write(*item, depth + 1);
+            }
+            newline(depth);
+            out.push_back('}');
+        }
+    };
+    write(value, 0);
     return out;
 }
 

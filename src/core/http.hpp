@@ -11,6 +11,9 @@ struct Response {
     std::string body;
 };
 
+Response request(const std::string& method, const std::string& host, const std::string& port,
+                 const std::string& target, std::chrono::seconds timeout);
+
 Response get(const std::string& host, const std::string& port, const std::string& target,
              std::chrono::seconds timeout);
 
