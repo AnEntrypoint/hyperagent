@@ -182,6 +182,7 @@ header {
 }
 
 main {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -336,5 +337,97 @@ main {
 }
 
 .detail .json {
+  color: var(--dim);
+}
+
+.detail .actions {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.detail .btn {
+  padding: 2px 9px;
+}
+
+.row mark {
+  padding: 0 1px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--warn) 35%, transparent);
+  color: inherit;
+}
+
+.stream.wrap .row .text {
+  overflow: visible;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.jump {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 40%);
+}
+
+.flash {
+  color: var(--ok);
+  font-size: 12px;
+}
+
+.help {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  background: rgb(0 0 0 / 50%);
+}
+
+.help-card {
+  min-width: 320px;
+  padding: 16px 20px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: 0 16px 48px rgb(0 0 0 / 50%);
+}
+
+.help-card h3 {
+  margin: 0 0 10px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dim);
+  font-weight: 600;
+}
+
+.help-card dl {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  column-gap: 12px;
+}
+
+.pair dt {
+  font-family: var(--mono);
+  color: var(--accent);
+}
+
+.pair dd {
+  margin: 0;
   color: var(--dim);
 }

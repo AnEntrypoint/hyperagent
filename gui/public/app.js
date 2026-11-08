@@ -16,10 +16,20 @@ const KIND_LABELS = {
   malformed: "bad",
   text: "delta",
 };
+const SHORTCUTS = [
+  ["/", "filter text"],
+  ["j  k", "next or previous record"],
+  ["p", "pause or resume the stream"],
+  ["f", "follow the newest record"],
+  ["w", "wrap long lines"],
+  ["Esc", "deselect, or close this help"],
+  ["?", "this help"],
+];
 const PAGE_SIZE = 300;
 const MAX_RECORDS = 8000;
 const ACTIVE_SECONDS = 60;
 const SUMMARY_CHARS = 240;
+const FLASH_MS = 1500;
 
 const state = {
   records: [],
@@ -29,11 +39,16 @@ const state = {
   paused: false,
   live: "connecting",
   follow: true,
+  unseen: 0,
   limit: PAGE_SIZE,
   selected: null,
+  reveal: false,
   agent: "",
   query: "",
   kinds: new Set(DEFAULT_KINDS),
+  wrap: false,
+  help: false,
+  flash: "",
   eventsPerSecond: 0,
   arrivals: 0,
   unsorted: false,
@@ -51,10 +66,11 @@ function pad(number) {
   return String(number).padStart(2, "0");
 }
 
-function clock(epoch) {
+function stamp(epoch) {
   const date = new Date(epoch * 1000);
-  const millis = String(date.getMilliseconds()).padStart(3, "0");
-  return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}.${millis}`;
+  const time = `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}.${String(date.getMilliseconds()).padStart(3, "0")}`;
+  if (date.toDateString() === new Date().toDateString()) return time;
+  return `${date.toLocaleDateString(undefined, { month: "short", day: "numeric" })} ${time}`;
 }
 
 function ago(seconds) {
@@ -74,6 +90,21 @@ function summary(record) {
     .map((part) => part.trim())
     .find((part) => part && !part.startsWith("<pasted_content"));
   return (line ?? "").slice(0, SUMMARY_CHARS);
+}
+
+function highlight(text, query) {
+  if (!query) return text;
+  const lower = text.toLowerCase();
+  const parts = [];
+  let at = 0;
+  let hit = lower.indexOf(query, at);
+  while (hit !== -1) {
+    parts.push(text.slice(at, hit), html`<mark>${text.slice(hit, hit + query.length)}</mark>`);
+    at = hit + query.length;
+    hit = lower.indexOf(query, at);
+  }
+  parts.push(text.slice(at));
+  return parts;
 }
 
 function isKindShown(kind) {
@@ -114,13 +145,13 @@ function trim(list) {
 }
 
 function ingest(batch) {
-  let added = false;
+  let added = 0;
   for (const record of batch) {
     if (state.ids.has(record.id)) continue;
     state.ids.add(record.id);
     noteAgent(record);
     state.arrivals += 1;
-    added = true;
+    added += 1;
     if (state.paused) {
       state.pending.push(record);
       continue;
@@ -130,6 +161,7 @@ function ingest(batch) {
     state.records.push(record);
   }
   if (!added) return;
+  if (!state.follow) state.unseen += added;
   if (state.paused) {
     trim(state.pending);
   } else {
@@ -154,6 +186,56 @@ function setPaused(paused) {
     flushSorted();
   }
   scheduleRender();
+}
+
+function setFollow(follow) {
+  state.follow = follow;
+  if (follow) state.unseen = 0;
+  scheduleRender();
+}
+
+function toggleWrap() {
+  state.wrap = !state.wrap;
+  scheduleRender();
+}
+
+function toggleHelp() {
+  state.help = !state.help;
+  scheduleRender();
+}
+
+function flash(message) {
+  state.flash = message;
+  scheduleRender();
+  setTimeout(() => {
+    if (state.flash === message) {
+      state.flash = "";
+      scheduleRender();
+    }
+  }, FLASH_MS);
+}
+
+function copy(value, label) {
+  if (!navigator.clipboard) {
+    flash("copy unavailable");
+    return;
+  }
+  navigator.clipboard.writeText(value).then(
+    () => flash(`copied ${label}`),
+    () => flash("copy failed"),
+  );
+}
+
+function exportVisible() {
+  const visible = matching().slice(-state.limit);
+  const body = visible.map((record) => JSON.stringify(record)).join("\n");
+  const blob = new Blob([body ? `${body}\n` : ""], { type: "application/x-ndjson" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `hyperagent-logs-${new Date().toISOString().replace(/[:.]/g, "-")}.jsonl`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), FLASH_MS * 4);
+  flash(`exported ${visible.length}`);
 }
 
 function writeHash() {
@@ -209,19 +291,35 @@ function select(id) {
   scheduleRender();
 }
 
+function step(delta) {
+  const visible = matching().slice(-state.limit);
+  if (!visible.length) return;
+  const index = visible.findIndex((record) => record.id === state.selected);
+  let next;
+  if (index === -1) {
+    next = delta > 0 ? 0 : visible.length - 1;
+  } else {
+    next = Math.min(visible.length - 1, Math.max(0, index + delta));
+  }
+  state.selected = visible[next].id;
+  state.reveal = true;
+  setFollow(false);
+}
+
 function onScroll(event) {
   const { scrollTop, scrollHeight, clientHeight } = event.currentTarget;
   const atBottom = scrollHeight - scrollTop - clientHeight < 24;
-  if (atBottom !== state.follow) {
-    state.follow = atBottom;
-    scheduleRender();
-  }
+  if (atBottom !== state.follow) setFollow(atBottom);
 }
 
 function detail(record) {
   const { text, pane_tail: paneTail, ...fields } = record;
   return html`
     <div class="detail" onclick=${(event) => event.stopPropagation()}>
+      <div class="actions">
+        ${text ? html`<button class="btn" onclick=${() => copy(text, "text")}>copy text</button>` : null}
+        <button class="btn" onclick=${() => copy(JSON.stringify(record, null, 2), "json")}>copy json</button>
+      </div>
       ${text ? html`<pre class="body">${text}</pre>` : null}
       ${paneTail?.length ? html`<pre class="pane">${paneTail.join("\n")}</pre>` : null}
       <pre class="json">${JSON.stringify(fields, null, 2)}</pre>
@@ -230,12 +328,13 @@ function detail(record) {
 
 function row(record) {
   const open = state.selected === record.id;
+  const query = state.query.trim().toLowerCase();
   return html`
     <div key=${record.id} class=${`row kind-${record.kind}${open ? " open" : ""}`} onclick=${() => select(record.id)}>
-      <time>${clock(record.epoch)}</time>
+      <time>${stamp(record.epoch)}</time>
       <span class="agent">${record.agent}</span>
       <span class="kind">${KIND_LABELS[record.kind] ?? record.kind}</span>
-      <span class="text">${summary(record)}</span>
+      <span class="text">${highlight(summary(record), query)}</span>
       ${open ? detail(record) : null}
     </div>`;
 }
@@ -245,10 +344,29 @@ function stream(matches, visible) {
   let empty = "No records match the current filters.";
   if (state.records.length === 0) empty = "Waiting for journal records…";
   return html`
-    <section class="stream" onscroll=${onScroll}>
+    <section class=${`stream${state.wrap ? " wrap" : ""}`} onscroll=${onScroll}>
       ${hidden > 0 ? html`<button class="older" onclick=${() => { state.limit += PAGE_SIZE; scheduleRender(); }}>Show ${hidden} older</button>` : null}
       ${visible.length ? visible.map(row) : html`<p class="empty">${empty}</p>`}
     </section>`;
+}
+
+function jump() {
+  if (state.follow) return null;
+  const label = state.unseen ? `${state.unseen} new · latest` : "latest";
+  return html`<button class="jump" onclick=${() => setFollow(true)}>${label} ↓</button>`;
+}
+
+function help() {
+  if (!state.help) return null;
+  return html`
+    <div class="help" onclick=${toggleHelp}>
+      <div class="help-card" onclick=${(event) => event.stopPropagation()}>
+        <h3>Keyboard</h3>
+        <dl>
+          ${SHORTCUTS.map(([key, text]) => html`<div key=${key} class="pair"><dt>${key}</dt><dd>${text}</dd></div>`)}
+        </dl>
+      </div>
+    </div>`;
 }
 
 function sidebar() {
@@ -282,7 +400,10 @@ function toolbar() {
       <button class=${`btn${state.paused ? " on" : ""}`} onclick=${() => setPaused(!state.paused)}>
         ${state.paused ? `Resume · ${state.pending.length} new` : "Pause ( p )"}
       </button>
-      <button class=${`btn${state.follow ? " on" : ""}`} onclick=${() => { state.follow = !state.follow; scheduleRender(); }}>Follow ( f )</button>
+      <button class=${`btn${state.follow ? " on" : ""}`} onclick=${() => setFollow(!state.follow)}>Follow ( f )</button>
+      <button class=${`btn${state.wrap ? " on" : ""}`} onclick=${toggleWrap}>Wrap ( w )</button>
+      <button class="btn" onclick=${exportVisible}>Export</button>
+      <button class=${`btn${state.help ? " on" : ""}`} onclick=${toggleHelp}>Keys ( ? )</button>
     </div>`;
 }
 
@@ -294,6 +415,7 @@ function header(matchCount) {
       <span class=${`live ${state.live}`}>${labels[state.live]}</span>
       <span class="stat">${state.eventsPerSecond}/s</span>
       <span class="stat">${matchCount} of ${state.records.length} shown</span>
+      <span class="flash">${state.flash}</span>
     </header>`;
 }
 
@@ -306,8 +428,10 @@ function view(matches, visible) {
         <main>
           ${toolbar()}
           ${stream(matches, visible)}
+          ${jump()}
         </main>
       </div>
+      ${help()}
     </div>`;
 }
 
@@ -319,7 +443,10 @@ function render() {
   if (state.follow) {
     const stream = root.querySelector(".stream");
     if (stream) stream.scrollTop = stream.scrollHeight;
+  } else if (state.reveal) {
+    root.querySelector(".row.open")?.scrollIntoView({ block: "nearest" });
   }
+  state.reveal = false;
 }
 
 function connectEvents() {
@@ -370,14 +497,25 @@ function onKey(event) {
     if (event.key === "Escape") event.target.blur();
     return;
   }
+  if (state.help) {
+    if (event.key === "Escape" || event.key === "?") toggleHelp();
+    return;
+  }
   if (event.key === "/") {
     event.preventDefault();
     document.getElementById("query")?.focus();
   } else if (event.key === "p") {
     setPaused(!state.paused);
   } else if (event.key === "f") {
-    state.follow = !state.follow;
-    scheduleRender();
+    setFollow(!state.follow);
+  } else if (event.key === "w") {
+    toggleWrap();
+  } else if (event.key === "j") {
+    step(1);
+  } else if (event.key === "k") {
+    step(-1);
+  } else if (event.key === "?") {
+    toggleHelp();
   } else if (event.key === "Escape") {
     select(null);
   }
