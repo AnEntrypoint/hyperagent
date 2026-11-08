@@ -97,7 +97,12 @@ This section is the standing rule; the other sections apply it.
   slow path, a flaky check, or behaviour the owner did not ask for is a defect to be
   fixed or recorded with its cause. It is never waved through as "expected".
 - Decide, do not defer. Reversible choices are made by the dispatcher and reported
-  afterwards. Only held items wait for the owner.
+  afterwards, with the reasoning recorded in the affected ledger. Never hold a choice back
+  because it is a judgement call, a trade-off, a visual or tuning value, a replay or
+  protocol design, or an open question the evidence can settle.
+- The only things that wait for the owner are: credentials; deleting or rewriting data
+  that cannot be recovered; licence or legal confirmations the owner has deferred; and
+  facts only the owner holds, such as the intended product scope. Everything else is decided.
 - Ignore effort and labour budgets when judging what to do next.
 
 ## Two-phase work
