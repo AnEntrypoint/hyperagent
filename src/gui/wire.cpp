@@ -29,7 +29,7 @@ std::uint32_t encoded_surrogate(const std::string& raw, std::size_t offset)
 
 void append_unit(std::string& out, std::uint32_t unit)
 {
-    char escaped[8];
+    char escaped[16];
     std::snprintf(escaped, sizeof escaped, "\\u%04x", unit);
     out += escaped;
 }
