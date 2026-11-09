@@ -23,3 +23,5 @@ Owner instruction (2026-11-08): for the rest of the work, make all the changes f
 - The gm skill must carry this workflow so gm runs it for every peer task. Dispatched to the gm project on 2026-11-08 (see [[gm-skill-two-phase-and-defects]]).
 
 Related: [[jayzee-engine-core-cpp-jolt]]
+
+**Failure mode (2026-11-10):** the owner saw continuous CI runs wasting time. Peers pushed after a fix and then watched CI, and the dispatcher approved a second push (spoint 342cff0 then 3566dac) against this rule. The rule is: finish every outstanding change first, then run one Phase B, push once, and do not chase CI between fixes. A second push is allowed only when the first Phase B push itself broke a witness, and the dispatcher must say so in the report. Do not poll CI in a loop.
