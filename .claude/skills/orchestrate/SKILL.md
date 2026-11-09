@@ -119,6 +119,15 @@ validate, and it is not split into several small Phase A passes.
 - Phase B: build, run every listed witness, fix every defect, then push to origin main
   in one pass. Each peer runs its own Phase B when its own Phase A is done. Peers do
   not wait on each other.
+- One push per Phase B. Do not push to check CI, and do not push a fix for a CI run
+  that is still in progress. Finish every outstanding change first, then validate once.
+- A second push is allowed only when the first Phase B push itself breaks a listed
+  witness. The dispatcher approves it and states the reason in its owner report. A
+  push that only repairs a CI result on an already-validated commit is not allowed.
+- Do not watch or poll CI between fixes. Check the hosted run at most once, with a
+  single status call, after the one push. Never loop on `gh run view` or `gh run list`.
+- When hosted Actions are unavailable, for example at the spending limit, validate
+  locally and push once. Do not push to find out whether CI would pass.
 - When a peer gets a new item while its Phase A is open, fold the item into that same
   pass. Do not start a second Phase A or a validation in the middle.
 - A peer that is already running a gate or Pages build may finish that check, since it
@@ -138,7 +147,8 @@ validate, and it is not split into several small Phase A passes.
   choice back when the choice is reversible.
 - Read-only verification: decide and proceed.
 - Pushes happen in Phase B only, as one pass per peer (see Two-phase work). Commits are
-  local until then.
+  local until then. The dispatcher approves no push outside that rule, including a
+  push to repair CI on an earlier commit.
 - Every change in the hyperagent repo is committed and pushed to origin/main before
   the cycle ends. At the end of each cycle, check `git status` and
   `git log origin/main..HEAD` in /workspace/hyperagent, and push anything outstanding.
@@ -155,6 +165,7 @@ Include these in every assignment prompt:
 - Two-phase work: make every change for the stretch first (Phase A, code, docs and tests
   only, no build, test, gate or witness), list each change in `docs/PENDING_VALIDATION.md`,
   commit locally, and push nothing. Then run Phase B: build, witness, fix, push once.
+  Do not watch or poll CI between fixes; at most one status check after the push.
 - Maximum effort and yield. Choose the solution that gets the best result, work around
   the platform's limits, and rearchitect where needed.
 - Treat any issue as a defect: fix it, or record it with its cause. Do not call it expected.
