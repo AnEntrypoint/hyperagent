@@ -21,9 +21,9 @@ import journal as outputs
 import monitor
 
 PROTOCOL_VERSION = "2025-06-18"
-DEFAULT_TIMEOUT = 1800.0
+DEFAULT_TIMEOUT = 14400.0
 DEFAULT_IDLE = 120.0
-LOCK_WAIT = 1800.0
+LOCK_WAIT = 14400.0
 DEFAULT_CONCURRENCY = 8
 TURNS: dict[str, dict] = {}
 WRITE_LOCK = asyncio.Lock()
