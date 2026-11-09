@@ -18,3 +18,4 @@
 - [Local token is not a concern](feedback-local-token-not-a-concern.md) — owner: the pasted token is local, do not raise rotation
 - [pw browser isolation per project](pw-project-browser-isolation.md) — owner report: thebird and jayzee share tabs; gm runs one playwriter server for all projects; pending defect dispatch to gm
 - [Issue lists are cleared and deleted, never committed](feedback-issues-lists-cleared-not-committed.md) — owner rule: fix each issue, then clear and delete the list; do not commit it
+- [Reuse buffers and variables](feedback-reuse-buffers-and-variables.md) — owner rule: spoint, jayzee and oscraft reuse buffers and variables instead of allocating, for stability; audit first, change in one Phase A
