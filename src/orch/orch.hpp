@@ -18,9 +18,9 @@ public:
 };
 
 struct Timing {
-    double timeout = 1800.0;
+    double timeout = 14400.0;
     double idle_exit = 120.0;
-    double lock_wait = 1800.0;
+    double lock_wait = 14400.0;
 };
 
 struct TurnOptions {

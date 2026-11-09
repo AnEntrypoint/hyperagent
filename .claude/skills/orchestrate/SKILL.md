@@ -37,10 +37,12 @@ The `hyperagent` MCP server is the channel to peers.
 
 A turn that ends returns the peer's text with status `turn_end`. Any other status
 (`timeout`, `blocked`, `died`) returns the pane tail so you can see what it waits on.
+A `timeout` status means the four-hour turn deadline passed, not that the peer
+failed; check `peer_status` before treating it as a failure.
 
-Long turns: open the project with `bin/open`, which sets a 30-minute
-`MCP_TOOL_TIMEOUT`. If a turn still outlives the client, call `instruct` with
-`wait: false` and collect it later with `turn_result`.
+Long turns: open the project with `bin/open`, which sets a four-hour
+`MCP_TOOL_TIMEOUT`. Dispatch long assignments with `wait: false` and collect them
+later with `turn_result`, so no single client call has to outlive the turn.
 
 `bin/orch` is the same layer on the CLI for debugging; the MCP tools are the
 orchestrator's channel.

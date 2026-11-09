@@ -112,7 +112,7 @@ surface.
 minutes, so a turn can be collected in one call. Without it the client's shorter tool
 timeout can cut a long turn; use `wait: false` plus `turn_result` then. `hyperagent open`
 (`src/cli/open.cpp`) is not wired yet: it exits 3 and launches nothing. Its intended
-behaviour is to set `MCP_TIMEOUT` (60000) and `MCP_TOOL_TIMEOUT` (1800000) only when unset,
+behaviour is to set `MCP_TIMEOUT` (60000) and `MCP_TOOL_TIMEOUT` (14400000) only when unset,
 change to the repo root, and then run `hyperagent mcp`; `bin/open` stays the working launcher.
 
 `mcp_server.py` needs only aiohttp, declared in `requirements.txt` (on a PEP 668 system
@@ -204,9 +204,9 @@ bin/orch start NAME --cwd DIR --harness claude
 bin/orch status --json --panes
 bin/orch sessions [NAME] [--all] [--json]
 bin/orch resume [NAME] [--session ID] [--prompt "instruction"]
-bin/orch prompt NAME "instruction" --timeout 1800 --idle-exit 120
+bin/orch prompt NAME "instruction" --timeout 14400 --idle-exit 120
 bin/orch prompt NAME "instruction" --resume
-bin/orch fanout jobs.json --timeout 1800 --idle-exit 120
+bin/orch fanout jobs.json --timeout 14400 --idle-exit 120
 bin/orch pane NAME --lines 40
 bin/orch outputs [NAME] [--all] [--json]
 bin/orch output [NAME] [--agent A] [--session ID] [--tail 40] [--json]
@@ -238,7 +238,7 @@ Claude transcript channel binds to the newest session file in a project director
 | `ORCH_WATCH_AGENTS` | empty | comma separated peers the MCP monitor keeps |
 | `ORCH_WATCH_LAST_CHARS` | `4000` | last-output characters in an event |
 | `ORCH_PROGRESS_INTERVAL` | `5` | seconds between MCP progress notifications |
-| `MCP_TOOL_TIMEOUT` | set by `bin/open` (or `hyperagent open`) to 1800000 | client limit for one tool call |
+| `MCP_TOOL_TIMEOUT` | set by `bin/open` (or `hyperagent open`) to 14400000 | client limit for one tool call |
 | `CCBRIDGE_HOME` | `.orch/ccbridge` | install root for `hyperagent ccbridge`; a scratch directory keeps a test install away from the running binary |
 | `GITHUB_TOKEN` | unset | optional bearer token for the GitHub API calls of `hyperagent ccbridge`; never sent to download hosts |
 

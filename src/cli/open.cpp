@@ -38,7 +38,7 @@ void add_command(CLI::App& app)
     command->allow_extras();
     command->callback([command]() {
         set_default_environment("MCP_TIMEOUT", "60000");
-        set_default_environment("MCP_TOOL_TIMEOUT", "1800000");
+        set_default_environment("MCP_TOOL_TIMEOUT", "14400000");
         std::filesystem::current_path(core::paths::repo_root());
         exec_claude(command->remaining());
     });
