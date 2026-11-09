@@ -43,5 +43,6 @@
   "enableArtifact": false,
   "promptSuggestionEnabled": false,
   "awaySummaryEnabled": false,
-  "remoteControlAtStartup": false
+  "remoteControlAtStartup": false,
+  "autoMemoryDirectory": "/workspace/hyperagent/memories"
 }
