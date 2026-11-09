@@ -23,3 +23,4 @@
 - [Every peer reads the gm skill first](feedback-gm-skill-always-read.md) — owner rule: first tool call of every session is a read of skill://gm/SKILL.md; gm server enforces it
 - [Kill by PID only](feedback-kill-by-pid-only.md) — owner rule: peers stop processes by PID; never pkill, killall or pkill -0
 - [Build locally, avoid Actions limits](feedback-build-locally-avoid-actions-limits.md) — owner rule: fx builds locally; fx hosted workflows disabled after the Actions spending limit; keep API and Actions usage low
+- [fx parity also matches the Claude Code docs](fx-parity-claude-code-docs.md) — owner direction: fx runs a read-only deep research pass over the Claude Code docs to collect parity issues into the matrix
