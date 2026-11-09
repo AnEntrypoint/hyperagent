@@ -24,3 +24,4 @@
 - [Kill by PID only](feedback-kill-by-pid-only.md) — owner rule: peers stop processes by PID; never pkill, killall or pkill -0
 - [Build locally, avoid Actions limits](feedback-build-locally-avoid-actions-limits.md) — owner rule: fx builds locally; fx hosted workflows disabled after the Actions spending limit; keep API and Actions usage low
 - [fx parity also matches the Claude Code docs](fx-parity-claude-code-docs.md) — owner direction: fx runs a read-only deep research pass over the Claude Code docs to collect parity issues into the matrix
+- [fx image reading: router fixed](fx-image-reading-router-fixed.md) — owner: the image problem was the router, now fixed; no fx image-reading change
