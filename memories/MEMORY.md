@@ -19,3 +19,6 @@
 - [pw browser isolation per project](pw-project-browser-isolation.md) — owner report: thebird and jayzee share tabs; gm runs one playwriter server for all projects; pending defect dispatch to gm
 - [Issue lists are cleared and deleted, never committed](feedback-issues-lists-cleared-not-committed.md) — owner rule: fix each issue, then clear and delete the list; do not commit it
 - [Reuse buffers and variables](feedback-reuse-buffers-and-variables.md) — owner rule: spoint, jayzee and oscraft reuse buffers and variables instead of allocating, for stability; audit first, change in one Phase A
+- [Validation: debug first, HMR, no unit tests in the loop](feedback-validation-debug-first.md) — owner rule: validation as cheap as possible; debugging and live troubleshooting before tests; gm skill codifies it
+- [Every peer reads the gm skill first](feedback-gm-skill-always-read.md) — owner rule: first tool call of every session is a read of skill://gm/SKILL.md; gm server enforces it
+- [Kill by PID only](feedback-kill-by-pid-only.md) — owner rule: peers stop processes by PID; never pkill, killall or pkill -0
