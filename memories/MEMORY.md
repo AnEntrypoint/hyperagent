@@ -15,4 +15,5 @@
 - [gm skill: two-phase workflow and defects](gm-skill-two-phase-and-defects.md) — owner direction: gm carries the per-peer two-phase workflow; five gm defects dispatched to the gm project
 - [gm live state, compact output](gm-live-state-compact-output.md) — owner direction: gm shows agents open browser tabs and run state continually; compact automated output, not spelled-out prompts
 - [jayzee: WebGPU and Vulkan enabled](jayzee-webgpu-vulkan-enabled.md) — pending: tell jayzee WebGPU and Vulkan are on; re-run WebGPU witnesses; deliver when its turn ends
+- [Local token is not a concern](feedback-local-token-not-a-concern.md) — owner: the pasted token is local, do not raise rotation
 - [pw browser isolation per project](pw-project-browser-isolation.md) — owner report: thebird and jayzee share tabs; gm runs one playwriter server for all projects; pending defect dispatch to gm
