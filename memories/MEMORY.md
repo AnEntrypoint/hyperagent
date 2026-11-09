@@ -22,3 +22,4 @@
 - [Validation: debug first, HMR, no unit tests in the loop](feedback-validation-debug-first.md) — owner rule: validation as cheap as possible; debugging and live troubleshooting before tests; gm skill codifies it
 - [Every peer reads the gm skill first](feedback-gm-skill-always-read.md) — owner rule: first tool call of every session is a read of skill://gm/SKILL.md; gm server enforces it
 - [Kill by PID only](feedback-kill-by-pid-only.md) — owner rule: peers stop processes by PID; never pkill, killall or pkill -0
+- [Build locally, avoid Actions limits](feedback-build-locally-avoid-actions-limits.md) — owner rule: fx builds locally; fx hosted workflows disabled after the Actions spending limit; keep API and Actions usage low
