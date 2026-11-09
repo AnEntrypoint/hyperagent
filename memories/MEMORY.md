@@ -1,0 +1,18 @@
+- [Build tooling in GitHub Actions](tooling-build-in-github-actions.md) — builds run in GitHub Actions with pinned hashes; local builds only when they save time
+- [txiki.js in the browser](txiki-js-browser-runtime.md) — owner decision: txiki.js must run in thebird's browser, no exceptions
+- [No automated checks in CI](ci-checks-manual-builds-automated.md) — checks are manual; CI keeps builds only
+- [msgpackr licence approved, jayzee UNLICENSED](jayzee-licence-msgpackr.md) — msgpackr may be used; no licence text in the repo
+- [No fly.io, only wireweave](no-flyio-only-wireweave.md) — fly.io is not a feature; spoint is built on wireweave, hosted on GH Pages
+- [TermRover TTFX licence](termrover-ttfx-licence.md) — TermRover terms forbid copying the app design; do not vendor or hot-link TTFX without permission
+- [tte-js loading screen](tte-js-loading-screen.md) — owner decision: thebird's brotli bundle loads behind flaviocopes/tte-js (MIT), vendored with notices
+- [fx parity target: kimi-code](fx-parity-target-kimi-code.md) — owner decision: fx must match MoonshotAI/kimi-code (not the archived kimi-cli); parity matrix, one witnessed commit per surface
+- [jayzee engine core: C++ and Jolt](jayzee-engine-core-cpp-jolt.md) — owner decision: C++20 core with Jolt in one preallocated wasm; docs/ENGINE.md goes into every jayzee dispatch
+- [Two-phase work: changes first, then validate](feedback-two-phase-work.md) — owner rule: peers make all changes without building or testing, then validate and push in one pass
+- [thebird tjs as node](thebird-tjs-as-node.md) — owner directive: thebird aliases tjs to node so the browser runtime looks like it has node
+- [oscraft control scheme](oscraft-control-scheme.md) — owner direction: slick twin-stick walking, plus a one-handed mode with intelligent auto-attack and one-hand casting
+- [Decide, do not hold back](feedback-decide-maximum-yield.md) — owner rule: the dispatcher decides every choice for maximum yield; only credentials, unrecoverable deletes, deferred licence and owner-only facts wait
+- [thebird is unlicensed](thebird-unlicensed.md) — owner decision: remove thebird's own MIT licence claim; keep vendored third-party notices; licence questions later
+- [gm skill: two-phase workflow and defects](gm-skill-two-phase-and-defects.md) — owner direction: gm carries the per-peer two-phase workflow; five gm defects dispatched to the gm project
+- [gm live state, compact output](gm-live-state-compact-output.md) — owner direction: gm shows agents open browser tabs and run state continually; compact automated output, not spelled-out prompts
+- [jayzee: WebGPU and Vulkan enabled](jayzee-webgpu-vulkan-enabled.md) — pending: tell jayzee WebGPU and Vulkan are on; re-run WebGPU witnesses; deliver when its turn ends
+- [pw browser isolation per project](pw-project-browser-isolation.md) — owner report: thebird and jayzee share tabs; gm runs one playwriter server for all projects; pending defect dispatch to gm
