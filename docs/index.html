@@ -190,7 +190,7 @@ The server is registered by <code>.mcp.json</code> and enabled by <code>.claude/
 (<code>enabledMcpjsonServers</code>). Then run <code>/orchestrate</code>. The CLI equivalent is
 <code>bin/orch</code>: <code>projects</code>, <code>start NAME</code>, <code>prompt</code>,
 <code>fanout</code>, <code>status</code>, <code>pane</code>, <code>stop</code>, <code>down</code>.</p>
-<p>The airc checkout defaults to <code>../airc</code> (<code>AIRC_DIR</code>) for harness mods, the ccbridge binary comes from <code>CCBRIDGE_BIN</code> or <code>bin/ccbridge-latest</code>, projects come from the parent
+<p>The airc (ccbridge) source is the vendored <code>airc/</code> directory, built into <code>build/ccbridge</code>; <code>CCBRIDGE_BIN</code> overrides that binary, projects come from the parent
 folder (<code>ORCH_PARENT</code>), and the server listens on <code>127.0.0.1:8787</code>
 (<code>ORCH_HOST</code> / <code>ORCH_PORT</code>).</p>
 

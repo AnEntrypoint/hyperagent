@@ -1,8 +1,12 @@
 # hyperagent
 
 hyperagent orchestrates the projects beside it: peer coding-harness sessions are started
-and prompted directly through `../airc` instead of Claude sessions reached over the
-messaging bus. The orchestrator talks to them through the `hyperagent` MCP server.
+and prompted directly through airc instead of Claude sessions reached over the messaging
+bus. The orchestrator talks to them through the `hyperagent` MCP server.
+
+airc is included in this repository as `airc/` (its history was imported with git subtree).
+The standalone AnEntrypoint/airc repository is no longer the source: ccbridge development
+happens in `airc/` here, and the root CMake build compiles it into `build/ccbridge`.
 
 ## MCP server
 
@@ -10,30 +14,29 @@ messaging bus. The orchestrator talks to them through the `hyperagent` MCP serve
 `.claude/settings.json` lists it in `enabledMcpjsonServers` so opening the project
 enables it without a prompt. `claude mcp list` reports it as connected.
 
-`hyperagent mcp` (`src/mcp/`) is the C++ port of `mcp_server.py` and serves the same tools,
-tool schemas, INSTRUCTIONS, resources, events and protocol features (`initialize`,
-`server/discover`, `tools/list`, `tools/call`, `logging/setLevel`, `resources/subscribe`,
-`subscriptions/listen`, `notifications/progress`). `mcp_server.py` stays the reference until
-parity passes; `.mcp.json` still points at it, and switching it to the binary is a separate
-step.
+`hyperagent mcp` (`src/mcp/`) serves the MCP tools, tool schemas, INSTRUCTIONS, resources,
+events and protocol features (`initialize`, `server/discover`, `tools/list`, `tools/call`,
+`logging/setLevel`, `resources/subscribe`, `subscriptions/listen`, `notifications/progress`).
+`.mcp.json` points at the binary. The Python reference (`mcp_server.py`) was removed on the
+conversion commit; before removal its tool list, the ten read-only tools and `peer_status`
+(with the opt-in `pane_lines` tail) were witnessed identical.
 
-Known deviations of `hyperagent mcp` from `mcp_server.py`:
+Known deviations of `hyperagent mcp`:
 
 - Peer and journal tools call the orch internals (`orch.hpp`, `turn.hpp`, `projects.hpp`,
   `ccbridge.hpp`) directly rather than the CLI.
 - Tools outside the synchronous set (`list_projects`, `list_project_sessions`,
   `list_outputs`, `read_output`, `search_output`) run on worker threads. Responses to
-  concurrent requests can arrive in a different order from Python's; the ids correlate them,
-  and sorted outputs are identical.
-- At EOF in-flight tools get a 2 s grace; Python cancels them at once.
+  concurrent requests arrive in completion order; the ids correlate them, and sorted
+  outputs are identical.
+- At EOF in-flight tools get a 2 s grace before they are cancelled.
 - The monitor runs on one thread per server and emits from there.
-- Resource subscriptions keep insertion order; Python's set order is arbitrary.
+- Resource subscriptions keep insertion order.
 - `search_output` lowercases Latin-1, Greek and Cyrillic only (simple Unicode lowercase).
-- `server_down` checks the server with `server_alive(1)` where Python uses 0.5 s.
+- `server_down` checks the server with `server_alive(1)`, one second.
 - The default `cmake -B build` has no build type and compiles at -O0; the journal tools run
   about 14x slower there than in a Release build (`list_outputs` 1.35 s at -O0, 0.10 s in
-  Release, 0.19 s in Python; `search_output` 2.29 s, 0.12 s and 0.22 s). Use
-  `-DCMAKE_BUILD_TYPE=Release` for MCP work.
+  Release; `search_output` 2.29 s and 0.12 s). Use `-DCMAKE_BUILD_TYPE=Release` for MCP work.
 
 Tools: `list_projects`, `start_projects`, `instruct`, `instruct_many`,
 `turn_result`, `resume_project`, `list_project_sessions`, `list_outputs`,
@@ -91,7 +94,7 @@ journal exists) and a ready `instruct` call whose prompt feeds that response bac
 It emits `gone` when a live peer disappears. `--once` reports peers that airc marks
 not busy. Output is one-line JSON, or `--text`.
 
-The MCP server runs the same `bin/monitor.py` loop natively when a client asks for
+The MCP server runs the monitor loop (`src/monitor/`) natively when a client asks for
 events. Delivery surfaces:
 
 | MCP surface | what it carries |
@@ -115,10 +118,9 @@ timeout can cut a long turn; use `wait: false` plus `turn_result` then. `hyperag
 behaviour is to set `MCP_TIMEOUT` (60000) and `MCP_TOOL_TIMEOUT` (14400000) only when unset,
 change to the repo root, and then run `hyperagent mcp`; `bin/open` stays the working launcher.
 
-`mcp_server.py` needs only aiohttp, declared in `requirements.txt` (on a PEP 668 system
-Python install it with `sudo apt install python3-aiohttp`), and imports `bin/orch` as its
-implementation. Stdout is the JSON-RPC channel: tool handlers must never print to
-stdout, and only the launcher and diagnostics write to stderr.
+`hyperagent mcp` is a single binary with no runtime dependency. Stdout is the JSON-RPC
+channel: tool handlers must never print to stdout, and only the launcher and diagnostics
+write to stderr.
 
 ## Peers are airc sessions
 
@@ -226,8 +228,7 @@ Claude transcript channel binds to the newest session file in a project director
 
 | variable | default | meaning |
 |---|---|---|
-| `AIRC_DIR` | `../airc` | checkout whose `mods/` (harness names, transcript readers) are used |
-| `CCBRIDGE_BIN` | unset | ccbridge binary to serve; unset runs `bin/ccbridge-latest` (C++: `hyperagent ccbridge install`), which installs the newest GitHub release |
+| `CCBRIDGE_BIN` | unset | ccbridge binary to serve; unset runs the compiled-in `build/ccbridge` |
 | `ORCH_PARENT` | parent of this project | directory whose projects become peers |
 | `ORCH_PORT` | `8787` | airc WebSocket server port |
 | `ORCH_HOST` | `127.0.0.1` | airc WebSocket server host |
@@ -239,8 +240,6 @@ Claude transcript channel binds to the newest session file in a project director
 | `ORCH_WATCH_LAST_CHARS` | `4000` | last-output characters in an event |
 | `ORCH_PROGRESS_INTERVAL` | `5` | seconds between MCP progress notifications |
 | `MCP_TOOL_TIMEOUT` | set by `bin/open` (or `hyperagent open`) to 14400000 | client limit for one tool call |
-| `CCBRIDGE_HOME` | `.orch/ccbridge` | install root for `hyperagent ccbridge`; a scratch directory keeps a test install away from the running binary |
-| `GITHUB_TOKEN` | unset | optional bearer token for the GitHub API calls of `hyperagent ccbridge`; never sent to download hosts |
 
 ## airc coupling
 
@@ -251,10 +250,10 @@ Claude transcript channel binds to the newest session file in a project director
 
 ## Log GUI
 
-`hyperagent gui [--port 8790]` (the C++ port that replaces `bin/gui`; `bin/gui` runs `gui/server.py` until it lands) serves a realtime view of `.orch/projects/**/*.jsonl` and `.orch/server.log` at http://127.0.0.1:8790/.
+`hyperagent gui [--port 8790]` (`bin/gui` runs it) serves a realtime view of `.orch/projects/**/*.jsonl` and `.orch/server.log` at http://127.0.0.1:8790/.
 
-- `gui/server.py` is stdlib only. Each journal tail starts at its end, and a connect gets a snapshot of the last 1500 records, then `records` batches over SSE `/api/events`. Records are keyed `<source>@<byte offset>`, so the client drops duplicates after a reconnect.
-- HMR: `/api/reload` sends `change` on any edit under `gui/public`. A stylesheet edit swaps in place; other edits reload the page. An edit to `gui/server.py` restarts the server after a compile check, and the page reloads when it is back. The C++ `hyperagent gui` does not restart itself; it keeps the `/api/reload` stream for `gui/public` edits only.
+- The server is C++ (`src/gui/`). Each journal tail starts at its end, and a connect gets a snapshot of the last 1500 records, then `records` batches over SSE `/api/events`. Records are keyed `<source>@<byte offset>`, so the client drops duplicates after a reconnect.
+- HMR: `/api/reload` sends `change` on any edit under `gui/public`. A stylesheet edit swaps in place; other edits reload the page. The server does not restart itself: a rebuild and restart picks up a source change.
 - Client: `gui/public/app.js` renders with webjsx `createElement`/`applyDiff` through htm tagged templates, so there is no build step. Both are vendored under `gui/public/vendor` (webjsx 0.0.73, htm 3.1.1, MIT). Renders run on animation frames, the buffer holds 8000 records, and the last 300 matches show with "Show older".
 - Streamed `text` deltas are hidden by default. The URL hash carries the filters (`q`, `agent`, `kinds`).
 - Keys: `/` search, `p` pause, `f` follow, `Esc` clear selection.
@@ -263,18 +262,18 @@ Claude transcript channel binds to the newest session file in a project director
 ## Source facts
 
 - No comments in source: intent lives in names, durable facts live here.
-- `mcp_server.py` (reference) and `hyperagent mcp` expose the MCP tools; `bin/orch` holds the
-  implementation; `bin/open` starts Claude Code with a long MCP tool timeout (C++: `hyperagent open`).
-- `bin/journal.py` owns the per-session output files; `bin/monitor.py` owns the pane
+- `hyperagent mcp` exposes the MCP tools; `bin/orch` is a wrapper for `hyperagent orch`;
+  `bin/open` starts Claude Code with a long MCP tool timeout (`hyperagent open` is not wired yet).
+- `src/journal/` owns the per-session output files; `src/monitor/` owns the pane
   animation detector shared by `bin/watch` and the MCP server.
 - The dispatcher skill is `.claude/skills/orchestrate/SKILL.md`; open the project with
   `bin/open` and run `/orchestrate`.
 
 ## C++ port (`src/`)
 
-- Build: `cmake -B build -G Ninja && cmake --build build`; target `hyperagent` (C++20; Boost.Beast/Asio headers, nlohmann-json, CLI11, sqlite3, OpenSSL). Boost.System is header-only here, so it is linked only when its target exists.
-- Layout: `src/main.cpp` (CLI11 dispatch); `src/core/` (`text`, `json`, `files`, `paths`, `clock`, `process`, `http`); `src/journal/` (`Journal` writer, `records` readers, `command`); `src/monitor/` (`Monitor` state machine behind `SessionSource`, `command` replay); `src/watch/` (ccbridge `/sessions` source and loop); `src/cli/` (`ccbridge` install, `open`, `https` client); `src/gui/` (`command` options and startup, `server` Beast HTTP with SSE and static files, `feed` `JournalFeed` over the `tail` readers and a `hub` of subscribers, `reload` watcher for `gui/public`, `wire` Python-style JSON with ASCII escapes); `src/orch/` (the `orch` port: `config`, `state`, `projects`, `harness` (airc mods), `ccbridge` (HTTP and server lifecycle), `websocket`, `lock`, `turn` (run_job), `orch` (the function API for the MCP port), `command` (CLI11)); `src/mcp/` (`hyperagent mcp`: `server` JSON-RPC loop, `tools`, `peers`, `outputs` resources, `turns`, `events`, `args` Python-compatible JSON and argument coercion, `schema` generated from `mcp_server.py`, `command`).
-- The C++ GUI reads the same journal bytes as `gui/server.py`: `tail` replays the backward block scan of `read_last_lines`, the 500-per-source and 1500-total backfill, and the `<source>@<offset>` ids. Its server log is `orch_home()/server.log`, so `ORCH_HOME` moves it. That is kept on purpose: `bin/orch` writes the airc server log under `ORCH_HOME` (line 184, read back at line 209) and the C++ `ccbridge` does the same, so the viewer follows that path. `gui/server.py` always reads `REPO/.orch/server.log` and its journal root ignores `ORCH_HOME`; the two agree only when `ORCH_HOME` is unset. It has no server.py restart: `/api/reload` still sends `change` with `restart: false`, and a rebuild plus restart replaces the Python HMR. Responses are HTTP/1.0 with Python's header order (`Server`, `Date`, then the response fields); a 501 reason phrase is the error message, as in `HTTP/1.0 501 Unsupported method ('POST')`. The one header difference is that Python appends `Python/<version>` to `Server`, and the C++ server sends `orch-gui` only. Journal lines are parsed by `core::json::parse_python`, which accepts NaN, Infinity, -Infinity, float literals that overflow to Infinity, and lone `\uD800`-`\uDFFF` escapes as Python's `json.loads` does; a lone surrogate is kept as WTF-8 and written back as a `\udXXX` escape. The strict `core::json::parse` used by the other readers still rejects these. The Python journal writer uses `ensure_ascii=False`, so it cannot write a lone surrogate (UnicodeEncodeError), which is why the journal does not contain them today. `tests/fixtures/gui/` is the parity fixture: `journal/root` holds the NaN, Infinity and lone surrogate lines, and `expected-snapshot.json` is the `gui/server.py` backfill with `airc/server` records removed (drop `src == "airc/server"` from both sides, then compare `json.dumps(records, indent=1)`).
+- Build: `cmake -B build -G Ninja && cmake --build build`; targets `hyperagent` and `ccbridge` (from `airc/`; C++20; Boost.Beast/Asio headers, nlohmann-json, CLI11, sqlite3, OpenSSL). Boost.System is header-only here, so it is linked only when its target exists.
+- Layout: `src/main.cpp` (CLI11 dispatch); `src/core/` (`text`, `json`, `files`, `paths`, `clock`, `process`, `http`); `src/journal/` (`Journal` writer, `records` readers, `command`); `src/monitor/` (`Monitor` state machine behind `SessionSource`, `command` replay); `src/watch/` (ccbridge `/sessions` source and loop); `src/cli/` (`ccbridge` path, `open`); `src/gui/` (`command` options and startup, `server` Beast HTTP with SSE and static files, `feed` `JournalFeed` over the `tail` readers and a `hub` of subscribers, `reload` watcher for `gui/public`, `wire` Python-style JSON with ASCII escapes); `src/orch/` (the `orch` port: `config`, `state`, `projects`, `harness` (airc mods), `ccbridge` (HTTP and server lifecycle), `websocket`, `lock`, `turn` (run_job), `orch` (the function API for the MCP port), `command` (CLI11)); `src/mcp/` (`hyperagent mcp`: `server` JSON-RPC loop, `tools`, `peers`, `outputs` resources, `turns`, `events`, `args` Python-compatible JSON and argument coercion, `schema` (the tool and resource definitions), `command`).
+- The GUI reads the journal bytes the way the removed Python server did: `tail` replays the backward block scan of `read_last_lines`, the 500-per-source and 1500-total backfill, and the `<source>@<offset>` ids. Its server log is `orch_home()/server.log`, so `ORCH_HOME` moves it. That is kept on purpose: the airc server log lives under `ORCH_HOME`, and `bin/orch` and `hyperagent ccbridge` read it from there, so the viewer follows that path. `/api/reload` sends `change` with `restart: false`; a rebuild plus restart replaces the old Python HMR restart. Responses are HTTP/1.0 with Python's header order (`Server`, `Date`, then the response fields); a 501 reason phrase is the error message, as in `HTTP/1.0 501 Unsupported method ('POST')`. The `Server` header is `orch-gui`. Journal lines are parsed by `core::json::parse_python`, which accepts NaN, Infinity, -Infinity, float literals that overflow to Infinity, and lone `\uD800`-`\uDFFF` escapes as Python's `json.loads` does; a lone surrogate is kept as WTF-8 and written back as a `\udXXX` escape. The strict `core::json::parse` used by the other readers still rejects these. The journal writer keeps UTF-8 unescaped, so it cannot write a lone surrogate, which is why the journal does not contain them today. `tests/fixtures/gui/` is the parity fixture: `journal/root` holds the NaN, Infinity and lone surrogate lines, and `expected-snapshot.json` is the backfill snapshot with `airc/server` records removed (drop `src == "airc/server"` from both sides, then compare `json.dumps(records, indent=1)`).
 - Journal bytes: records are written compact with insertion order (`ordered_json`), Python float repr and unescaped UTF-8. `core::json::dumps(value, spaced)` gives Python's default `json.dumps` text.
 - Text is counted in code points, as Python `len` and slicing do, and `splitlines` uses Python's separator set.
 - A session without a `busy` field falls back to airc's busy markers (`esc to interrupt` for claude and codex, `Starting your model session` for freebuff) rather than loading the airc mods.
@@ -282,13 +281,12 @@ Claude transcript channel binds to the newest session file in a project director
 - `hyperagent orch` writes `.orch/state.json` as `json.dumps(indent=2, sort_keys=True)` and prints JSON with Python's default `ensure_ascii`, via `core::json::python_dumps`.
 - `fanout` runs one thread per job; each turn owns one ccbridge WebSocket (`orch/websocket`, Beast async reads driven in `run_for` slices) and holds the per-name `.orch/locks/` flock.
 - Transcript lines that are not JSON objects are skipped when reading a session's first timestamp, in `bin/orch` and in the C++ port alike; a single-line `chat-messages.json` (a JSON array) therefore yields no stamp. Freebuff's real chat files are single-line arrays, so the line-based stamp never binds them.
-- `hyperagent orch <sub> --help` prints argparse's layout (usage wrapping at the terminal width, help column at 24, `-h, --help` first). The per-subcommand spec lives in `src/orch/help.cpp` and mirrors the `add_argument` calls in `bin/orch`; CLI11 still does the parsing.
+- `hyperagent orch <sub> --help` prints argparse's layout (usage wrapping at the terminal width, help column at 24, `-h, --help` first). The per-subcommand spec lives in `src/orch/help.cpp` and reproduces the argparse layout of the removed Python `bin/orch`; CLI11 still does the parsing.
 - Parity sandbox: a `ccbridge serve` on a spare port with `CCBRIDGE_TEMPLATES` pointing at templates copied from `airc/tests/fixtures/templates/fake.json` runs prompt, fanout, resume, stop and down with no real harness. Mutating commands never target the live peer server.
 - Parity fixtures: `tests/fixtures/journal/root` (journal root) and `tests/fixtures/monitor/replay.json` (ticks for `hyperagent monitor --replay`, run with `ORCH_JOURNAL` pointing at the journal fixture).
 - `tests/fake_claude/` builds `build/fake_claude/bin/claude` (CMake target `fake_claude`, added by the root CMakeLists). It is the claude harness that the stock `claude.json` template drives: a PTY screen with `❯` and `Claude Code` ready markers and `esc to interrupt` while a turn runs; input arrives as bracketed paste (`ESC[200~` ... `ESC[201~`) and is submitted by Enter. Each turn appends to `$HOME/.claude/projects/<slug(cwd)>/<session>.jsonl`: a user record with string content, assistant `text` and `tool_use` blocks with `apiBlockIndex`, a `tool_result` user record, and a `system` `turn_duration` record that ends the turn. A prompt containing `TOOL` runs a Bash tool_use. `--resume <id>` (missing id exits 1 with `No conversation found`), `--continue` and `--fork-session` are supported; `FAKE_CLAUDE_TURN_MS` sets the turn length (default 1500).
-- MCP success-path sandbox (no `harness fake`, which orch rejects): a `mktemp -d` root with `HOME`, `ORCH_HOME`, `CCBRIDGE_HOME` (a copy of the ccbridge `share/ccbridge` templates), `ORCH_PARENT` holding throwaway project dirs with an `AGENTS.md` marker, `CCBRIDGE_BIN` set to the installed binary, `ORCH_PORT` on a spare port, and `PATH` with `build/fake_claude/bin` first. Drive `hyperagent mcp` (or `python3 mcp_server.py`) through a FIFO pair. `stop_peer` ends peers, but closing the MCP stdin leaves the ccbridge running: stop it by the PID in `$ORCH_HOME/server.pid` and its children, never by name.
+- MCP success-path sandbox (no `harness fake`, which orch rejects): a `mktemp -d` root with `HOME`, `ORCH_HOME`, `CCBRIDGE_TEMPLATES` (a copy of `airc/templates`), `ORCH_PARENT` holding throwaway project dirs with an `AGENTS.md` marker, `CCBRIDGE_BIN` set to the installed binary, `ORCH_PORT` on a spare port, and `PATH` with `build/fake_claude/bin` first. Drive `hyperagent mcp` through a FIFO pair. `stop_peer` ends peers, but closing the MCP stdin leaves the ccbridge running: stop it by the PID in `$ORCH_HOME/server.pid` and its children, never by name.
 - `stop_peer` during an outstanding background turn: airc keeps the turn's WebSocket open after `DELETE /sessions/{name}`, so the turn cannot see the stop through its socket. Each idle poll (`poll_interval`, 5 s) checks the hub instead (`hub_stopped` in `src/orch/turn.cpp`, same name in `bin/orch`); a missing or dead hub ends the turn with status `stopped` and releases `.orch/locks/<name>.lock`, so a queued `resume_project` prompt runs. A fetch failure keeps the turn waiting. airc's claude reader stitches text blocks inside one `poll()` only, so a message whose text blocks land in different polls shows the tail of the second block alone; the fake writes one text block per final message for that reason.
-- `bin/journal.py`, `bin/monitor.py` and `bin/watch` remain the reference. `bin/orch` stays the reference until the whole port passes; `hyperagent orch` serves its subcommands with the same argument surface, JSON shapes and `.orch/` state.
-- `hyperagent ccbridge [install|latest|path]` ports `bin/ccbridge-latest` (bare `ccbridge` is `install`). It asks `api.github.com` for `releases/latest` of `AnEntrypoint/airc`, maps this OS and CPU to a release target (`linux-x64`, `linux-arm64`, `macos-arm64`, `macos-x64`, `windows-x64`, `windows-arm64`), and fetches `ccbridge-<target>.tar.gz` (`.zip` on Windows) from the release download URL. Downloads follow redirects over TLS (Beast with OpenSSL, peer and host verified with the system CA paths). `GITHUB_TOKEN` is optional and only sent to the API; a 403 or 429 with an exhausted limit reports the reset time and asks for a token. The archive is kept in `downloads/`, unpacked by `tar` (`tar -xzf`; `tar -xf` for zip) into `<tag>.partial`, and renamed to `<tag>` only when `ccbridge-<target>/bin/ccbridge` (`.exe` on Windows) is present. `path` prints the newest installed binary with no network access.
-- `hyperagent open` sets `MCP_TIMEOUT` and `MCP_TOOL_TIMEOUT` only when unset and changes to the repo root. `hyperagent gui` replaces `bin/gui`. Callers of `bin/ccbridge-latest`, `bin/open` and `bin/gui` are listed in the port notes below; remove the scripts only after the whole port passes.
-- Port notes: `bin/orch` (line 173) still calls `bin/ccbridge-latest`, `bin/open` is documented in `CLAUDE.md` and `.claude/skills/orchestrate/SKILL.md`, and `docs/index.html` describes `bin/open` and `bin/ccbridge-latest`. Update them when their owning port lands.
+- `bin/orch`, `bin/watch` and `bin/gui` are wrappers around `hyperagent orch`, `watch` and `gui`, which keep the same argument surface, JSON shapes and `.orch/` state as the removed Python tools.
+- `hyperagent ccbridge` prints the binary hyperagent runs: `CCBRIDGE_BIN` when set, else the compiled-in `build/ccbridge`. There is no release download. At spawn, `CCBRIDGE_TEMPLATES` is set to `airc/templates` unless the caller already set it.
+- `hyperagent open` sets `MCP_TIMEOUT` and `MCP_TOOL_TIMEOUT` only when unset and changes to the repo root. `bin/gui` runs `hyperagent gui`; `bin/open` stays the launcher.
