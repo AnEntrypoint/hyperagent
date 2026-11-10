@@ -49,4 +49,17 @@ Also, from gm's report (07:08 UTC): project imports under txiki are blocked by y
 3. Witness `fx ask` in the full witness with a local stub gateway, so the witness fails when the ask path breaks.
 4. Keep the rest of your queue. The standing rules apply, the turn stays open while your own jobs run, and you push once per Phase B.
 
+## thebird: loading animation (owner direction, 2026-11-10 07:20 UTC)
+
+we want thebird's loading animation to be big, central, and read "thebird", drawn as ASCII text and not as canvas or CSS. The owner's words: "the loading animation for thebird should be big, central, and 'thebird', pick animation thats actually ascii not css".
+
+Today web/splash.js draws a 240x20 canvas with the tte-js laseretch effect in the top-right corner (web/terminal.html, #splash). Change it to this:
+1. Put the splash in the middle of the terminal viewport, large. Its content is "thebird" drawn as block letters made of plain ASCII characters, about six rows tall, in a <pre> element with the same monospace font, centred horizontally and vertically over the terminal, and it stays on top of the output.
+2. Animate it with ASCII frames only: a short sequence of text frames swapped by a timer in JS, for example a scan line that sweeps across the block letters, or the letters filling in and out. No canvas, no CSS keyframes, no transitions. Pick one animation, state the reason in the ledger, and keep it cheap: one text node update per frame, no allocation per frame beyond the frame string built once.
+3. Below the art, keep the status text ("loading Python...", "loading the shell") as plain text in the same block, so the phases from web/terminal.js still show.
+4. splash.done() removes the element and its timer. splash.failed(message) shows the message in the same big block, and it must not leave a timer running.
+5. The tte-js import leaves splash.js. Keep web/vendor/tte-js and its notice in place for now, since the owner's earlier decision was to load it behind the splash; record in docs/PENDING_VALIDATION.md that it is no longer imported and that the owner must say whether to remove it.
+
+Witness: a browser run through the playwriter setup, on the live built site, that shows the big "thebird" text centred in the viewport during loading, changes between at least two frames, and is gone after done(). Quote the frame text from two samples, and the element's bounding box against the viewport. Put this under the standing rules, in the same Phase A as your other items.
+
 Related: [[jayzee-realistic-scenarios-shared-terrain]], [[floosie-integration-wanted]], [[gm-run-code-under-txiki-browser]], [[jayzee-web-architecture-static-pools]], [[fx-memory-format-hyperagent]].
