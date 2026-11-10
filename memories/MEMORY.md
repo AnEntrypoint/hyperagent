@@ -31,3 +31,4 @@
 - [thebird accepts fx and gm work](thebird-accepts-fx-work.md) — owner direction: thebird takes the new fx work and the gm addition another agent is making; send the follow-up when thebird is idle
 - [fx features added, sent](fx-features-added-pending.md) — owner instruction: fx was told the features were added when it resumed after its Phase B (ae644306)
 - [floosie integration wanted](floosie-integration-wanted.md) — owner direction: restore floosie in thebird's gm addition, reverting only the decoupling hunks; /workspace/floosie is in place; send when thebird is idle
+- [gm run_code under txiki in the browser](gm-run-code-under-txiki-browser.md) — owner direction: run_code needs project imports via txiki.js; thebird's tjs.wasm is the one browser txiki; queued until both peers are idle
