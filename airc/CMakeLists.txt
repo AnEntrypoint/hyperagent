@@ -48,7 +48,11 @@ add_executable(claude_channel_test EXCLUDE_FROM_ALL ${CMAKE_CURRENT_SOURCE_DIR}/
 target_link_libraries(claude_channel_test PRIVATE ccb_core)
 add_test(NAME claude_channel COMMAND claude_channel_test)
 
-foreach(target ccb_core ccbridge claude_channel_test)
+add_executable(opencode_channel_test EXCLUDE_FROM_ALL ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/opencode_channel_test.cpp)
+target_link_libraries(opencode_channel_test PRIVATE ccb_core)
+add_test(NAME opencode_channel COMMAND opencode_channel_test)
+
+foreach(target ccb_core ccbridge claude_channel_test opencode_channel_test)
     if(MSVC)
         target_compile_options(${target} PRIVATE /W4 /utf-8 /permissive- /bigobj)
         target_compile_definitions(${target} PRIVATE _CRT_SECURE_NO_WARNINGS _WIN32_WINNT=0x0A00)

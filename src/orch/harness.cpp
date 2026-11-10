@@ -34,13 +34,14 @@ using core::json::member;
 using core::json::py_str;
 using core::json::truthy;
 
-constexpr std::array<std::string_view, 3> harness_names{"claude", "codex", "freebuff"};
+constexpr std::array<std::string_view, 4> harness_names{"claude", "codex", "freebuff", "opencode"};
 constexpr std::string_view jsonl_suffix{".jsonl"};
 
 const std::regex uuid_pattern("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
 const std::regex name_pattern("[A-Za-z0-9][A-Za-z0-9 ._-]{0,127}");
 const std::regex chat_id_pattern("[A-Za-z0-9][A-Za-z0-9._:-]{0,255}");
 const std::regex state_version_pattern("state_([0-9]+)");
+const std::regex opencode_session_pattern("ses_[A-Za-z0-9_]{1,124}");
 
 bool is_known(std::string_view name)
 {
@@ -50,7 +51,7 @@ bool is_known(std::string_view name)
 void require_known(const std::string& harness)
 {
     if (!is_known(harness)) {
-        throw std::runtime_error("unknown harness '" + harness + "'; known: claude, codex, freebuff");
+        throw std::runtime_error("unknown harness '" + harness + "'; known: claude, codex, freebuff, opencode");
     }
 }
 
@@ -554,6 +555,68 @@ std::string freebuff_selector_kind(const std::string& selector)
     throw std::invalid_argument("bad conversation id '" + selector + "'");
 }
 
+fs::path opencode_database()
+{
+    return fs::path(home_dir()) / ".local" / "share" / "opencode" / "opencode.db";
+}
+
+constexpr const char* opencode_sessions_sql =
+    "select s.id, coalesce(s.title, ''), s.time_updated from session s "
+    "where s.directory = ? and s.parent_id is null and s.time_archived is null "
+    "and exists (select 1 from message m where m.session_id = s.id) order by s.time_updated";
+constexpr const char* opencode_find_sql = "select s.id, coalesce(s.title, ''), s.time_updated from session s where s.id = ?";
+
+Value opencode_row(sqlite3_stmt* raw, const fs::path& database)
+{
+    Value row = Value::object();
+    row["session_id"] = column_text(raw, 0).value_or("");
+    row["path"] = database.string();
+    row["mtime"] = thread_mtime(static_cast<std::int64_t>(sqlite3_column_int64(raw, 2)));
+    row["size"] = 0;
+    row["title"] = column_text(raw, 1).value_or("");
+    return row;
+}
+
+Value opencode_sessions(const std::string& cwd)
+{
+    std::vector<Value> rows;
+    const fs::path database = opencode_database();
+    const auto connection = open_readonly(database);
+    if (!connection) {
+        return Value::array();
+    }
+    const auto statement = prepare(connection->get(), opencode_sessions_sql, core::paths::absolute_path(cwd));
+    if (!statement) {
+        return Value::array();
+    }
+    while (sqlite3_step(statement->get()) == SQLITE_ROW) {
+        rows.push_back(opencode_row(statement->get(), database));
+    }
+    return by_mtime(std::move(rows));
+}
+
+std::optional<Value> opencode_find(const std::string& session_id)
+{
+    const fs::path database = opencode_database();
+    const auto connection = open_readonly(database);
+    if (!connection) {
+        return std::nullopt;
+    }
+    const auto statement = prepare(connection->get(), opencode_find_sql, session_id);
+    if (!statement || sqlite3_step(statement->get()) != SQLITE_ROW) {
+        return std::nullopt;
+    }
+    return opencode_row(statement->get(), database);
+}
+
+std::string opencode_selector_kind(const std::string& selector)
+{
+    if (std::regex_match(selector, opencode_session_pattern)) {
+        return "id";
+    }
+    throw std::invalid_argument("bad session id '" + selector + "'");
+}
+
 constexpr std::string_view claude_busy_marker{"esc to interrupt"};
 constexpr std::string_view claude_prompt_glyph{"❯"};
 constexpr std::string_view claude_title_marker{"Claude Code"};
@@ -563,6 +626,8 @@ constexpr std::string_view codex_onboarding_marker{"to get started, describe a t
 constexpr std::string_view freebuff_busy_marker{"Starting your model session"};
 constexpr std::string_view freebuff_prompt_marker{"Enter a coding task"};
 constexpr std::string_view freebuff_ready_marker{"for history · ? for help"};
+constexpr std::string_view opencode_busy_marker{"esc interrupt"};
+constexpr std::string_view opencode_prompt_marker{"Ask anything"};
 
 }
 
@@ -589,6 +654,9 @@ Value sessions(const std::string& harness, const std::string& cwd)
     if (harness == "codex") {
         return codex_sessions(cwd);
     }
+    if (harness == "opencode") {
+        return opencode_sessions(cwd);
+    }
     return freebuff_sessions(cwd);
 }
 
@@ -600,6 +668,9 @@ std::optional<Value> find(const std::string& harness, const std::string& session
     }
     if (harness == "codex") {
         return codex_find(session_id);
+    }
+    if (harness == "opencode") {
+        return opencode_find(session_id);
     }
     return std::nullopt;
 }
@@ -613,6 +684,9 @@ std::string selector_kind(const std::string& harness, const std::string& selecto
     if (harness == "codex") {
         return codex_selector_kind(selector);
     }
+    if (harness == "opencode") {
+        return opencode_selector_kind(selector);
+    }
     return freebuff_selector_kind(selector);
 }
 
@@ -624,6 +698,9 @@ bool pane_busy(const std::string& harness, const std::string& pane)
     }
     if (harness == "codex") {
         return contains(pane, codex_busy_marker);
+    }
+    if (harness == "opencode") {
+        return contains(pane, opencode_busy_marker);
     }
     return contains(pane, freebuff_busy_marker);
 }
@@ -638,6 +715,9 @@ bool pane_ready(const std::string& harness, const std::string& pane)
     if (harness == "codex") {
         return contains(pane, codex_prompt_marker) || contains(pane, codex_onboarding_marker)
             || contains(pane, codex_busy_marker);
+    }
+    if (harness == "opencode") {
+        return contains(pane, opencode_prompt_marker) || contains(pane, opencode_busy_marker);
     }
     return contains(pane, freebuff_prompt_marker) || contains(pane, freebuff_ready_marker)
         || contains(pane, freebuff_busy_marker);

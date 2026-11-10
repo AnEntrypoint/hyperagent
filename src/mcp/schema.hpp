@@ -35,7 +35,7 @@ inline constexpr const char* tools_json = R"schema([
         },
         "harness": {
           "type": "string",
-          "description": "claude, codex or freebuff; defaults to the project's remembered harness"
+          "description": "claude, codex, freebuff or opencode; defaults to the project's remembered harness"
         },
         "resume": {
           "type": "boolean",
@@ -83,7 +83,7 @@ inline constexpr const char* tools_json = R"schema([
         },
         "harness": {
           "type": "string",
-          "description": "claude, codex or freebuff; defaults to the project's remembered harness"
+          "description": "claude, codex, freebuff or opencode; defaults to the project's remembered harness"
         },
         "resume": {
           "type": "boolean",
@@ -191,7 +191,7 @@ inline constexpr const char* tools_json = R"schema([
   },
   {
     "name": "resume_project",
-    "description": "Resume a project's conversation in claude, codex or freebuff. With no project it resumes the last project used; with no session_id it resumes that project's newest session. A specific project, harness or session_id can be given. Starts the airc server and peer as needed and optionally sends a prompt, returning the resumed session and the turn.",
+    "description": "Resume a project's conversation in claude, codex, freebuff or opencode. With no project it resumes the last project used; with no session_id it resumes that project's newest session. A specific project, harness or session_id can be given. Starts the airc server and peer as needed and optionally sends a prompt, returning the resumed session and the turn.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -209,7 +209,7 @@ inline constexpr const char* tools_json = R"schema([
         },
         "harness": {
           "type": "string",
-          "description": "claude, codex or freebuff; defaults to the project's remembered harness"
+          "description": "claude, codex, freebuff or opencode; defaults to the project's remembered harness"
         },
         "prompt": {
           "type": "string",
@@ -427,6 +427,6 @@ inline constexpr const char* tools_json = R"schema([
   }
 ])schema";
 
-inline constexpr const char* instructions = R"schema(Peer agents are project directories beside this one. list_projects launches nothing. start_projects starts only the names given and runs Claude Code in each project through airc. instruct and instruct_many prompt peers and return their turns; wait=false returns a turn_id for turn_result. resume_project continues a project's last conversation in claude, codex or freebuff (or a named one) after its peer stopped; list_project_sessions shows the candidates. Peers keep their conversation across prompts and stay alive until stop_peer or server_down. Every turn is journaled per session under .orch/projects; list_outputs, read_output and search_output are the MCP views, and resources under hyperagent://outputs read the same files. The peer monitor emits an idle event at turn end (trigger result or pane) with the whole last response; subscribe with resources/subscribe or subscriptions/listen (resourceSubscriptions, resourcesListChanged), follow logging/setLevel for notifications/message, and read hyperagent://events for the recent event stream. Run build/hyperagent watch locally for the same events as lines.)schema";
+inline constexpr const char* instructions = R"schema(Peer agents are project directories beside this one. list_projects launches nothing. start_projects starts only the names given and runs Claude Code in each project through airc. instruct and instruct_many prompt peers and return their turns; wait=false returns a turn_id for turn_result. resume_project continues a project's last conversation in claude, codex, freebuff or opencode (or a named one) after its peer stopped; list_project_sessions shows the candidates. Peers keep their conversation across prompts and stay alive until stop_peer or server_down. Every turn is journaled per session under .orch/projects; list_outputs, read_output and search_output are the MCP views, and resources under hyperagent://outputs read the same files. The peer monitor emits an idle event at turn end (trigger result or pane) with the whole last response; subscribe with resources/subscribe or subscriptions/listen (resourceSubscriptions, resourcesListChanged), follow logging/setLevel for notifications/message, and read hyperagent://events for the recent event stream. Run build/hyperagent watch locally for the same events as lines.)schema";
 
 }

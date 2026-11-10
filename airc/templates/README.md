@@ -48,6 +48,7 @@ Output is read from the agent's own transcript, never scraped from the screen. B
 | `claude-jsonl` | `<root>/projects/<slug(cwd)>/*.jsonl`; assistant/user records, text blocks stitched by `apiBlockIndex` within `message.id`; `stop_reason` ends a turn |
 | `codex-jsonl` | `<root>/sessions/YYYY/MM/DD/rollout-*.jsonl`; `response_item` assistant `output_text`; `task_complete` ends a turn; `session_meta.payload.cwd` selects the session |
 | `freebuff-json` | `<root>/projects/<basename(cwd)>/chats/<id>/chat-messages.json`; array of `{variant: user or ai, blocks}`; `isComplete` ends a turn |
+| `opencode-sqlite` | `<root>/opencode.db` (SQLite, read-only); root sessions by `directory`, messages and parts by `time_updated`; assistant `text`, `reasoning` and `tool` parts; a completed assistant message whose `finish` is not `tool-calls` ends a turn |
 
 ## Example: a new agent that reuses a kind
 
