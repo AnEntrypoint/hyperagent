@@ -108,57 +108,27 @@ This section is the standing rule; the other sections apply it.
   facts only the owner holds, such as the intended product scope. Everything else is decided.
 - Ignore effort and labour budgets when judging what to do next.
 
-## Wall-clock rules
+## Wall-clock habits
 
 Time a peer spends idle or waiting is lost progress. Where time is wasted, the fix
 goes into this skill. Where work is repeated or tokens and turns are wasted, the fix
-goes to the gm project as a change to the gm skill.
+goes to the gm project as a change to the gm skill. Either fix is a habit stated once
+in general terms, not another rule for one incident.
 
-- A peer never waits on the dispatcher for its next item. Every dispatch carries the
-  whole ordered queue, so a finished item is followed by the next one in the same turn.
-- Dispatch on the idle event, not on the timer. A `build/hyperagent watch` line for a finished turn
-  is answered at once; the ten-minute wake is only the fallback.
-- A turn that ends with a stub such as "waiting for the build" is not a report. Read
-  the pane or `read_output` for the result; do not spend a turn asking for it again.
-- Check `alive` for every peer each cycle. A dead peer is resumed in that same cycle
-  with its open queue.
-- Blocked items never leave capacity idle. When a peer has no reachable item, start
-  the peer of another project whose ledger has reachable open work.
-- Peers do not sleep-and-poll. They block once on the job's PID or use a background
-  job that notifies on exit, with a timeout, and do other queue items meanwhile.
-- A peer does not end its turn while its own job is still running, unless the job
-  re-invokes it on exit.
-- Build and check once per Phase B, after the last change. Reuse build directories and
-  caches. Run only the tests the changed surface needs.
-- Shared installs, such as the gm binary, and `/model` switches run in a quiet window
-  when no peer is busy. Queue them and act the moment the window opens.
-- Each cycle, measure the waste from the transcripts (wait loops, repeated builds,
-  round trips per item) and report the worst item per peer with its fix. The measure
-  is the gap between each journal `result` record and the next `instruct` record, plus
-  the peer transcript's long calls, repeated commands and token use.
-- The gap between a peer's `result` and its next `instruct` is dispatcher waste. The
-  target is under one minute. On 2026-11-10 the gaps over eight hours summed to 4 h for
-  fx, 3 h for spoint, 1.4 h for jayzee and 1.1 h for thebird, with a typical gap of five
-  to eight minutes, because the idle events never arrived and the timer did the work.
-- Keep each busy peer's next dispatch written before its turn ends: the full prompt in
-  a pending memory file, ready to send. The idle event is answered by sending that
-  file's prompt in the same wake, with no research in between.
-- Dispatch deep queues. A queue holds several stretches of work, enough for hours. A
-  turn that ends in under thirty minutes with reachable work left means the queue was
-  too shallow; send the rest at once and make the next queue deeper.
-- When one peer goes idle while the dispatcher is working on something else, dispatch
-  that peer first and return to the other work afterwards.
-- A peer waits on its own job once, for as long as the host's tool limit allows (about
-  590 s per call), sized from the wall time recorded in its ledger. Slices of 100 s
-  cost a round trip each.
-- After the idle events were repaired the gap fell to between 14 and 72 s. A gap over a
-  minute now means the next prompt was not written in advance.
-- A resumed peer continues its latest session. Pass the `session_id` of the newest
-  journal under `.orch/projects/<slug>/`, since the default once chose an older one and
-  the peer lost its last turn's context.
-- Read busy state from the watcher's file and the journal's last record. Call
-  `peer_status` only for `alive`, since a server built before the pane change still
-  prints every pane.
+- Peers are never waiting on the dispatcher. A peer always holds more reachable work
+  than it can finish soon, and when its turn does end, its next prompt is already
+  written and goes out on the idle event, before anything else the dispatcher is doing.
+- A turn's end is read, not asked for again. The report, the journal and the pane
+  already say what happened, including when a turn ended early or a peer died; the
+  answer is the next dispatch.
+- Everything is done once. One build and one check after the last change, one wait for
+  a job for as long as it needs, one read of state per phase, other work while a job runs.
+- Capacity is never parked behind a blocked item. Blocked work is driven towards
+  unblocking, and meanwhile the peer, or another project's peer, takes reachable work.
+- Changes that touch every peer, such as a shared install, wait for a moment when no
+  peer is busy.
+- Waste is measured, not guessed: the gap between a peer's `result` and its next
+  `instruct` in the journal, and the long calls, repeats and token use in its transcript.
 
 ## Two-phase work
 
@@ -227,8 +197,7 @@ Include these in every assignment prompt:
 - Work the whole queue without waiting for the dispatcher. No sleep-and-poll loops:
   block once on the job's PID with a timeout, or do the next item while it runs. Batch
   gm verbs into one `run_code` body. Record each witness's wall time in the ledger.
-- A finished stretch is not the end of the turn. Start the next stretch at once, and end
-  the turn only when no reachable item is left. A turn does not end on a running job.
+- A finished stretch is not the end of the turn; carry on until no reachable item is left.
 - End every turn with: `REPORT: finished|open|blocked — <your rhetoric> — witness: <output evidence>`.
 
 ## Resume
@@ -291,18 +260,13 @@ A client that speaks MCP events can skip `build/hyperagent watch`: subscribe wit
 the same idle and gone payloads as `notifications/resources/updated` and
 `notifications/message`; `hyperagent://events` holds the recent stream.
 
-Arm a Monitor on the watcher's output file so each idle or gone event wakes this
-session at once, and re-arm it when it expires. Every stage of the pipe must flush per
-line: `tail -n 0 -F /tmp/watch.out | grep --line-buffered -a -v '"busy":true' | grep --line-buffered -a -o -E '^.{1,400}'`. Do not
-shorten lines with `cut`, which holds its output in a block buffer when it writes to a
-pipe, so no event is delivered. A monitor that expires with no events while peers were
-finishing turns is a defect in the filter: compare it with the watcher's file before
-re-arming. An idle event that carries `"busy":true` is not a finished turn: the peer
-compacted or a background job re-invoked it, and its journal continues. The filter drops
-those lines, since each one costs a dispatcher turn and sends nothing.
+Arm a Monitor on the watcher's output file so each finished turn wakes this session at
+once, and re-arm it when it expires:
+`tail -n 0 -F /tmp/watch.out | grep --line-buffered -a -v '"busy":true' | grep --line-buffered -a -o -E '^.{1,400}'`.
+Every stage flushes per line, and events from a peer that is still busy are dropped.
 Check live state from git and the
-event line first; call `peer_status` only when those do not answer the question. It
-returns the peer list without panes; add `pane_lines` only when a pane is needed.
+event line first; call `peer_status` only when those do not answer the question. A
+resumed peer continues its newest session.
 
 Also start a loop that wakes this session every 10 minutes validating that all peers
 are making maximal progress. On each wake, run the cycle above. If loops are not

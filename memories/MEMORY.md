@@ -37,3 +37,4 @@
 - [thebird npm and npx](thebird-npm-npx-pending.md) — sent in turn 450f347730c5 with the foreground-line correction, floosie and the gm txiki shim; witnesses in its REPORT
 - [Ready prompts for busy peers](dispatch-ready-prompts.md) — next dispatch per busy peer, written in advance; send on the idle event, then remove the section
 - [jayzee: realistic scenarios, shared terrain data](jayzee-realistic-scenarios-shared-terrain.md) — owner direction: realistic game physics scenarios, baseline features from spoint/spawn/savi, flawless vegetation streaming, one landscape dataset for collision and visuals
+- [Generalizations, not towers of checks](feedback-generalizations-not-check-towers.md) — owner rule: instructions are a few general habit anchors; no incident rules, numbers or enforcement gates in skills and prompts
