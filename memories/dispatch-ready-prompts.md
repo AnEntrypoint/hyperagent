@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: bc092253-97dd-4f77-9001-5a59318251ee
-  modified: 2026-11-10T06:12:48.821Z
+  modified: 2026-11-10T06:16:17.530Z
 ---
 
 The orchestrate skill's wall-clock rule: each busy peer's next dispatch is written before its turn ends. On the idle event, read the peer's REPORT, adjust only what the report changes, send the prompt, and delete its section here.
@@ -33,6 +33,12 @@ Defects to settle, each with its cause:
 - The dispatcher did the research itself (ls, six reads) before delegating. The superagent's job is to start the root and hand it the request; the skill text should say so.
 
 The standing rules apply.
+
+## gm (after its waste-fix REPORT)
+
+we want gm's browser run_code to run under txiki.js with the project's imports, using thebird's artifact. thebird has built it: /workspace/thebird/web/vendor/txiki/tjs.wasm exports the seven gm_txiki_* shim functions (gm_txiki_new, gm_txiki_free, gm_txiki_context, gm_txiki_loop_alive, gm_txiki_loop_turn, gm_txiki_load_builtin, gm_txiki_refresh_loop_time), with pins txiki v26.11.0, libuv dd9f081cc55a4d83e2a976848d074f28ee5f34eb, quickjs-ng 7b5f588e0f9b643e2996f291bfc861abeaceddc2. Its sha256 changes once thebird adds an exit flush, so read the pin from thebird's TXIKI_WASM_SHA256 and do not hard-code today's value. Read the artifact; do not edit thebird. run_code bodies execute in the txiki context, project imports resolve through the module loader, the 120 s deadline still runs through the interrupt handler, and LeafVerbs stay as they are. Witness with a Node run and a browser run of the built site through playwriter. Then every open row left in your ledger, stretch after stretch. Also from the report: anything it left open in the waste-fix queue goes first.
+
+The new gm binary is installed over the shared one by the dispatcher in a quiet window, never by gm.
 
 ## jayzee (owner direction, 2026-11-10: realistic scenarios, flawless vegetation streaming, one landscape dataset)
 
