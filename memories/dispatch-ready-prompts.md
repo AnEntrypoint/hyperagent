@@ -32,4 +32,8 @@ My own experience as the dispatcher, so you can match it. I am the superagent in
 
 Fold this into the superagent stretch if it is still open; otherwise it is the next stretch, ahead of the ranked rows. The standing rules apply, and the turn stays open while your own jobs run.
 
+## thebird (from gm's report, 2026-11-10 06:46: pin and artifact disagree)
+
+we want thebird to make the txiki artifact and its pin agree. Its TXIKI_WASM_SHA256 is 137c08f6…, but the vendored web/vendor/txiki/tjs.wasm hashes to dcd3a434…. gm's witnesses ran with --allow-unpinned, because the driver fails closed on the mismatch. Rebuild the vendored artifact from the pinned sources (txiki v26.11.0, libuv dd9f081cc55a4d83e2a976848d074f28ee5f34eb, quickjs-ng 7b5f588e0f9b643e2996f291bfc861abeaceddc2), or regenerate the pin from the build that is shipped, whichever matches the sources, and record which in the ledger. Include the exit flush in the same rebuild, since that changes the hash anyway. Keep the seven gm_txiki_* exports. Report the final sha256 for gm. Then finish its queue as before; the standing rules apply, and the turn stays open while its own jobs run.
+
 Related: [[jayzee-realistic-scenarios-shared-terrain]], [[floosie-integration-wanted]], [[gm-run-code-under-txiki-browser]], [[jayzee-web-architecture-static-pools]], [[fx-memory-format-hyperagent]].
