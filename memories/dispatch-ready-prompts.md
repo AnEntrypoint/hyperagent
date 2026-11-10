@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: bc092253-97dd-4f77-9001-5a59318251ee
-  modified: 2026-11-10T15:16:02.814Z
+  modified: 2026-11-10T15:20:26.567Z
 ---
 
 The orchestrate skill's wall-clock rule: each busy peer's next dispatch is written before its turn ends. On the idle event, read the peer's REPORT, adjust only what the report changes, send the prompt, and delete its section here.
@@ -187,3 +187,5 @@ Send: we want fx to change its superagent so each root notifies it when it finis
 Phase B, once: build fx; run the live superagent witness (start one root, instruct it to end with a REPORT line, receive its turn-end event, continue it on its session id, read status once) and quote the output; fix every defect; push origin main once. Do not add a test that asserts the prompt's wording.
 
 Standing lines: work only in /workspace/fx/fx on main, in the shared checkout; commit as lanmower with no trailer; stop processes by their own PID, never pkill or killall. End with REPORT: finished|open|blocked — <summary> — witness: <output evidence>.
+
+- 15:21 UTC: thebird ended 01315c08ee67 finished-with-open: approval and ask fail because the page sends no libfx.tools; cd4fac5 local (docs), no push. Decided: the page advertises exactly the tools its stub implements. Sent turn 5d014aef5553 via resume_project (session f76f541c, wait false): tools in the initialize with a stub guard and test, witnesses once, one push (folds cd4fac5); stop relay PID 3051450 only if its own; list the chromium trees under /config, do not stop them. fx busy on fd34d88b949f (Phase B running core and permissions); the superagent finish notice above waits for its idle event.
