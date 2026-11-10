@@ -66,9 +66,10 @@ decision to a person.
 3. Ask every started peer for its full ranked remaining work, with current item and
    status, through `instruct_many`.
 4. Decide the best next step for each peer.
-5. Send each peer its single next step in the same turn as its report requirement.
-   Use `instruct_many` for parallel assignments and `instruct` for one peer. Tell it
-   to keep working on that item and to end with a `REPORT:` line.
+5. Send each peer an ordered queue of every reachable item it has, in the same turn as
+   its report requirement. Use `instruct_many` for parallel assignments and `instruct`
+   for one peer. Tell it to work the queue top to bottom without waiting for the
+   dispatcher, one Phase A and one Phase B per stretch, and to end with a `REPORT:` line.
 6. The output of each call is the peer's report: finished, open, blocked, and its
    witness output. Do not ask for a separate message.
 
@@ -106,6 +107,33 @@ This section is the standing rule; the other sections apply it.
   that cannot be recovered; licence or legal confirmations the owner has deferred; and
   facts only the owner holds, such as the intended product scope. Everything else is decided.
 - Ignore effort and labour budgets when judging what to do next.
+
+## Wall-clock rules
+
+Time a peer spends idle or waiting is lost progress. Where time is wasted, the fix
+goes into this skill. Where work is repeated or tokens and turns are wasted, the fix
+goes to the gm project as a change to the gm skill.
+
+- A peer never waits on the dispatcher for its next item. Every dispatch carries the
+  whole ordered queue, so a finished item is followed by the next one in the same turn.
+- Dispatch on the idle event, not on the timer. A `bin/watch` line for a finished turn
+  is answered at once; the ten-minute wake is only the fallback.
+- A turn that ends with a stub such as "waiting for the build" is not a report. Read
+  the pane or `read_output` for the result; do not spend a turn asking for it again.
+- Check `alive` for every peer each cycle. A dead peer is resumed in that same cycle
+  with its open queue.
+- Blocked items never leave capacity idle. When a peer has no reachable item, start
+  the peer of another project whose ledger has reachable open work.
+- Peers do not sleep-and-poll. They block once on the job's PID or use a background
+  job that notifies on exit, with a timeout, and do other queue items meanwhile.
+- A peer does not end its turn while its own job is still running, unless the job
+  re-invokes it on exit.
+- Build and check once per Phase B, after the last change. Reuse build directories and
+  caches. Run only the tests the changed surface needs.
+- Shared installs, such as the gm binary, and `/model` switches run in a quiet window
+  when no peer is busy. Queue them and act the moment the window opens.
+- Each cycle, measure the waste from the transcripts (wait loops, repeated builds,
+  round trips per item) and report the worst item per peer with its fix.
 
 ## Two-phase work
 
@@ -171,6 +199,9 @@ Include these in every assignment prompt:
 - Treat any issue as a defect: fix it, or record it with its cause. Do not call it expected.
 - Verify by running the thing in Phase B. Quote the witness output. Fix any issues that arise.
 - Stop dev servers by their own PID; never use `pkill` or `killall`.
+- Work the whole queue without waiting for the dispatcher. No sleep-and-poll loops:
+  block once on the job's PID with a timeout, or do the next item while it runs. Batch
+  gm verbs into one `run_code` body. Record each witness's wall time in the ledger.
 - End every turn with: `REPORT: finished|open|blocked — <your rhetoric> — witness: <output evidence>`.
 
 ## Resume
