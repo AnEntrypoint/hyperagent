@@ -63,3 +63,5 @@ Measured for hyperagent (airc/templates/opencode.json, for reference): ready mar
 - jayzee: stretch 5 Phase A accepted as 0183bef; stretch 6 Phase A (camera-relative origin, precision defect from stretch 4) on turn c5ed44fb7844. Stretches 1 to 5 Phase B wait for quiet host (load 5.6 on 12 cores at 11:17).
 - fx: busy; superagent pass and opencode template still queued above.
 - gm: idle; installed-build go still held until no peer is busy.
+
+- 2026-11-10 09:23 UTC: jayzee's stretch 6 turn c5ed44fb7844 ended "open" with uncommitted camera-relative work in its checkout. Redispatched as turn 6addf105c7c2 to finish Phase A in one pass (items 1 to 7 of its open report, no build, no push). Its claim that my instruction was text-only was wrong; the instruction did not say that, and the correction is in the prompt.
