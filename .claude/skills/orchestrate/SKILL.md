@@ -127,11 +127,11 @@ goes to the gm project as a change to the gm skill.
 - Peers do not sleep-and-poll. They block once on the job's PID in the foreground, with
   a timeout, and do other queue items meanwhile.
 - Build, test and CLI-run checks run in the foreground of the peer's own turn, with
-  the shell timeout set to cover them (up to 600000 ms per call). A peer does not
-  delegate a build, test or CLI run to a background agent, and does not background
-  its own shell job, because a backgrounded job stops the turn and the owner has to
-  bring it back by hand. A long check that exceeds one call is split into sequential
-  foreground calls.
+  the shell timeout set to cover them (up to 600000 ms per call). This is a precaution
+  about the fx app, not about peer agents: the app's CLI under test has been seen to
+  suspend mid-run, and the owner has had to resume it with `fg`. The cause is not
+  confirmed (a Ctrl-Z is one suspect), so keep checks foreground until it is. A long
+  check that exceeds one call is split into sequential foreground calls.
 - A peer does not end its turn while its own job is still running.
 - Build and check once per Phase B, after the last change. Reuse build directories and
   caches. Run only the tests the changed surface needs.
@@ -206,8 +206,8 @@ Include these in every assignment prompt:
 - Stop dev servers by their own PID; never use `pkill` or `killall`.
 - Work the whole queue without waiting for the dispatcher. No sleep-and-poll loops:
   block once on the job's PID in the foreground with a timeout, or do the next item
-  while it runs. Build, test and CLI-run checks stay in the foreground; do not run them
-  through a background agent or a backgrounded shell job. Batch
+  while it runs. Build, test and CLI-run checks stay in the foreground, because the fx
+  app's CLI has suspended mid-run (cause unconfirmed). Batch
   gm verbs into one `run_code` body. Record each witness's wall time in the ledger.
 - End every turn with: `REPORT: finished|open|blocked — <your rhetoric> — witness: <output evidence>`.
 
