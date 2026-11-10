@@ -1,6 +1,6 @@
 ---
 name: dispatch-ready-prompts
-description: "ready-to-send next prompts for busy peers (none queued; holds the quiet-window airc server restart); send on the idle event in the same wake, then remove the sent section"
+description: "ready-to-send next prompts for busy peers (fx superagent view; holds the quiet-window airc server restart); send on the idle event in the same wake, then remove the sent section"
 metadata:
   node_type: memory
   type: project
@@ -15,5 +15,13 @@ Every prompt ends with the standing lines: work only in your cwd on main in the 
 ## Quiet window: restart the airc server on the rebuilt ccbridge
 
 Peers whose turn ran longer than thirty minutes were retired within a minute or two of the turn ending (gm, spoint, jayzee and fx on 2026-11-10), and any job they had left running died with them. Cause: the hub's idle clock was last set when the prompt was submitted, so a long turn was already past the 1800 s reap limit when the dispatcher's client detached. Fixed in airc/src/server/server.cpp (detach now resets the clock) and built into build/ccbridge. The running servers (pids 884614 and 931565, the older .orch/ccbridge/v0.1.0.4 binary) still have the defect. When no peer is busy, restart the server on build/ccbridge and resume each peer's newest session. Until then: answer a finished turn within a minute, resume with `resume: true` when a peer is gone, and ask peers to keep the turn open while their own job runs.
+
+## fx (owner direction, 2026-11-10: the superagent's view of its agents)
+
+we want fx's superagent to see its agents the way a dispatcher sees peers, not the full view of what they do. The owner's words: "superagents shouldnt get the full view of what agents are doing, we must make sure that fx's superagent view is a rough match of what we experience from the perspective of superagent feedback when running in the fx app".
+
+The reference is the hyperagent dispatcher's experience: it prompts a peer and receives only the turn's final response; it is told the moment a turn ends, with that last response, and when a peer is gone; it can read alive and busy state; everything else a peer did (tool calls, streamed text, its context) stays in that peer's own journal and is read on request, in slices. Give the superagent the same shape from its roots, in the tool results and in what the fx app shows the user for a superagent turn. Record the design in docs/superagent.md and witness it: after a root runs a turn with many tool calls, the superagent's context holds the final response and status only.
+
+Fold this into the superagent stretch if it is still open; otherwise it is the next stretch, ahead of the ranked rows. The standing rules apply, and the turn stays open while your own jobs run.
 
 Related: [[jayzee-realistic-scenarios-shared-terrain]], [[floosie-integration-wanted]], [[gm-run-code-under-txiki-browser]], [[jayzee-web-architecture-static-pools]], [[fx-memory-format-hyperagent]].
