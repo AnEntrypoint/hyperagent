@@ -314,9 +314,27 @@ async def tool_list_project_sessions(args: dict) -> str:
     return json.dumps(rows, indent=2)
 
 
+PEER_STATUS_FIELDS = ("alive", "busy", "harness", "cwd", "clients", "launch_args",
+                      "output_path", "output_session")
+
+
+def pane_content(pane: list) -> list[str]:
+    rows = [line.rstrip() for line in pane if line.strip()]
+    return [line for line in rows if set(line.strip()) - set("─ ")]
+
+
+def compact_peer(info: dict, pane_lines: int) -> dict:
+    row = {key: info[key] for key in PEER_STATUS_FIELDS if key in info}
+    if pane_lines:
+        row["pane_tail"] = pane_content(info.get("pane_tail") or [])[-pane_lines:]
+    return row
+
+
 async def tool_peer_status(args: dict) -> str:
     await orch.ensure_server()
     sessions = await orch.fetch_sessions()
+    pane_lines = int(args.get("pane_lines") or 0)
+    status = {}
     for name, info in sessions.items():
         try:
             row = outputs.find_session(agent=name, cwd=info.get("cwd"))
@@ -325,7 +343,8 @@ async def tool_peer_status(args: dict) -> str:
         if row:
             info["output_path"] = row["path"]
             info["output_session"] = row["session"]
-    return json.dumps(sessions, indent=2, sort_keys=True)
+        status[name] = compact_peer(info, pane_lines)
+    return json.dumps(status, indent=2, sort_keys=True)
 
 
 async def tool_read_pane(args: dict) -> str:
@@ -614,8 +633,11 @@ TOOLS = [
                                     "all": {"type": "boolean"}},
                      "additionalProperties": False}},
     {"name": "peer_status",
-     "description": "List live peers with alive and busy state, cwd, harness, launch args and pane tail.",
-     "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False}},
+     "description": "List live peers with alive and busy state, cwd, harness, client count, launch "
+                    "args and output journal paths. The pane tail is left out unless pane_lines is given.",
+     "inputSchema": {"type": "object",
+                     "properties": {"pane_lines": {"type": "number"}},
+                     "additionalProperties": False}},
     {"name": "read_pane",
      "description": "Print the tail of a peer's terminal pane.",
      "inputSchema": {"type": "object",
