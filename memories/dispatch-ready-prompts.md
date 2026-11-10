@@ -85,3 +85,11 @@ Measured for hyperagent (airc/templates/opencode.json, for reference): ready mar
 - 2026-11-10 09:38 UTC: jayzee finished stretch 7 Phase A as c4685de (turn 4c5681b887de). Phase A is done for stretches 1 to 7. The single Phase B waits for fx and thebird to be idle; load is 2.65 now. fx busy on 5639b5d7707f; thebird busy on run 9.
 
 - 2026-11-10 09:53 UTC: fx pushed 108d86e6 (superagent habits, opencode template confirmed unchanged: --prompt submits by itself). Its open items went to stretch 9 Phase A as turn 4da24d18c531: Q16, Q10, queue rows 10+, and the ACP suite (48 of 173 failing at HEAD, treated as defects). jayzee idle on the single Phase B for stretches 1 to 7. gm still gone.
+
+## Queued for fx's next idle event (dispatcher, 2026-11-10 09:55 UTC)
+
+thebird's Phase B push is held on the resize defect, which lives in fx's checkout (src/ui/resize_runtime.zig; the witness "a resize after the command palette keeps the welcome panel and the rules at 70 columns", screen settled false). Decision: fix it in fx, not accept it as known. Send to fx on its idle event, folded into its open stretch 9 pass, or as its first item if that pass is done:
+
+we want fx to fix the resize defect in src/ui/resize_runtime.zig and rebuild fx-term.wasm, as a Phase A change with the witness listed in docs/PENDING_VALIDATION.md. The witness is thebird's "a resize after the command palette keeps the welcome panel and the rules at 70 columns" check, which screens `["𝒇x v0.0.16 · Run /help for commands","","┃",""]` with settled false. Find the cause in the resize path, the settle condition, and the palette close, then fix it. Phase B: build once, run that check through thebird's witness, push origin main once, and report the output.
+
+When fx pushes, send thebird the go-ahead (it has its own Phase A committed as 854c9a8 and its pin, orphan-cleanup and import-contract items queued in turn 038505de3032).
