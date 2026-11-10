@@ -290,7 +290,9 @@ line: `tail -n 0 -F /tmp/watch.out | grep --line-buffered -a -o -E '^.{1,400}'`.
 shorten lines with `cut`, which holds its output in a block buffer when it writes to a
 pipe, so no event is delivered. A monitor that expires with no events while peers were
 finishing turns is a defect in the filter: compare it with the watcher's file before
-re-arming. Check live state from git and the
+re-arming. An idle event that carries `"busy":true` is not a finished turn: the peer
+ran a background job that re-invoked it, and its journal continues. Send nothing for it.
+Check live state from git and the
 event line first; call `peer_status` only when those do not answer the question. It
 returns the peer list without panes; add `pane_lines` only when a pane is needed.
 
