@@ -56,3 +56,10 @@ Send: we want fx to add an opencode template as part of the superagent change. C
 It follows the same shape as claude.json and codex.json. Phase B: confirm the template launches opencode with the prompt, that opencode runs the turn, and quote the output. Do not copy any transcript reader into fx; fx's external templates only launch. If `--prompt` does not submit the prompt by itself, make the template submit it and record the change in docs/PENDING_VALIDATION.md.
 
 Measured for hyperagent (airc/templates/opencode.json, for reference): ready marker "Ask anything", busy marker "esc interrupt", live turn 4.8 s, transcript `~/.local/share/opencode/opencode.db`.
+
+## Dispatch ledger (dispatcher, 2026-11-10 11:18 UTC)
+
+- thebird: resumed session f76f541c with the witness run 7 failures (5 checks), client pid 284260; running run 8 at 09:17 UTC on its own clock.
+- jayzee: stretch 5 Phase A accepted as 0183bef; stretch 6 Phase A (camera-relative origin, precision defect from stretch 4) on turn c5ed44fb7844. Stretches 1 to 5 Phase B wait for quiet host (load 5.6 on 12 cores at 11:17).
+- fx: busy; superagent pass and opencode template still queued above.
+- gm: idle; installed-build go still held until no peer is busy.
