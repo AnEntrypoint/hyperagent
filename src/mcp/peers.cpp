@@ -9,6 +9,7 @@
 #include <semaphore>
 #include <signal.h>
 #include <string>
+#include <string_view>
 #include <sys/types.h>
 #include <thread>
 #include <utility>
@@ -494,9 +495,63 @@ std::string list_project_sessions(const Value& args)
     return dumps_indented(rows);
 }
 
-std::string peer_status(const Value&)
+bool is_pane_rule_or_blank(std::string line)
 {
+    for (const std::string_view glyph : {std::string_view("─"), std::string_view(" "), std::string_view(" ")}) {
+        for (std::size_t at = line.find(glyph); at != std::string::npos; at = line.find(glyph)) {
+            line.erase(at, glyph.size());
+        }
+    }
+    return line.empty();
+}
+
+std::string rstrip_pane_line(std::string line)
+{
+    while (true) {
+        if (line.ends_with(" ")) {
+            line.pop_back();
+        } else if (line.ends_with(" ")) {
+            line.resize(line.size() - 2);
+        } else {
+            return line;
+        }
+    }
+}
+
+Value compact_peer(const Value& info, long long pane_lines)
+{
+    static const std::vector<std::string> fields{"alive", "busy", "harness", "cwd", "clients", "launch_args",
+                                                 "output_path", "output_session"};
+    Value row = Value::object();
+    for (const auto& key : fields) {
+        if (const Value* value = core::json::member(&info, key)) {
+            row[key] = *value;
+        }
+    }
+    if (pane_lines > 0) {
+        std::vector<std::string> content;
+        for (auto& line : text_list(core::json::member(&info, "pane_tail"))) {
+            if (!is_pane_rule_or_blank(line)) {
+                content.push_back(rstrip_pane_line(std::move(line)));
+            }
+        }
+        const std::size_t first = content.size() > static_cast<std::size_t>(pane_lines)
+                                      ? content.size() - static_cast<std::size_t>(pane_lines)
+                                      : 0;
+        Value tail = Value::array();
+        for (std::size_t index = first; index < content.size(); ++index) {
+            tail.push_back(content[index]);
+        }
+        row["pane_tail"] = tail;
+    }
+    return row;
+}
+
+std::string peer_status(const Value& args)
+{
+    const long long pane_lines = int_arg(args, "pane_lines", 0);
     Value sessions = orch::peer_status();
+    Value status = Value::object();
     for (auto iterator = sessions.begin(); iterator != sessions.end(); ++iterator) {
         Value& info = iterator.value();
         std::optional<Value> row;
@@ -509,8 +564,9 @@ std::string peer_status(const Value&)
             info["output_path"] = field(*row, "path");
             info["output_session"] = field(*row, "session");
         }
+        status[iterator.key()] = compact_peer(info, pane_lines);
     }
-    return dumps_indented(sessions, true);
+    return dumps_indented(status, true);
 }
 
 std::string read_pane(const Value& args)
