@@ -14,4 +14,6 @@ The owner pointed at https://anentrypoint.github.io/assets/ as a copy of the ass
 
 **Why it matters:** the repo AnEntrypoint/assets on main holds only `docs/lib/webjsx/factory.js` (the repo reports about 2.4 GB, but its only branch is main and it has no releases). The models are on the Pages site, not in the repo.
 
+**Local copy:** the owner has the same 934 files in /workspace/assets (flat, no streaming-cluster prefix, about 1.1 GB). Prefer the local copy.
+
 **How to apply:** fetch `https://anentrypoint.github.io/assets/manifest.json`, then the `path` entries under the same base. Use it as a second source after hy3d, oscraft and spoint for witness scenes. Record which entries each witness used.
