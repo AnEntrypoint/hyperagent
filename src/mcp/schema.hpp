@@ -263,10 +263,10 @@ inline constexpr const char* tools_json = R"schema([
   },
   {
     "name": "peer_status",
-    "description": "List live peers with alive and busy state, cwd, harness, launch args and pane tail.",
+    "description": "List live peers with alive and busy state, cwd, harness, client count, launch args and output journal paths. The pane tail is left out unless pane_lines is given.",
     "inputSchema": {
       "type": "object",
-      "properties": {},
+      "properties": {"pane_lines": {"type": "number"}},
       "additionalProperties": false
     }
   },
