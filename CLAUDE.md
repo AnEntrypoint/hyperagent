@@ -24,9 +24,9 @@ or `subscriptions/listen`, `notifications/resources/list_changed` for new sessio
 and `notifications/progress` for tool calls that pass a progress token.
 `hyperagent://events` is the recent event stream.
 
-`bin/watch` prints one line the moment a peer finishes, with its whole last response
+`build/hyperagent watch` prints one line the moment a peer finishes, with its whole last response
 and a ready `instruct` call. Run it locally beside the orchestrator.
 
 Never start a peer that has no work. The full dispatch loop is `/orchestrate`.
-Open this project with `bin/open` so MCP tool calls get a long timeout.
-The equivalent CLI is `bin/orch`.
+Open this project with `build/hyperagent open` so MCP tool calls get a long timeout.
+The equivalent CLI is `build/hyperagent orch`.

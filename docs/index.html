@@ -67,7 +67,7 @@ session tree, so <code>ListAgents</code> and <code>SendMessage</code> never reac
 <h2>02 — Architecture</h2>
 <table>
   <tr><th>Direction</th><th>Mechanism</th><th>Result</th></tr>
-  <tr><td>Tool call</td><td>Claude Code calls <code>mcp__hyperagent__*</code>; the stdio server runs <code>bin/orch</code></td><td>one orchestration layer for MCP and CLI</td></tr>
+  <tr><td>Tool call</td><td>Claude Code calls <code>mcp__hyperagent__*</code>; the stdio server runs <code>build/hyperagent orch</code></td><td>one orchestration layer for MCP and CLI</td></tr>
   <tr><td>Prompt in</td><td>ccbridge writes the text into the peer's PTY with bracketed paste and Enter</td><td>the peer treats it as a human typing</td></tr>
   <tr><td>Reply out</td><td>airc reads the harness's own transcript, never the TUI screen</td><td>clean text with no spinner or ANSI damage</td></tr>
   <tr><td>Turn end</td><td>Claude's <code>system/turn_duration</code> record</td><td>one <code>e:</code> frame per turn</td></tr>
@@ -92,7 +92,7 @@ its context across dispatch cycles.</p>
 </table>
 <p>A turn that ends returns the peer's text with status <code>turn_end</code>. Any other status
 (<code>timeout</code>, <code>blocked</code>, <code>died</code>) returns the pane tail. Open the project with
-<code>bin/open</code> so a tool call gets a 30-minute timeout; otherwise use <code>wait: false</code> and
+<code>build/hyperagent open</code> so a tool call gets a four-hour timeout; otherwise use <code>wait: false</code> and
 <code>turn_result</code>.</p>
 
 <h2>04 — Projects</h2>
@@ -135,8 +135,8 @@ harness's resume form. The resumed store is read from its end, so a turn returns
 reply, not the saved history. <code>start_projects</code>, <code>instruct</code> and
 <code>instruct_many</code> accept <code>resume: true</code> and <code>harness</code> to do this
 automatically when a peer is not running. The CLI is
-<code>bin/orch resume [NAME] [--harness H] [--session ID]</code> and
-<code>bin/orch sessions [NAME] [--harness H] [--all]</code>.</p>
+<code>build/hyperagent orch resume [NAME] [--harness H] [--session ID]</code> and
+<code>build/hyperagent orch sessions [NAME] [--harness H] [--all]</code>.</p>
 <p>Add <code>fork: true</code> / <code>--fork</code> to resume into a new session id instead of
 reusing the source; Claude uses <code>--fork-session</code> and codex uses <code>fork</code>. The
 source store is untouched and the new id becomes the project's remembered session.</p>
@@ -184,11 +184,11 @@ questions for the owner report. A timeout does not cancel the peer's turn: check
 
 <h2>10 — Open</h2>
 <pre>cd /data/workspace/hyperagent
-./bin/open</pre>
-<p><code>bin/open</code> starts Claude Code in this project and sets <code>MCP_TOOL_TIMEOUT=14400000</code>.
+build/hyperagent open</pre>
+<p><code>build/hyperagent open</code> starts Claude Code in this project and sets <code>MCP_TOOL_TIMEOUT=14400000</code>.
 The server is registered by <code>.mcp.json</code> and enabled by <code>.claude/settings.json</code>
 (<code>enabledMcpjsonServers</code>). Then run <code>/orchestrate</code>. The CLI equivalent is
-<code>bin/orch</code>: <code>projects</code>, <code>start NAME</code>, <code>prompt</code>,
+<code>build/hyperagent orch</code>: <code>projects</code>, <code>start NAME</code>, <code>prompt</code>,
 <code>fanout</code>, <code>status</code>, <code>pane</code>, <code>stop</code>, <code>down</code>.</p>
 <p>The airc (ccbridge) source is the vendored <code>airc/</code> directory, built into <code>build/ccbridge</code>; <code>CCBRIDGE_BIN</code> overrides that binary, projects come from the parent
 folder (<code>ORCH_PARENT</code>), and the server listens on <code>127.0.0.1:8787</code>
@@ -196,7 +196,7 @@ folder (<code>ORCH_PARENT</code>), and the server listens on <code>127.0.0.1:878
 
 <h2>11 — Limits</h2>
 <ul>
-  <li>One tool call waits for one turn; <code>bin/open</code> raises the client timeout to 30 minutes.</li>
+  <li>One tool call waits for one turn; <code>build/hyperagent open</code> raises the client timeout to four hours.</li>
   <li>A client attaching mid-turn sees only later events; the tools always prompt and wait for the turn.</li>
   <li>One prompt per peer at a time is enforced by an advisory lock in <code>.orch/locks/</code>.</li>
   <li>Two peers should not share one cwd: the Claude transcript channel binds the newest session file per project directory.</li>

@@ -220,7 +220,7 @@ Value start_peers(const StartRequest& request)
         throw Error("--fork needs --resume");
     }
     if (names.empty()) {
-        throw Error("start needs one or more project names; see `bin/orch projects`");
+        throw Error("start needs one or more project names; see `build/hyperagent orch projects`");
     }
     if (present(request.cwd) && names.size() > 1) {
         throw Error("--cwd applies to a single name");
@@ -248,7 +248,7 @@ Value start_peers(const StartRequest& request)
         }
     }
     if (!unknown.empty()) {
-        throw Error("unknown project(s): " + join(unknown, ", ") + "; see bin/orch projects or pass --cwd");
+        throw Error("unknown project(s): " + join(unknown, ", ") + "; see build/hyperagent orch projects or pass --cwd");
     }
 
     if (request.resume) {
@@ -315,7 +315,7 @@ Value prompt_peer(const PromptRequest& request, const TurnOptions& options)
     job = jobs.front();
     if (!core::json::truthy(core::json::member(&job, "cwd"))) {
         throw Error("unknown project " + config::python_repr(request.name)
-                    + "; see bin/orch projects or pass --cwd");
+                    + "; see build/hyperagent orch projects or pass --cwd");
     }
 
     if (present(request.session)) {
@@ -364,7 +364,7 @@ Value run_turns(const Value& entries, const TurnOptions& options)
         }
     }
     if (!unknown.empty()) {
-        throw Error("unknown project(s): " + join(unknown, ", ") + "; see bin/orch projects or give each job a cwd");
+        throw Error("unknown project(s): " + join(unknown, ", ") + "; see build/hyperagent orch projects or give each job a cwd");
     }
     auto results = run_concurrently(jobs.size(), jobs.size(), [&](std::size_t index) {
         return turn::run_job(jobs[index], options);
