@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: bc092253-97dd-4f77-9001-5a59318251ee
-  modified: 2026-11-10T06:03:19.240Z
+  modified: 2026-11-10T06:12:48.821Z
 ---
 
 The orchestrate skill's wall-clock rule: each busy peer's next dispatch is written before its turn ends. On the idle event, read the peer's REPORT, adjust only what the report changes, send the prompt, and delete its section here.
@@ -34,4 +34,17 @@ Defects to settle, each with its cause:
 
 The standing rules apply.
 
-Related: [[floosie-integration-wanted]], [[gm-run-code-under-txiki-browser]], [[jayzee-web-architecture-static-pools]], [[fx-memory-format-hyperagent]].
+## jayzee (owner direction, 2026-11-10: realistic scenarios, flawless vegetation streaming, one landscape dataset)
+
+we want jayzee measured and built against real game scenarios, with vegetation and terrain streaming that never hitches, and one landscape dataset serving both collision and visuals. This goes to the top of your queue and is folded into your open Phase A if one is open.
+
+Why jayzee exists: on spoint, terrain and vegetation streaming make the game unplayable. Flawless vegetation streaming is the most important requirement, and any hitch in it is the top defect.
+
+1. Baseline feature set. Read the documentation in /workspace/spoint, /workspace/spawn and /workspace/savi (read only; do not edit those projects) and write the bottom-line feature set jayzee must support into docs/ENGINE.md as a checklist, each row marked supported, partial or missing. The difference from spawn's engine is that jayzee's landscapes are spherical.
+2. Realistic physics scenarios. Replace synthetic body counts as the measure with scenarios taken from spoint's example games in /workspace/spoint/apps (character controller, deathrun, combat bots, lockstep RTS, boss fights and the rest): player capsules on the spherical terrain, projectiles, moving platforms, crowds, pickups. Each scenario is a repeatable witness with tick and frame budgets on every tier, on WebGPU and WebGL2.
+3. Vegetation and terrain streaming. A walk and a fast fly-over across the sphere with dense vegetation from the real assets, with no hitch: frame-time p99 and worst frame inside budget, RAM and VRAM flat, uploads inside the per-frame budget, nothing compiled or allocated after the seal. Assets are in /workspace/hy3d and the AnEntrypoint/assets repository on GitHub, run through the one art pipeline (KTX2, meshopt).
+4. One landscape dataset. The terrain data is processed and stored once and read by both the collider and the renderer (for example one height or patch store that feeds the Jolt shape and the vertex stream). Measure the memory and build time against two copies, and record the decision in docs/ENGINE.md; if a measured reason forbids sharing some part, record that part and the reason.
+
+Then carry on with the earlier queue. The standing rules apply.
+
+Related: [[jayzee-realistic-scenarios-shared-terrain]], [[floosie-integration-wanted]], [[gm-run-code-under-txiki-browser]], [[jayzee-web-architecture-static-pools]], [[fx-memory-format-hyperagent]].
