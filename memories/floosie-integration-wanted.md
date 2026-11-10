@@ -20,7 +20,7 @@ Owner direction (2026-11-10): "we want the floosie integration".
 - Commit the floosie files and the restored import as lanmower only, no trailer, with each change in `docs/PENDING_VALIDATION.md`.
 - Witness run 4 once on the clean tracked tree, fix every defect, push origin main once.
 
-**Why:** the owner wants floosie in the browser runtime, which the decoupling had removed. The decoupling is reversible, and its revert is the cleaner path than keeping a local stdio loop.
+**Why (dispatcher call, 2026-11-10):** thebird benefits from floosie. floosie's browser bundle ships `createBrowserStdio`, which routes newline-framed rpc chunks to named endpoints. That is exactly the stdio MCP server gm-in-page runs in the browser. Without it, the decoupling duplicated that framing by hand, and the tracked `web/stream-hub.js` already carries a partial copy of the same codec. Cost: one pinned dependency, built by the vendor script from a floosie commit recorded in its manifest. floosie is pre-1.0 (0.7.9), so the pin matters, and its bundle size is not yet measured.
 
 **How to apply:** do not revert the whole `4686dce` commit; the gm vendoring is accepted. Restore only the floosie-dependent lines.
 
