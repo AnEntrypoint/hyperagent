@@ -233,6 +233,12 @@ A resumed peer answers from its saved context, so it is the right choice wheneve
 peer's next step depends on what it already did. Only start a fresh session when the
 saved context is wrong for the work.
 
+Send the continuation of a peer whose turn ended through `resume_project` with its
+`session_id` and `project`, not `instruct`. A plain `instruct` can start a fresh session
+in the project's root with none of the saved work, so the peer searches for files it
+already knows about. After the send, check the journal for the new `instruct` record
+under the saved session id.
+
 ## Blocked peers
 
 `idle_exit_s` returns early when the transcript is silent and the pane is not busy:
