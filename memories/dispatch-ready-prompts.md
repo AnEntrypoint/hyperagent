@@ -81,3 +81,5 @@ Measured for hyperagent (airc/templates/opencode.json, for reference): ready mar
 - 2026-11-10 09:31 UTC: the queued fx superagent section (with the opencode template item 5) is sent as turn 191300025bb5 and removed from this file. gm is gone (the gone event is real; its session is no longer alive), so resume it with the installed-build go when no peer is busy. jayzee busy on stretch 7 (4c5681b887de); thebird busy on run 9.
 
 - 2026-11-10 09:35 UTC: fx ended turn 191300025bb5 at 09:30:53 with its stash held, waiting on a HEAD ACP run (pid 331025) with no monitor to wake it. Nudged as turn 5639b5d7707f to block on that PID, restore the stash, then do the superagent change and the opencode template.
+
+- 2026-11-10 09:38 UTC: jayzee finished stretch 7 Phase A as c4685de (turn 4c5681b887de). Phase A is done for stretches 1 to 7. The single Phase B waits for fx and thebird to be idle; load is 2.65 now. fx busy on 5639b5d7707f; thebird busy on run 9.
