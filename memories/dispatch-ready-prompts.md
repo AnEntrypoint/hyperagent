@@ -44,6 +44,8 @@ What the owner sees: fx does not run yet in thebird. What we know from the code:
 
 1. Reproduce on the live site, through the playwriter setup, with the owner's exact steps: open the site, run `fx --version`, `fx check`, then `fx ask hello` with a configured key. Quote each output. If the owner's version of thebird is the live one, compare it with the local build and say which one fails.
 2. Fix every cause you find: the core, the vendored modules, the in-page wiring, the key path, JSPI detection, and the gateway call. Record each cause in docs/PENDING_VALIDATION.md.
+Also, from gm's report (07:08 UTC): project imports under txiki are blocked by your artifact. Your stubs.tsv lists uv_fs_* as stubs in the browser build, so the tjs_fs_* bridge is never reached and imports cannot resolve through the loader. Back uv_fs_* with the bridge in the browser build, report that to gm (it reruns S5c and the import witness), and keep the seven gm_txiki_* exports. The pin already matches (137c08f6).
+
 3. Witness `fx ask` in the full witness with a local stub gateway, so the witness fails when the ask path breaks.
 4. Keep the rest of your queue. The standing rules apply, the turn stays open while your own jobs run, and you push once per Phase B.
 
