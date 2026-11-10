@@ -26,6 +26,14 @@ gm's installed-build commits are all on origin. The install reaches every peer, 
 
 Peers whose turn ran longer than thirty minutes were retired within a minute or two of the turn ending (gm, spoint, jayzee and fx on 2026-11-10), and any job they had left running died with them. Cause: the hub's idle clock was last set when the prompt was submitted, so a long turn was already past the 1800 s reap limit when the dispatcher's client detached. Fixed in airc/src/server/server.cpp (detach now resets the clock) and built into build/ccbridge. The running servers (pids 884614 and 931565, the older .orch/ccbridge/v0.1.0.4 binary) still have the defect. When no peer is busy, restart the server on build/ccbridge and resume each peer's newest session. Until then: answer a finished turn within a minute, resume with `resume: true` when a peer is gone, and ask peers to keep the turn open while their own job runs.
 
+## gm: installed-build step go-ahead (dispatcher, 2026-11-10 09:00 UTC)
+
+gm's installed-build commits are all on origin. The install reaches every peer, so send gm the go only when no peer is busy. gm was given the waste-audit Phase A (turn 2c775d20e63a) in the meantime.
+
+## Quiet window: restart the airc server on the rebuilt ccbridge
+
+Peers whose turn ran longer than thirty minutes were retired within a minute or two of the turn ending (gm, spoint, jayzee and fx on 2026-11-10), and any job they had left running died with them. Cause: the hub's idle clock was last set when the prompt was submitted, so a long turn was already past the 1800 s reap limit when the dispatcher's client detached. Fixed in airc/src/server/server.cpp (detach now resets the clock) and built into build/ccbridge. The running servers (pids 884614 and 931565, the older .orch/ccbridge/v0.1.0.4 binary) still have the defect. When no peer is busy, restart the server on build/ccbridge and resume each peer's newest session. Until then: answer a finished turn within a minute, resume with `resume: true` when a peer is gone, and ask peers to keep the turn open while their own job runs.
+
 ## fx: superagent carries the dispatcher's habits (dispatcher, 2026-11-10)
 
 Owner (2026-11-10): make sure the up-to-date orchestrate habits are built into fx's superagent instructions. Send on fx's idle event, after turn 93efeb13142f reports. Fold it into fx's open pass; do not start a second one. Leave fx's other uncommitted changes as they are until its current work ends.
@@ -69,3 +77,5 @@ Measured for hyperagent (airc/templates/opencode.json, for reference): ready mar
 - 2026-11-10 09:26 UTC: jayzee finished stretch 6 Phase A as 9a51e5a (turn 6addf105c7c2). Phase A is done for stretches 1 to 6; no reachable item is left except the Phase B runs, which wait for a quiet host (load 4.3 on 12 cores, PAUSED gate limit 0.20). Next go-ahead: when fx and thebird are both idle and the load is quiet, send jayzee the one Phase B for stretches 1 to 6 together, since they are all in the same checkout and share the witnesses.
 
 - 2026-11-10 09:28 UTC: jayzee turn 4c5681b887de is stretch 7 Phase A (light positions, Jolt body rebase, WebGPU visibility path), dispatched because the stretch 6 residuals are defects. thebird is busy on run 9 (resize split). fx busy. gm idle, install still held.
+
+- 2026-11-10 09:31 UTC: the queued fx superagent section (with the opencode template item 5) is sent as turn 191300025bb5 and removed from this file. gm is gone (the gone event is real; its session is no longer alive), so resume it with the installed-build go when no peer is busy. jayzee busy on stretch 7 (4c5681b887de); thebird busy on run 9.
