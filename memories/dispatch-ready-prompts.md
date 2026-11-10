@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: bc092253-97dd-4f77-9001-5a59318251ee
-  modified: 2026-11-10T09:58:51.630Z
+  modified: 2026-11-10T15:00:51.249Z
 ---
 
 The orchestrate skill's wall-clock rule: each busy peer's next dispatch is written before its turn ends. On the idle event, read the peer's REPORT, adjust only what the report changes, send the prompt, and delete its section here.
@@ -171,3 +171,4 @@ Sent 09:55: fx's stretch 9 ended open at 09:53 after one commit (faabf61a). The 
 - 14:19 UTC: fx idle at 14:19 with its stretch open (/theme picker and live apply, /tasks browser, rows 10+, long-stream row). Its 14:17 zig run had finished. Sent turn 03a883e73058 via resume_project: /theme and the /tasks browser first, then rows 10+, the long-stream row open with cause; one Phase B; one push at the end of the stretch (the second push, validated against the full stretch); REPORT after the push. thebird gone; resumes after the stretch push.
 - 14:46 UTC: the owner asked for an fx command in thebird's shell (option 1). thebird resumed on its saved session f76f541c-06a4-4741-8e6f-30dad8d01729 as turn f098e168ce22: bin/fx.mjs launcher (FX_BIN, else /workspace/fx/fx/zig-out/bin/fx), bin entry fx, README line, pass-through and missing-binary tests; Phase B: run, npm link, one push. fx busy on 03a883e73058 (the /theme work). thebird's earlier d722aa2 is already on origin.
 - 14:47 UTC: correction: the owner means fx inside thebird the app (in-page shell command starting the vendored fx-term TUI), not the native binary. Stopped thebird's wrong turn f098e168ce22 (native launcher, uncommitted in its working tree: bin/fx.mjs, test/, package.json fx entry, README line; bin/thebird-relay.js modified, kept unless it is launcher-only). Resumed session f76f541c-06a4-4741-8e6f-30dad8d01729 as turn 35265d440c22: undo the launcher pieces, register fx in the in-page shell to start the fx TUI from web/vendor/fx, TUI witness once, one push. Nothing from the launcher was pushed.
+- 15:00 UTC: fx ended turn 03a883e73058 open (REPORT at 14:59:49): /theme picker pushed as ccfaa813..021498b5 (one push, the end-of-stretch push). Its /tasks browser, queue rows 10+ and the long-stream row are open. Sent turn fd34d88b949f via resume_project (session afca55c2, wait false): the /theme live-apply test and /tasks browser in Phase A, rows 10+, the long-stream trace, one Phase B, one push. thebird busy on 35265d440c22 (witness PID 823783); its launcher cleanup and in-page fx REPORT are still pending.
