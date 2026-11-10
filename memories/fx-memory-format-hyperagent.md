@@ -18,8 +18,8 @@ Owner direction (2026-11-10): "no we want it to use that memory format instead o
 
 **Not wanted, to be removed:** the copy at /config/.claude/projects/-workspace-fx/memory/, which is a second copy, and the retired-memory directory /workspace/fx/.fx/retired-memory/, which would be a second copy of fx's old format. Once every old entry exists in /workspace/fx/memory in the new format, both go.
 
-**Sent state:** turn bd209709cb4d carried the earlier direction and finished at 05:37 UTC with 17 memories in /config and 55 files in /workspace/fx/.fx/retired-memory. The correction went out as turn cdc892afed71 (2026-11-10): /workspace/fx/memory is the only store, and the /config copy and the retired copy are removed after every entry is verified.
+**Done (2026-11-10, turn cdc892afed71):** /workspace/fx/memory holds 17 memories plus MEMORY.md; the /config copy and .fx/retired-memory are removed (checked on disk). fx's old store held one distinct fact, now feedback-attribution-lanmower-only. fx's repository is /workspace/fx/fx.
 
-**How to apply:** read the REPORT of turn cdc892afed71 and check that /workspace/fx/memory exists, that the /config copy and the retired directory are gone, and that fx's reader points at /workspace/fx/memory. fx's last turn left src/core/parity/item1.zig and scripts/acceptance/item1.mjs modified and uncommitted; they belong in fx's next Phase A.
+**How to apply:** fx's memory is /workspace/fx/memory only. Do not create a copy elsewhere.
 
 Related: [[feedback-two-phase-work]].

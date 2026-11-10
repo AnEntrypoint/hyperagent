@@ -25,7 +25,7 @@
 - [Build locally, avoid Actions limits](feedback-build-locally-avoid-actions-limits.md) — owner rule: fx builds locally; fx hosted workflows disabled after the Actions spending limit; keep API and Actions usage low
 - [fx parity also matches the Claude Code docs](fx-parity-claude-code-docs.md) — owner direction: fx runs a read-only deep research pass over the Claude Code docs to collect parity issues into the matrix
 - [fx image reading: router fixed](fx-image-reading-router-fixed.md) — owner: the image problem was the router, now fixed; no fx image-reading change
-- [fx memory format: hyperagent layout](fx-memory-format-hyperagent.md) — owner direction: fx keeps only the hyperagent memory format and retires its own; the 16 memories carried over
+- [fx memory in its own path](fx-memory-format-hyperagent.md) — owner direction, done: fx reads and writes /workspace/fx/memory in the hyperagent format, one copy only
 - [Wall-clock iteration times](feedback-wallclock-iteration-times.md) — owner direction: measured sleep-poll loops and per-step gm round trips; advice sent to peers to cut wall-clock per iteration
 - [hyperagent C++ and vendored airc](hyperagent-cpp-airc-vendored.md) — owner direction: hyperagent is C++ only with airc at airc/; import squashed because a git guard blocks the owner email
 - [gm QuickJS to txiki.js](gm-quickjs-to-txiki.md) — owner direction: gm swaps QuickJS-NG for embedded txiki.js; pins from thebird; dispatch waits for gm to go idle
@@ -35,3 +35,4 @@
 - [gm run_code under txiki in the browser](gm-run-code-under-txiki-browser.md) — owner direction: run_code needs project imports via txiki.js; thebird's tjs.wasm is the one browser txiki; queued until both peers are idle
 - [jayzee web architecture: static pools](jayzee-web-architecture-static-pools.md) — owner direction: size resources to the device once and scale within pre-allocated pools; graphics pre-initialized so models never hitch on first appearance
 - [thebird npm and npx](thebird-npm-npx-pending.md) — pending: npm and npx in thebird's browser shell; send to thebird on idle, with the foreground-line correction
+- [Ready prompts for busy peers](dispatch-ready-prompts.md) — next dispatch per busy peer, written in advance; send on the idle event, then remove the section
