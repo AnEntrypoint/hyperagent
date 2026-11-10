@@ -40,11 +40,11 @@ A turn that ends returns the peer's text with status `turn_end`. Any other statu
 A `timeout` status means the four-hour turn deadline passed, not that the peer
 failed; check `peer_status` before treating it as a failure.
 
-Long turns: open the project with `bin/open`, which sets a four-hour
+Long turns: open the project with `build/hyperagent open`, which sets a four-hour
 `MCP_TOOL_TIMEOUT`. Dispatch long assignments with `wait: false` and collect them
 later with `turn_result`, so no single client call has to outlive the turn.
 
-`bin/orch` is the same layer on the CLI for debugging; the MCP tools are the
+`build/hyperagent orch` is the same layer on the CLI for debugging; the MCP tools are the
 orchestrator's channel.
 
 ## Projects
@@ -116,7 +116,7 @@ goes to the gm project as a change to the gm skill.
 
 - A peer never waits on the dispatcher for its next item. Every dispatch carries the
   whole ordered queue, so a finished item is followed by the next one in the same turn.
-- Dispatch on the idle event, not on the timer. A `bin/watch` line for a finished turn
+- Dispatch on the idle event, not on the timer. A `build/hyperagent watch` line for a finished turn
   is answered at once; the ten-minute wake is only the fallback.
 - A turn that ends with a stub such as "waiting for the build" is not a report. Read
   the pane or `read_output` for the result; do not spend a turn asking for it again.
@@ -245,7 +245,7 @@ supplies its own list.
 
 ## Wake-up loop
 
-Start `bin/watch` in the background before the first cycle. It reports the moment a
+Start `build/hyperagent watch` in the background before the first cycle. It reports the moment a
 turn finishes, not after a quiet window: a new journal `result` record or a pane
 going from busy to not busy prints one line immediately with the peer, its session,
 the whole last response, and the exact `instruct` arguments that feed that response
@@ -256,15 +256,15 @@ busy, and `--text` prints the human form.
 
 `instruct` and `turn_result` return only the turn's final response block. Interim
 narration and tool calls remain in the journal, so `list_outputs` and `read_output`
-show everything without bloating the returned turn. `bin/orch output NAME --tail 40`
+show everything without bloating the returned turn. `build/hyperagent orch output NAME --tail 40`
 is the CLI view.
 
-A client that speaks MCP events can skip `bin/watch`: subscribe with
+A client that speaks MCP events can skip `build/hyperagent watch`: subscribe with
 `resources/subscribe` or `subscriptions/listen`, set `logging/setLevel`, and receive
 the same idle and gone payloads as `notifications/resources/updated` and
 `notifications/message`; `hyperagent://events` holds the recent stream.
 
-Arm a Monitor on the watcher's output file (`tail -n 0 -F` on the file `bin/watch`
+Arm a Monitor on the watcher's output file (`tail -n 0 -F` on the file `build/hyperagent watch`
 writes, cut to a few hundred characters per line) so each idle or gone event wakes
 this session at once, and re-arm it when it expires. Check live state from git and the
 event line first; call `peer_status` only when those do not answer the question. It

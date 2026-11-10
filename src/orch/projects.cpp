@@ -223,7 +223,7 @@ Value project_target(const ProjectSelector& selector)
         const auto location = known_cwd(listing, name);
         std::string cwd = location.value_or(text_of(core::json::member(entry, "cwd")));
         if (cwd.empty()) {
-            throw Error("unknown project " + config::python_repr(*selector.project) + "; see bin/orch projects");
+            throw Error("unknown project " + config::python_repr(*selector.project) + "; see build/hyperagent orch projects");
         }
         std::string harness_name = present(selector.harness) ? *selector.harness
             : core::json::or_else(core::json::member(entry, "harness"), Value(fallback_harness)).get<std::string>();

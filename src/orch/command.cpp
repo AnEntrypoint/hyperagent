@@ -373,7 +373,7 @@ void exit_with(int code)
 
 void add_command(CLI::App& app)
 {
-    auto* orch = app.add_subcommand("orch", "orchestrator CLI for airc harness peers (bin/orch)");
+    auto* orch = app.add_subcommand("orch", "orchestrator CLI for airc harness peers");
     orch->require_subcommand(1);
 
     {
