@@ -18,7 +18,6 @@
       "Bash(./bin/orch:*)",
       "Bash(bin/watch:*)",
       "Bash(./bin/watch:*)",
-      "Bash(python3 bin/orch:*)",
       "mcp__hyperagent__list_projects",
       "mcp__hyperagent__start_projects",
       "mcp__hyperagent__instruct",
