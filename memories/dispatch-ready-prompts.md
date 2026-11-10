@@ -5,12 +5,26 @@ metadata:
   node_type: memory
   type: project
   originSessionId: bc092253-97dd-4f77-9001-5a59318251ee
-  modified: 2026-11-10T07:59:34.382Z
+  modified: 2026-11-10T08:01:07.343Z
 ---
 
 The orchestrate skill's wall-clock rule: each busy peer's next dispatch is written before its turn ends. On the idle event, read the peer's REPORT, adjust only what the report changes, send the prompt, and delete its section here.
 
 Every prompt ends with the standing lines: work only in your cwd on main in the shared checkout; commit as lanmower only, no trailer or attribution line; Phase A (code, docs, tests, listed in docs/PENDING_VALIDATION.md, committed locally) then Phase B (build once, witness, batch fixes, rerun only what failed, push once, one status check at most); treat any issue as a defect; stop processes by their own PID only; wait on a job once with a timeout sized from its recorded wall time; read git state once per phase; record witness wall times; `REPORT: finished|open|blocked — <summary> — witness: <output evidence>`.
+
+## jayzee: the 1024 budget is required (owner, 2026-11-10 08:00 UTC)
+
+we want jayzee to hold the 1024 frame budget inside 16.7 ms on both backends. The owner's words: "we really do want that budget, 1024 isnt such a tall order for the environment we're setting up". This replaces the solver-cut decision in your current queue: a behaviour change is not the first move.
+
+1. Measure where the 1024 frame goes on both backends (the step, the solver, the render submit), with per-thread time, before you change anything.
+2. Use the environment: Jolt's multithreaded job system across the host cores, SIMD builds, fixed pools, sleeping bodies and broadphase layout. Record each change and its measured effect in docs/ENGINE.md.
+3. Reduce solver work only if the measured options are insufficient, and then record the behaviour change and regenerate the 1024 hash in docs/ENGINE.md. Keep the 64, 128 and 512 hashes unchanged.
+4. Witness 1024 on WebGPU and WebGL2 against the 16.7 ms budget, with the median and the p99, and quote the numbers.
+5. Keep the rest of your queue in the order it had. Phase A, then one Phase B push, and the turn stays open while your own jobs run.
+
+Standing lines: work only in /workspace/jayzee on main, in the shared checkout. Commit as lanmower only, with no trailer or attribution line. Stop processes by their own PID, never pkill or killall. Treat any issue as a defect. Record each witness's wall time.
+
+End with: REPORT: finished|open|blocked — <summary> — witness: <output evidence>.
 
 ## Quiet window: restart the airc server on the rebuilt ccbridge
 
