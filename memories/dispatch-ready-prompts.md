@@ -1,6 +1,6 @@
 ---
 name: dispatch-ready-prompts
-description: "ready-to-send next prompts for busy peers (spoint wrap-up and stop; fx superagent crash and subagent misuse, owner report); send on the idle event in the same wake, then remove the sent section"
+description: "ready-to-send next prompts for busy peers (none queued; holds the quiet-window airc server restart); send on the idle event in the same wake, then remove the sent section"
 metadata:
   node_type: memory
   type: project
@@ -12,33 +12,8 @@ The orchestrate skill's wall-clock rule: each busy peer's next dispatch is writt
 
 Every prompt ends with the standing lines: work only in your cwd on main in the shared checkout; commit as lanmower only, no trailer or attribution line; Phase A (code, docs, tests, listed in docs/PENDING_VALIDATION.md, committed locally) then Phase B (build once, witness, batch fixes, rerun only what failed, push once, one status check at most); treat any issue as a defect; stop processes by their own PID only; wait on a job once with a timeout sized from its recorded wall time; read git state once per phase; record witness wall times; `REPORT: finished|open|blocked — <summary> — witness: <output evidence>`.
 
-## fx (owner report, 2026-11-10, about 08:00 SAST: superagent used subagents and fx crashed)
+## Quiet window: restart the airc server on the rebuilt ccbridge
 
-we want the superagent to work as the owner used it, and the crash fixed. This goes to the top of your queue, ahead of the ranked rows, and is folded into your open Phase A if one is open.
-
-What the owner did, in fx v0.0.16 started in /workspace/sa (an empty directory, no `/skill superagent` typed):
-1. "what superagent projects do you see?" fx answered through "1 tool call · 1 subagent · Dispatched" and listed 82 projects.
-2. "lets start up nygrok and get it to combine all the features from ../sharesies so that it can do pages and terminals". fx said nygrok "isn't in the superagent project list", ran `ls` and six reads itself, then said "I'm starting /workspace/nygrok as a superagent project", showed "1 tool call · 1 subagent · Dispatched", generated for 23 s, and the process died: "Segmentation fault (core dumped) fx".
-
-Defects to settle, each with its cause:
-- The crash. Reproduce it from /workspace/sa with the same two prompts, get the stack (the core goes to apport; a debug build or a run under gdb will do), fix it, and add a witness that starts a root for a project, instructs it, reads its status and stops it without a crash.
-- Subagent in place of superagent. Find whether fx called `Agent` or whether the `superagent` tool is shown as "subagent". A superagent peer is a root agent, never a subagent: the model must reach the `superagent` tool for these requests without the skill being loaded by hand, and the transcript must label it as superagent.
-- Project list. /workspace/nygrok exists and is a git repository, yet it was "not in the list". Find why, and make `start` accept a project that exists beside the others.
-- The dispatcher did the research itself (ls, six reads) before delegating. The superagent's job is to start the root and hand it the request; the skill text should say so.
-
-The standing rules apply.
-
-## jayzee (owner direction, 2026-11-10: realistic scenarios, flawless vegetation streaming, one landscape dataset)
-
-we want jayzee measured and built against real game scenarios, with vegetation and terrain streaming that never hitches, and one landscape dataset serving both collision and visuals. This goes to the top of your queue and is folded into your open Phase A if one is open.
-
-Why jayzee exists: on spoint, terrain and vegetation streaming make the game unplayable. Flawless vegetation streaming is the most important requirement, and any hitch in it is the top defect.
-
-1. Baseline feature set. Read the documentation in /workspace/spoint, /workspace/spawn and /workspace/savi (read only; do not edit those projects) and write the bottom-line feature set jayzee must support into docs/ENGINE.md as a checklist, each row marked supported, partial or missing. The difference from spawn's engine is that jayzee's landscapes are spherical.
-2. Realistic physics scenarios. Replace synthetic body counts as the measure with scenarios taken from spoint's example games in /workspace/spoint/apps (character controller, deathrun, combat bots, lockstep RTS, boss fights and the rest): player capsules on the spherical terrain, projectiles, moving platforms, crowds, pickups. Each scenario is a repeatable witness with tick and frame budgets on every tier, on WebGPU and WebGL2.
-3. Vegetation and terrain streaming. A walk and a fast fly-over across the sphere with dense vegetation from the real assets, with no hitch: frame-time p99 and worst frame inside budget, RAM and VRAM flat, uploads inside the per-frame budget, nothing compiled or allocated after the seal. Assets are in /workspace/hy3d and the AnEntrypoint/assets repository on GitHub, run through the one art pipeline (KTX2, meshopt).
-4. One landscape dataset. The terrain data is processed and stored once and read by both the collider and the renderer (for example one height or patch store that feeds the Jolt shape and the vertex stream). Measure the memory and build time against two copies, and record the decision in docs/ENGINE.md; if a measured reason forbids sharing some part, record that part and the reason.
-
-Then carry on with the earlier queue. The standing rules apply.
+Peers whose turn ran longer than thirty minutes were retired within a minute or two of the turn ending (gm, spoint, jayzee and fx on 2026-11-10), and any job they had left running died with them. Cause: the hub's idle clock was last set when the prompt was submitted, so a long turn was already past the 1800 s reap limit when the dispatcher's client detached. Fixed in airc/src/server/server.cpp (detach now resets the clock) and built into build/ccbridge. The running servers (pids 884614 and 931565, the older .orch/ccbridge/v0.1.0.4 binary) still have the defect. When no peer is busy, restart the server on build/ccbridge and resume each peer's newest session. Until then: answer a finished turn within a minute, resume with `resume: true` when a peer is gone, and ask peers to keep the turn open while their own job runs.
 
 Related: [[jayzee-realistic-scenarios-shared-terrain]], [[floosie-integration-wanted]], [[gm-run-code-under-txiki-browser]], [[jayzee-web-architecture-static-pools]], [[fx-memory-format-hyperagent]].
