@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: bc092253-97dd-4f77-9001-5a59318251ee
-  modified: 2026-11-10T15:20:26.567Z
+  modified: 2026-11-10T15:35:24.711Z
 ---
 
 The orchestrate skill's wall-clock rule: each busy peer's next dispatch is written before its turn ends. On the idle event, read the peer's REPORT, adjust only what the report changes, send the prompt, and delete its section here.
@@ -180,7 +180,7 @@ Owner: fx agents must notify their superagent when they finish, and the superage
 
 Send: we want fx to change its superagent so each root notifies it when it finishes and so a finished root is continued the way the dispatcher continues a peer. Phase A is code and docs only, committed locally as lanmower with no trailer, each change listed in docs/PENDING_VALIDATION.md, nothing pushed.
 
-1. src/core/superagent/command.zig, system_prompt: (a) every queue the superagent sends to a root ends with the standing line `REPORT: finished|open|blocked — <one line> — witness: <output evidence>`; the root's turn end is the notice the superagent receives, and a root that stops with work left says so in that REPORT. (b) Continuation: when a root's turn has ended and it has more work, the superagent continues it on its saved session id (start with `session`, not a plain instruct that can start a fresh conversation), then confirms the session id in status. (c) A root whose turn ends while its own job runs is not idle: the superagent waits on that PID once with a timeout and sends the continuation with the job's result, not a restart. (d) Reword "The superagent adds no rules of its own" so it separates the owner's standing rules, which pass through verbatim, from the superagent's cycle, which it follows.
+1. src/core/superagent/command.zig, system_prompt: (a) every queue the superagent sends to a root ends with the standing line `REPORT: finished|open|blocked — <one line> — witness: <output evidence>`; the root's turn end is the notice the superagent receives, and a root that stops with work left says so in that REPORT. (b) Continuation: when a root's turn has ended and it has more work, the superagent continues it on its saved session id (start with `session`, not a plain instruct that can start a fresh conversation), then confirms the session id in status. (c) A root whose turn ends while its own job runs is not idle: the superagent waits on that PID once with a timeout and sends the continuation with the job's result, not a restart. (d) Reword "The superagent adds no rules of its own" so it separates the owner's standing rules, which pass through verbatim, from the superagent's cycle, which it follows. (e) Open or blocked continuation, the pattern the dispatcher used for thebird on turn 5d014aef5553: when a root's REPORT says open or blocked, the superagent reads the REPORT, decides any reversible blocker itself, and sends the next step on the same saved session, naming the open items, the decision taken and the witness to run. It does not end on a question, does not hand a reversible choice to the owner, and does not record reachable items as open without taking them.
 2. .fx/skills/superagent/SKILL.md, Cycle: state the same in the same general wording, with a continue step after step 6.
 3. docs/superagent.md: the finish notice is the turn-end event carrying the REPORT line; the continuation path is the saved session id.
 
