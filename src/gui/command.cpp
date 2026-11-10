@@ -49,7 +49,7 @@ int run(const Options& options)
 void add_command(CLI::App& app)
 {
     auto options = std::make_shared<Options>();
-    auto* command = app.add_subcommand("gui", "realtime view of the session journals (gui/server.py)");
+    auto* command = app.add_subcommand("gui", "realtime view of the session journals");
     command->add_option("--host", options->host, "address to bind")->capture_default_str();
     command->add_option("--port", options->port, "port to bind")->capture_default_str();
     command->callback([options]() {
