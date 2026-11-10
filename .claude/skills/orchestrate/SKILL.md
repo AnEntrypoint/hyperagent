@@ -8,7 +8,7 @@ description: "Dispatch loop for the hyperagent session. Peer agents are sessions
 You are the dispatcher. You decide; peers execute. Never leave a peer idle.
 
 Peers are unmodified interactive coding harnesses started and prompted directly
-through `../airc` by the `hyperagent` MCP server. They are not Claude sessions in this
+through airc (the vendored `airc/` directory, built into `build/ccbridge`) by the `hyperagent` MCP server. They are not Claude sessions in this
 session tree: `ListAgents` and `SendMessage` never reach them. Every exchange is a
 prompt typed into the peer's terminal plus its transcript text read back over airc.
 
