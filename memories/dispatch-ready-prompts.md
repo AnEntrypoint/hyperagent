@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: bc092253-97dd-4f77-9001-5a59318251ee
-  modified: 2026-11-10T08:01:07.343Z
+  modified: 2026-11-10T08:01:54.688Z
 ---
 
 The orchestrate skill's wall-clock rule: each busy peer's next dispatch is written before its turn ends. On the idle event, read the peer's REPORT, adjust only what the report changes, send the prompt, and delete its section here.
@@ -19,7 +19,7 @@ we want jayzee to hold the 1024 frame budget inside 16.7 ms on both backends. Th
 1. Measure where the 1024 frame goes on both backends (the step, the solver, the render submit), with per-thread time, before you change anything.
 2. Use the environment: Jolt's multithreaded job system across the host cores, SIMD builds, fixed pools, sleeping bodies and broadphase layout. Record each change and its measured effect in docs/ENGINE.md.
 3. Reduce solver work only if the measured options are insufficient, and then record the behaviour change and regenerate the 1024 hash in docs/ENGINE.md. Keep the 64, 128 and 512 hashes unchanged.
-4. Witness 1024 on WebGPU and WebGL2 against the 16.7 ms budget, with the median and the p99, and quote the numbers.
+4. Witness 1024 on WebGPU and WebGL2 against the 16.7 ms budget, with the median and the p99, and quote the numbers. The owner's requirement: the 1024 objects must operate in a scene that represents a spoint planet's worth of complex colliders at those rates. So the witness scene is built from spoint's planet, not from primitive boxes: take the collider set from spoint's planet witness (scripts/perf-planet-witness.mjs, and docs/performance.md) — the trimesh placed-model colliders (trees, rocks, buildings from GLBs), the terrain collision, and the vegetation that carries colliders — and record its collider count and triangle count in docs/ENGINE.md. Run the 1024 dynamic objects through that collider set.
 5. Keep the rest of your queue in the order it had. Phase A, then one Phase B push, and the turn stays open while your own jobs run.
 
 Standing lines: work only in /workspace/jayzee on main, in the shared checkout. Commit as lanmower only, with no trailer or attribution line. Stop processes by their own PID, never pkill or killall. Treat any issue as a defect. Record each witness's wall time.
