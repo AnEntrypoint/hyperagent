@@ -25,3 +25,12 @@ gm's installed-build commits are all on origin. The install reaches every peer, 
 ## Quiet window: restart the airc server on the rebuilt ccbridge
 
 Peers whose turn ran longer than thirty minutes were retired within a minute or two of the turn ending (gm, spoint, jayzee and fx on 2026-11-10), and any job they had left running died with them. Cause: the hub's idle clock was last set when the prompt was submitted, so a long turn was already past the 1800 s reap limit when the dispatcher's client detached. Fixed in airc/src/server/server.cpp (detach now resets the clock) and built into build/ccbridge. The running servers (pids 884614 and 931565, the older .orch/ccbridge/v0.1.0.4 binary) still have the defect. When no peer is busy, restart the server on build/ccbridge and resume each peer's newest session. Until then: answer a finished turn within a minute, resume with `resume: true` when a peer is gone, and ask peers to keep the turn open while their own job runs.
+
+## gm: waste findings for the gm skill (dispatcher, 2026-11-10 09:10 UTC)
+
+Send on gm's idle event, after turn 2c775d20e63a reports. Fold into gm's Phase A for the skill change, not a new pass. The findings are from this session:
+- gm's one-read-per-run habit: the skill is read again after each compaction; the read is cheap, but a run that reads the skill and then the verbs list separately costs two turns. Put the verb list and the rules in the same read.
+- Batch gm verbs into one run_code body per phase; where a run made one round trip per verb, change the skill to group them.
+- A witness that needs a running browser on 10221 checks the port once, not per step.
+- Duplicate status reads in one run (state, then state again to confirm) are waste; one read per phase.
+Then remove this section.
