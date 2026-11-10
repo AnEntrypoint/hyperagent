@@ -12,12 +12,6 @@ The orchestrate skill's wall-clock rule: each busy peer's next dispatch is writt
 
 Every prompt ends with the standing lines: work only in your cwd on main in the shared checkout; commit as lanmower only, no trailer or attribution line; Phase A (code, docs, tests, listed in docs/PENDING_VALIDATION.md, committed locally) then Phase B (build once, witness, batch fixes, rerun only what failed, push once, one status check at most); treat any issue as a defect; stop processes by their own PID only; wait on a job once with a timeout sized from its recorded wall time; read git state once per phase; record witness wall times; `REPORT: finished|open|blocked — <summary> — witness: <output evidence>`.
 
-## spoint (owner, 2026-11-10: "after the next step lets wrap up spoint and stop it for now")
-
-we want spoint wrapped up and parked. Finish the weather and snow witness you are on, and commit scripts/weather-snow-landing-alloc-witness.mjs with it. Do not start a new item. Run the one Phase B for everything committed locally (grass revisit 5ee7f8bc, its witness 1708e35c, the occlusion witness a70b3db1, the weather witness), fix what fails, and push to origin main once. Then write the hand-over into docs/PENDING_VALIDATION.md: every open item with its status, cause and next step, including groundy's correction population and the three witnesses that need hardware or Windows. Leave no process running and no uncommitted file.
-
-After its REPORT: check `git -C /workspace/spoint status --short` and `git log origin/main..HEAD` are empty, then `stop_peer` spoint. Do not resume it until the owner asks.
-
 ## fx (owner report, 2026-11-10, about 08:00 SAST: superagent used subagents and fx crashed)
 
 we want the superagent to work as the owner used it, and the crash fixed. This goes to the top of your queue, ahead of the ranked rows, and is folded into your open Phase A if one is open.
