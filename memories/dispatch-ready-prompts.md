@@ -1,11 +1,11 @@
 ---
 name: dispatch-ready-prompts
-description: "ready-to-send next prompts for busy peers (fx superagent view; holds the quiet-window airc server restart); send on the idle event in the same wake, then remove the sent section"
+description: "ready-to-send next prompts for busy peers (thebird TUI parity; holds the quiet-window airc server restart); send on the idle event in the same wake, then remove the sent section"
 metadata:
   node_type: memory
   type: project
   originSessionId: bc092253-97dd-4f77-9001-5a59318251ee
-  modified: 2026-11-10T07:28:27.095Z
+  modified: 2026-11-10T07:29:47.123Z
 ---
 
 The orchestrate skill's wall-clock rule: each busy peer's next dispatch is written before its turn ends. On the idle event, read the peer's REPORT, adjust only what the report changes, send the prompt, and delete its section here.
@@ -15,22 +15,6 @@ Every prompt ends with the standing lines: work only in your cwd on main in the 
 ## Quiet window: restart the airc server on the rebuilt ccbridge
 
 Peers whose turn ran longer than thirty minutes were retired within a minute or two of the turn ending (gm, spoint, jayzee and fx on 2026-11-10), and any job they had left running died with them. Cause: the hub's idle clock was last set when the prompt was submitted, so a long turn was already past the 1800 s reap limit when the dispatcher's client detached. Fixed in airc/src/server/server.cpp (detach now resets the clock) and built into build/ccbridge. The running servers (pids 884614 and 931565, the older .orch/ccbridge/v0.1.0.4 binary) still have the defect. When no peer is busy, restart the server on build/ccbridge and resume each peer's newest session. Until then: answer a finished turn within a minute, resume with `resume: true` when a peer is gone, and ask peers to keep the turn open while their own job runs.
-
-## fx (owner direction, 2026-11-10: the superagent's view of its agents)
-
-we want fx's superagent to see its agents the way a dispatcher sees peers, not the full view of what they do. The owner's words: "superagents shouldnt get the full view of what agents are doing, we must make sure that fx's superagent view is a rough match of what we experience from the perspective of superagent feedback when running in the fx app".
-
-The reference is the hyperagent dispatcher's experience: it prompts a peer and receives only the turn's final response; it is told the moment a turn ends, with that last response, and when a peer is gone; it can read alive and busy state; everything else a peer did (tool calls, streamed text, its context) stays in that peer's own journal and is read on request, in slices. Give the superagent the same shape from its roots, in the tool results and in what the fx app shows the user for a superagent turn. Record the design in docs/superagent.md and witness it: after a root runs a turn with many tool calls, the superagent's context holds the final response and status only.
-
-My own experience as the dispatcher, so you can match it. I am the superagent in this loop, and this is roughly what I get:
-- A prompt goes out and what comes back is the peer's final text for that turn, plus a status. Nothing in between: no tool calls, no streamed text, no intermediate reasoning. A turn that ends with a stub such as "waiting for the build" is still just a final text; I have to read the journal to learn what happened.
-- A line arrives when a turn finishes: the peer's name, its session, and its last response. A line also arrives when a peer is gone. I act on that line; I do not poll for state.
-- Alive and busy are the only state I read unless something is wrong. I do not read a peer's pane or its tool log by default.
-- The full journal (every tool call, every line of output) exists and I can read it, but I read it in slices and only when a final text is not enough to decide. Dumping whole journals into my context overflowed it more than once today. Your superagent should treat the journal as something it can open on request, never as something it receives.
-- Two mistakes I made that the design should prevent: I told a peer to copy memory files alongside its own format when I meant to replace them, and I wrote a rule into a peer's prompt that no one had asked for, which the peer then obeyed. So: the superagent passes a root only what the owner asked, and it does not add rules of its own.
-- When a root is idle or gone, that is an event; when it is busy, the superagent waits for the event rather than asking again.
-
-Fold this into the superagent stretch if it is still open; otherwise it is the next stretch, ahead of the ranked rows. The standing rules apply, and the turn stays open while your own jobs run.
 
 ## thebird: fx TUI parity (owner report, 2026-11-10 07:30 UTC)
 
@@ -42,35 +26,3 @@ we want thebird to show fx's full TUI in the browser, the way fx's own terminal 
 4. The owner pointed at https://github.com/vercel-labs/fx/tree/main/examples/browser-agent. It is not a TUI: a form with a textarea that streams text_delta into the reply. Its two useful pieces are for the fx ask path. First, createFxEngine({ apiKey, model, fetch }) lets the host override fetch. Second, with no key it routes requests through a server proxy that allows only the two gateway paths, using a demo key. Check thebird's fx ask against that shape, and check whether thebird's vendored core matches libfx 0.0.16. The TUI itself is the native fx terminal in /workspace/fx/fx/src/ui/. The examples node-chat/chat.mjs (readline) and browser-agent show no footer, approval, transcript or input surface.
 5. The owner also points at https://fx.sh/try, where the TUI shows. Its page runs the full fx CLI as fx-term.wasm (the -Dwasm-surface=term build, /workspace/fx/fx/build.zig:420), with output drawn through ghostty-vt.wasm as a VT emulator (GhosttyCore) and rendered by a WTerm grid. Input comes from a keydown listener and a textarea. thebird vendors only fx-core.wasm (the libfx SDK core, web/vendor/fx/manifest.json) and runs fx as line builtins in web/fx-in-page.js. That is the likely cause of the missing TUI. Compare the two, then build fx-term from /workspace/fx/fx and vendor it, with a VT surface for it in your xterm, keeping fx-core for the SDK path if it is still needed. Record the choice and the reason in docs/PENDING_VALIDATION.md, and say which surfaces it now covers.
 6. Keep your fx ask path and the rest of your queue. The standing rules apply, the turn stays open while your own jobs run, and you push once per Phase B.
-
-## thebird (from gm's report, 2026-11-10 06:46: pin and artifact disagree)
-
-we want thebird to make the txiki artifact and its pin agree. Its TXIKI_WASM_SHA256 is 137c08f6…, but the vendored web/vendor/txiki/tjs.wasm hashes to dcd3a434…. gm's witnesses ran with --allow-unpinned, because the driver fails closed on the mismatch. Rebuild the vendored artifact from the pinned sources (txiki v26.11.0, libuv dd9f081cc55a4d83e2a976848d074f28ee5f34eb, quickjs-ng 7b5f588e0f9b643e2996f291bfc861abeaceddc2), or regenerate the pin from the build that is shipped, whichever matches the sources, and record which in the ledger. Include the exit flush in the same rebuild, since that changes the hash anyway. Keep the seven gm_txiki_* exports. Report the final sha256 for gm. Then finish its queue as before; the standing rules apply, and the turn stays open while its own jobs run.
-
-## thebird: fx does not run in the browser (owner report, 2026-11-10 07:10 UTC)
-
-we want thebird to make fx run in the browser, end to end, and to witness it the way the owner uses it. This goes to the top of your queue and folds into your open Phase A.
-
-What the owner sees: fx does not run yet in thebird. What we know from the code: `fx --version`, `fx check` and `which fx` pass in the witness, but `fx ask` throws unless window.THEBIRD_FX has an apiKey and model (web/fx-in-page.js), and fx needs WebAssembly JSPI, so it refuses outside Chrome or Edge 137+. The witness never runs `fx ask`, so it cannot have caught a failure in it.
-
-1. Reproduce on the live site, through the playwriter setup, with the owner's exact steps: open the site, run `fx --version`, `fx check`, then `fx ask hello` with a configured key. Quote each output. If the owner's version of thebird is the live one, compare it with the local build and say which one fails.
-2. Fix every cause you find: the core, the vendored modules, the in-page wiring, the key path, JSPI detection, and the gateway call. Record each cause in docs/PENDING_VALIDATION.md.
-Also, from gm's report (07:08 UTC): project imports under txiki are blocked by your artifact. Your stubs.tsv lists uv_fs_* as stubs in the browser build, so the tjs_fs_* bridge is never reached and imports cannot resolve through the loader. Back uv_fs_* with the bridge in the browser build, report that to gm (it reruns S5c and the import witness), and keep the seven gm_txiki_* exports. The pin already matches (137c08f6).
-
-3. Witness `fx ask` in the full witness with a local stub gateway, so the witness fails when the ask path breaks.
-4. Keep the rest of your queue. The standing rules apply, the turn stays open while your own jobs run, and you push once per Phase B.
-
-## thebird: loading animation (owner direction, 2026-11-10 07:20 UTC)
-
-we want thebird's loading animation to be big, central, and read "thebird", drawn as ASCII text and not as canvas or CSS. The owner's words: "the loading animation for thebird should be big, central, and 'thebird', pick animation thats actually ascii not css".
-
-Today web/splash.js draws a 240x20 canvas with the tte-js laseretch effect in the top-right corner (web/terminal.html, #splash). Change it to this:
-1. Put the splash in the middle of the terminal viewport, large. Its content is "thebird" drawn as block letters made of plain ASCII characters, about six rows tall, in a <pre> element with the same monospace font, centred horizontally and vertically over the terminal, and it stays on top of the output.
-2. Animate it with ASCII frames only: a short sequence of text frames swapped by a timer in JS, for example a scan line that sweeps across the block letters, or the letters filling in and out. No canvas, no CSS keyframes, no transitions. Pick one animation, state the reason in the ledger, and keep it cheap: one text node update per frame, no allocation per frame beyond the frame string built once.
-3. Below the art, keep the status text ("loading Python...", "loading the shell") as plain text in the same block, so the phases from web/terminal.js still show.
-4. splash.done() removes the element and its timer. splash.failed(message) shows the message in the same big block, and it must not leave a timer running.
-5. The tte-js import leaves splash.js. Keep web/vendor/tte-js and its notice in place for now, since the owner's earlier decision was to load it behind the splash; record in docs/PENDING_VALIDATION.md that it is no longer imported and that the owner must say whether to remove it.
-
-Witness: a browser run through the playwriter setup, on the live built site, that shows the big "thebird" text centred in the viewport during loading, changes between at least two frames, and is gone after done(). Quote the frame text from two samples, and the element's bounding box against the viewport. Put this under the standing rules, in the same Phase A as your other items.
-
-Related: [[jayzee-realistic-scenarios-shared-terrain]], [[floosie-integration-wanted]], [[gm-run-code-under-txiki-browser]], [[jayzee-web-architecture-static-pools]], [[fx-memory-format-hyperagent]].
