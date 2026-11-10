@@ -36,6 +36,11 @@ if(TARGET Boost::system)
 endif()
 target_compile_options(hyperagent PRIVATE -Wall -Wextra -Wpedantic)
 
+add_subdirectory(airc)
+set_target_properties(ccbridge PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+add_dependencies(hyperagent ccbridge)
+target_compile_definitions(hyperagent PRIVATE HYPERAGENT_CCBRIDGE="$<TARGET_FILE:ccbridge>")
+
 add_subdirectory(tests/fake_claude)
 
 install(TARGETS hyperagent RUNTIME DESTINATION bin)

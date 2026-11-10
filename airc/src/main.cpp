@@ -77,6 +77,10 @@ int list_templates(const ccb::Registry& registry, bool check) {
         }
         std::printf("%s%s\n", name.c_str(), name == registry.default_name() ? " (default)" : "");
     }
+    if (check && registry.names().empty()) {
+        std::fprintf(stderr, "no templates found\n");
+        ++problems;
+    }
     if (check && problems == 0) std::printf("ok: %zu templates\n", registry.names().size());
     return problems == 0 ? 0 : 1;
 }

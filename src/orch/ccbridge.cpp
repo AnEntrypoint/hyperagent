@@ -70,6 +70,9 @@ pid_t spawn_detached(const std::string& binary)
     changes.emplace_back("AIRC_CLAUDE_SKIP_PERMISSIONS",
                          config::skip_permissions_setting() == "1" ? std::optional<std::string>("1") : std::nullopt);
     changes.emplace_back("AIRC_CLAUDE_MODEL", config::claude_model_setting());
+    if (std::getenv("CCBRIDGE_TEMPLATES") == nullptr) {
+        changes.emplace_back("CCBRIDGE_TEMPLATES", (config::root_dir() / "airc" / "templates").string());
+    }
 
     auto env_text = environment_with(changes);
     std::vector<char*> envp;
@@ -211,13 +214,7 @@ std::string ccbridge_binary()
     if (const char* override_binary = std::getenv("CCBRIDGE_BIN"); override_binary != nullptr && *override_binary != '\0') {
         return override_binary;
     }
-    const auto result = core::process::run_capture(
-        {"python3", (config::root_dir() / "bin" / "ccbridge-latest").string()});
-    const auto lines = core::text::splitlines(std::string(core::text::strip(result.standard_output)));
-    if (result.exit_code != 0 || lines.empty()) {
-        throw Error("cannot install ccbridge: " + std::string(core::text::strip(result.standard_error)));
-    }
-    return lines.back();
+    return HYPERAGENT_CCBRIDGE;
 }
 
 std::string server_binary()
