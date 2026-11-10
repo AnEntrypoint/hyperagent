@@ -36,3 +36,4 @@
 - [jayzee web architecture: static pools](jayzee-web-architecture-static-pools.md) — owner direction: size resources to the device once and scale within pre-allocated pools; graphics pre-initialized so models never hitch on first appearance
 - [thebird npm and npx](thebird-npm-npx-pending.md) — sent in turn 450f347730c5 with the foreground-line correction, floosie and the gm txiki shim; witnesses in its REPORT
 - [Ready prompts for busy peers](dispatch-ready-prompts.md) — next dispatch per busy peer, written in advance; send on the idle event, then remove the section
+- [jayzee: realistic scenarios, shared terrain data](jayzee-realistic-scenarios-shared-terrain.md) — owner direction: realistic game physics scenarios, baseline features from spoint/spawn/savi, flawless vegetation streaming, one landscape dataset for collision and visuals
