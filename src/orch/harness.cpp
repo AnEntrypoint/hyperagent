@@ -34,7 +34,7 @@ using core::json::member;
 using core::json::py_str;
 using core::json::truthy;
 
-constexpr std::array<std::string_view, 4> harness_names{"claude", "codex", "freebuff", "opencode"};
+constexpr std::array<std::string_view, 5> harness_names{"claude", "claude-fable", "codex", "freebuff", "opencode"};
 constexpr std::string_view jsonl_suffix{".jsonl"};
 
 const std::regex uuid_pattern("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
@@ -48,10 +48,15 @@ bool is_known(std::string_view name)
     return std::ranges::find(harness_names, name) != harness_names.end();
 }
 
+bool is_claude_family(std::string_view name)
+{
+    return name == "claude" || name == "claude-fable";
+}
+
 void require_known(const std::string& harness)
 {
     if (!is_known(harness)) {
-        throw std::runtime_error("unknown harness '" + harness + "'; known: claude, codex, freebuff, opencode");
+        throw std::runtime_error("unknown harness '" + harness + "'; known: claude, claude-fable, codex, freebuff, opencode");
     }
 }
 
@@ -648,7 +653,7 @@ bool known(const std::string& name)
 Value sessions(const std::string& harness, const std::string& cwd)
 {
     require_known(harness);
-    if (harness == "claude") {
+    if (is_claude_family(harness)) {
         return claude_sessions(cwd);
     }
     if (harness == "codex") {
@@ -663,7 +668,7 @@ Value sessions(const std::string& harness, const std::string& cwd)
 std::optional<Value> find(const std::string& harness, const std::string& session_id)
 {
     require_known(harness);
-    if (harness == "claude") {
+    if (is_claude_family(harness)) {
         return claude_find(session_id);
     }
     if (harness == "codex") {
@@ -678,7 +683,7 @@ std::optional<Value> find(const std::string& harness, const std::string& session
 std::string selector_kind(const std::string& harness, const std::string& selector)
 {
     require_known(harness);
-    if (harness == "claude") {
+    if (is_claude_family(harness)) {
         return claude_selector_kind(selector);
     }
     if (harness == "codex") {
@@ -693,7 +698,7 @@ std::string selector_kind(const std::string& harness, const std::string& selecto
 bool pane_busy(const std::string& harness, const std::string& pane)
 {
     require_known(harness);
-    if (harness == "claude") {
+    if (is_claude_family(harness)) {
         return contains(pane, claude_busy_marker);
     }
     if (harness == "codex") {
@@ -708,7 +713,7 @@ bool pane_busy(const std::string& harness, const std::string& pane)
 bool pane_ready(const std::string& harness, const std::string& pane)
 {
     require_known(harness);
-    if (harness == "claude") {
+    if (is_claude_family(harness)) {
         return contains(pane, claude_prompt_glyph) || contains(pane, claude_busy_marker)
             || contains(pane, claude_title_marker);
     }
