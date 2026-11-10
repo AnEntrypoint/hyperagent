@@ -22,6 +22,14 @@ we want fx's superagent to see its agents the way a dispatcher sees peers, not t
 
 The reference is the hyperagent dispatcher's experience: it prompts a peer and receives only the turn's final response; it is told the moment a turn ends, with that last response, and when a peer is gone; it can read alive and busy state; everything else a peer did (tool calls, streamed text, its context) stays in that peer's own journal and is read on request, in slices. Give the superagent the same shape from its roots, in the tool results and in what the fx app shows the user for a superagent turn. Record the design in docs/superagent.md and witness it: after a root runs a turn with many tool calls, the superagent's context holds the final response and status only.
 
+My own experience as the dispatcher, so you can match it. I am the superagent in this loop, and this is roughly what I get:
+- A prompt goes out and what comes back is the peer's final text for that turn, plus a status. Nothing in between: no tool calls, no streamed text, no intermediate reasoning. A turn that ends with a stub such as "waiting for the build" is still just a final text; I have to read the journal to learn what happened.
+- A line arrives when a turn finishes: the peer's name, its session, and its last response. A line also arrives when a peer is gone. I act on that line; I do not poll for state.
+- Alive and busy are the only state I read unless something is wrong. I do not read a peer's pane or its tool log by default.
+- The full journal (every tool call, every line of output) exists and I can read it, but I read it in slices and only when a final text is not enough to decide. Dumping whole journals into my context overflowed it more than once today. Your superagent should treat the journal as something it can open on request, never as something it receives.
+- Two mistakes I made that the design should prevent: I told a peer to copy memory files alongside its own format when I meant to replace them, and I wrote a rule into a peer's prompt that no one had asked for, which the peer then obeyed. So: the superagent passes a root only what the owner asked, and it does not add rules of its own.
+- When a root is idle or gone, that is an event; when it is busy, the superagent waits for the event rather than asking again.
+
 Fold this into the superagent stretch if it is still open; otherwise it is the next stretch, ahead of the ranked rows. The standing rules apply, and the turn stays open while your own jobs run.
 
 Related: [[jayzee-realistic-scenarios-shared-terrain]], [[floosie-integration-wanted]], [[gm-run-code-under-txiki-browser]], [[jayzee-web-architecture-static-pools]], [[fx-memory-format-hyperagent]].
