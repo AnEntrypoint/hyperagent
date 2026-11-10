@@ -42,3 +42,4 @@
 - [fx superagent view matches the dispatcher's](fx-superagent-view-matches-hyperagent.md) — owner direction: the superagent sees final responses, turn-end events and status, not the full view of its agents
 - [thebird fx TUI parity](thebird-fx-tui-parity.md) — owner report: thebird is missing most of fx's TUI; queued for thebird's next idle event
 - [1024 budget is achievable](feedback-1024-budget-is-achievable.md) — owner rule: jayzee holds the 1024 frame budget inside 16.7 ms; use the environment before cutting behaviour
+- [AnEntrypoint assets on Pages](assets-anentrypoint-pages.md) — reference: 934 streaming-cluster GLBs in 20 categories, indexed by manifest.json; the repo holds only docs
