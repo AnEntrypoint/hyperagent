@@ -27,3 +27,4 @@
 - [fx image reading: router fixed](fx-image-reading-router-fixed.md) — owner: the image problem was the router, now fixed; no fx image-reading change
 - [Wall-clock iteration times](feedback-wallclock-iteration-times.md) — owner direction: measured sleep-poll loops and per-step gm round trips; advice sent to peers to cut wall-clock per iteration
 - [hyperagent C++ and vendored airc](hyperagent-cpp-airc-vendored.md) — owner direction: hyperagent is C++ only with airc at airc/; import squashed because a git guard blocks the owner email
+- [gm QuickJS to txiki.js](gm-quickjs-to-txiki.md) — owner direction: gm swaps QuickJS-NG for embedded txiki.js; pins from thebird; dispatch waits for gm to go idle
