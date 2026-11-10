@@ -34,5 +34,5 @@
 - [floosie integration wanted](floosie-integration-wanted.md) — owner direction: restore floosie in thebird's gm addition, reverting only the decoupling hunks; /workspace/floosie is in place; send when thebird is idle
 - [gm run_code under txiki in the browser](gm-run-code-under-txiki-browser.md) — owner direction: run_code needs project imports via txiki.js; thebird's tjs.wasm is the one browser txiki; queued until both peers are idle
 - [jayzee web architecture: static pools](jayzee-web-architecture-static-pools.md) — owner direction: size resources to the device once and scale within pre-allocated pools; graphics pre-initialized so models never hitch on first appearance
-- [thebird npm and npx](thebird-npm-npx-pending.md) — pending: npm and npx in thebird's browser shell; send to thebird on idle, with the foreground-line correction
+- [thebird npm and npx](thebird-npm-npx-pending.md) — sent in turn 450f347730c5 with the foreground-line correction, floosie and the gm txiki shim; witnesses in its REPORT
 - [Ready prompts for busy peers](dispatch-ready-prompts.md) — next dispatch per busy peer, written in advance; send on the idle event, then remove the section

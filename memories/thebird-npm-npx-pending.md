@@ -1,6 +1,6 @@
 ---
 name: thebird-npm-npx-pending
-description: "owner direction: npm and npx must work in thebird's browser shell; queued until thebird is idle, and includes a correction to the foreground line I wrongly sent it"
+description: "owner direction: npm and npx must work in thebird's browser shell; sent in turn 450f347730c5 with the foreground-line correction, floosie and the gm txiki shim artifact as later stretches"
 metadata:
   node_type: memory
   type: project
@@ -18,6 +18,8 @@ Owner direction (2026-11-10): "we want npm and npx working in thebird".
 
 **Correction to send with it:** the last dispatch to thebird included "Do not background any check or wait on a background agent". The owner asked for that line to be removed; it was my mistake. Tell thebird to disregard it. Foreground checks are not a rule for the agent.
 
-**How to apply:** when thebird goes idle, send the instruction above as a Phase A/Phase B stretch with the correction. Then delete this file and its index line.
+**Sent (2026-11-10, turn 450f347730c5):** npm and npx, the correction, then floosie, the txiki shim artifact for gm, and the open ledger rows. thebird's previous push was 837c78c (144 PASS, 0 FAIL). thebird lists as owner-held: Pages Ctrl-C without isolation, removing web/stream-hub.js, the licence questions, the journal limit for C-extension writes, the upstream floosie esbuild declaration.
+
+**How to apply:** read the REPORT of that turn for the four witnesses.
 
 Related: [[thebird-tjs-as-node]], [[txiki-js-browser-runtime]], [[feedback-two-phase-work]].
