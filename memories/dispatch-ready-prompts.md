@@ -36,4 +36,15 @@ Fold this into the superagent stretch if it is still open; otherwise it is the n
 
 we want thebird to make the txiki artifact and its pin agree. Its TXIKI_WASM_SHA256 is 137c08f6…, but the vendored web/vendor/txiki/tjs.wasm hashes to dcd3a434…. gm's witnesses ran with --allow-unpinned, because the driver fails closed on the mismatch. Rebuild the vendored artifact from the pinned sources (txiki v26.11.0, libuv dd9f081cc55a4d83e2a976848d074f28ee5f34eb, quickjs-ng 7b5f588e0f9b643e2996f291bfc861abeaceddc2), or regenerate the pin from the build that is shipped, whichever matches the sources, and record which in the ledger. Include the exit flush in the same rebuild, since that changes the hash anyway. Keep the seven gm_txiki_* exports. Report the final sha256 for gm. Then finish its queue as before; the standing rules apply, and the turn stays open while its own jobs run.
 
+## thebird: fx does not run in the browser (owner report, 2026-11-10 07:10 UTC)
+
+we want thebird to make fx run in the browser, end to end, and to witness it the way the owner uses it. This goes to the top of your queue and folds into your open Phase A.
+
+What the owner sees: fx does not run yet in thebird. What we know from the code: `fx --version`, `fx check` and `which fx` pass in the witness, but `fx ask` throws unless window.THEBIRD_FX has an apiKey and model (web/fx-in-page.js), and fx needs WebAssembly JSPI, so it refuses outside Chrome or Edge 137+. The witness never runs `fx ask`, so it cannot have caught a failure in it.
+
+1. Reproduce on the live site, through the playwriter setup, with the owner's exact steps: open the site, run `fx --version`, `fx check`, then `fx ask hello` with a configured key. Quote each output. If the owner's version of thebird is the live one, compare it with the local build and say which one fails.
+2. Fix every cause you find: the core, the vendored modules, the in-page wiring, the key path, JSPI detection, and the gateway call. Record each cause in docs/PENDING_VALIDATION.md.
+3. Witness `fx ask` in the full witness with a local stub gateway, so the witness fails when the ask path breaks.
+4. Keep the rest of your queue. The standing rules apply, the turn stays open while your own jobs run, and you push once per Phase B.
+
 Related: [[jayzee-realistic-scenarios-shared-terrain]], [[floosie-integration-wanted]], [[gm-run-code-under-txiki-browser]], [[jayzee-web-architecture-static-pools]], [[fx-memory-format-hyperagent]].
