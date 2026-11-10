@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: bc092253-97dd-4f77-9001-5a59318251ee
-  modified: 2026-11-10T15:02:44.663Z
+  modified: 2026-11-10T15:16:02.814Z
 ---
 
 The orchestrate skill's wall-clock rule: each busy peer's next dispatch is written before its turn ends. On the idle event, read the peer's REPORT, adjust only what the report changes, send the prompt, and delete its section here.
@@ -173,3 +173,17 @@ Sent 09:55: fx's stretch 9 ended open at 09:53 after one commit (faabf61a). The 
 - 14:47 UTC: correction: the owner means fx inside thebird the app (in-page shell command starting the vendored fx-term TUI), not the native binary. Stopped thebird's wrong turn f098e168ce22 (native launcher, uncommitted in its working tree: bin/fx.mjs, test/, package.json fx entry, README line; bin/thebird-relay.js modified, kept unless it is launcher-only). Resumed session f76f541c-06a4-4741-8e6f-30dad8d01729 as turn 35265d440c22: undo the launcher pieces, register fx in the in-page shell to start the fx TUI from web/vendor/fx, TUI witness once, one push. Nothing from the launcher was pushed.
 - 15:00 UTC: fx ended turn 03a883e73058 open (REPORT at 14:59:49): /theme picker pushed as ccfaa813..021498b5 (one push, the end-of-stretch push). Its /tasks browser, queue rows 10+ and the long-stream row are open. Sent turn fd34d88b949f via resume_project (session afca55c2, wait false): the /theme live-apply test and /tasks browser in Phase A, rows 10+, the long-stream trace, one Phase B, one push. thebird busy on 35265d440c22 (witness PID 823783); its launcher cleanup and in-page fx REPORT are still pending.
 - 15:02 UTC: the fx gone event was for the old session afca55c2 turn 03a883e73058 ending; the resumed turn fd34d88b949f is alive and busy on /tasks (verified in its journal). thebird ended 35265d440c22 finished: in-page fx builtin already present (web/builtins.js), witness commit 2094f44, pushed e4b44f6; witness PASS 186 FAIL 3 (palette resize, approval and ask: fx tool advertisement). Its launcher files are removed. Sent turn 01315c08ee67 via resume_project (session f76f541c, wait false): check the page initialize sends clientCapabilities.libfx.tools per fx b3a22f51, approval and ask witnesses once, push only if its own code changed; read-only report of /config/.local/bin/fx; stop only its own chromium and thebird-relay PIDs, list the rest.
+
+## fx: superagent finish notice and continuation (owner, 2026-11-10 15:15 UTC; send on fx's idle event)
+
+Owner: fx agents must notify their superagent when they finish, and the superagent runs the same continuation cycle the dispatcher runs. fx is busy on fd34d88b949f, so send this on its idle event, with the open pass (no second Phase A).
+
+Send: we want fx to change its superagent so each root notifies it when it finishes and so a finished root is continued the way the dispatcher continues a peer. Phase A is code and docs only, committed locally as lanmower with no trailer, each change listed in docs/PENDING_VALIDATION.md, nothing pushed.
+
+1. src/core/superagent/command.zig, system_prompt: (a) every queue the superagent sends to a root ends with the standing line `REPORT: finished|open|blocked — <one line> — witness: <output evidence>`; the root's turn end is the notice the superagent receives, and a root that stops with work left says so in that REPORT. (b) Continuation: when a root's turn has ended and it has more work, the superagent continues it on its saved session id (start with `session`, not a plain instruct that can start a fresh conversation), then confirms the session id in status. (c) A root whose turn ends while its own job runs is not idle: the superagent waits on that PID once with a timeout and sends the continuation with the job's result, not a restart. (d) Reword "The superagent adds no rules of its own" so it separates the owner's standing rules, which pass through verbatim, from the superagent's cycle, which it follows.
+2. .fx/skills/superagent/SKILL.md, Cycle: state the same in the same general wording, with a continue step after step 6.
+3. docs/superagent.md: the finish notice is the turn-end event carrying the REPORT line; the continuation path is the saved session id.
+
+Phase B, once: build fx; run the live superagent witness (start one root, instruct it to end with a REPORT line, receive its turn-end event, continue it on its session id, read status once) and quote the output; fix every defect; push origin main once. Do not add a test that asserts the prompt's wording.
+
+Standing lines: work only in /workspace/fx/fx on main, in the shared checkout; commit as lanmower with no trailer; stop processes by their own PID, never pkill or killall. End with REPORT: finished|open|blocked — <summary> — witness: <output evidence>.
