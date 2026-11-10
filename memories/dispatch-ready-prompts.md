@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: bc092253-97dd-4f77-9001-5a59318251ee
-  modified: 2026-11-10T07:27:39.820Z
+  modified: 2026-11-10T07:28:27.095Z
 ---
 
 The orchestrate skill's wall-clock rule: each busy peer's next dispatch is written before its turn ends. On the idle event, read the peer's REPORT, adjust only what the report changes, send the prompt, and delete its section here.
@@ -40,7 +40,8 @@ we want thebird to show fx's full TUI in the browser, the way fx's own terminal 
 2. Fix every cause in Phase A. Record each cause and its fix in docs/PENDING_VALIDATION.md.
 3. Witness in Phase B: run the TUI in the browser through the playwriter setup, one surface at a time, and quote the screen text for each. Add a witness to the full witness, so a missing surface fails it.
 4. The owner pointed at https://github.com/vercel-labs/fx/tree/main/examples/browser-agent. It is not a TUI: a form with a textarea that streams text_delta into the reply. Its two useful pieces are for the fx ask path. First, createFxEngine({ apiKey, model, fetch }) lets the host override fetch. Second, with no key it routes requests through a server proxy that allows only the two gateway paths, using a demo key. Check thebird's fx ask against that shape, and check whether thebird's vendored core matches libfx 0.0.16. The TUI itself is the native fx terminal in /workspace/fx/fx/src/ui/. The examples node-chat/chat.mjs (readline) and browser-agent show no footer, approval, transcript or input surface.
-5. Keep your fx ask path and the rest of your queue. The standing rules apply, the turn stays open while your own jobs run, and you push once per Phase B.
+5. The owner also points at https://fx.sh/try, where the TUI shows. Its page runs the full fx CLI as fx-term.wasm (the -Dwasm-surface=term build, /workspace/fx/fx/build.zig:420), with output drawn through ghostty-vt.wasm as a VT emulator (GhosttyCore) and rendered by a WTerm grid. Input comes from a keydown listener and a textarea. thebird vendors only fx-core.wasm (the libfx SDK core, web/vendor/fx/manifest.json) and runs fx as line builtins in web/fx-in-page.js. That is the likely cause of the missing TUI. Compare the two, then build fx-term from /workspace/fx/fx and vendor it, with a VT surface for it in your xterm, keeping fx-core for the SDK path if it is still needed. Record the choice and the reason in docs/PENDING_VALIDATION.md, and say which surfaces it now covers.
+6. Keep your fx ask path and the rest of your queue. The standing rules apply, the turn stays open while your own jobs run, and you push once per Phase B.
 
 ## thebird (from gm's report, 2026-11-10 06:46: pin and artifact disagree)
 
