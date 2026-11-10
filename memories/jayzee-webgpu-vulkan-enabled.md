@@ -21,3 +21,5 @@ Owner statement (2026-11-09): "explain to jayzee that we've just enabled webgpu 
 **How to apply:** when jayzee's turn returns, dispatch this as its next step, folded into its open Phase B if that pass is still open. Keep the instruction short: the outcome and the witnesses to run.
 
 Related: [[jayzee-engine-core-cpp-jolt]]
+
+**Result (2026-11-10, push dfe58cd):** adapter NVIDIA RTX 3060 Laptop, not a fallback adapter. 1024 tier: WebGPU 52.86 ms median against WebGL2 59.10 ms (1.12x), p99 67.54 against 78.64 (1.16x); the physics tick dominates and differs between runs, so no render-path speedup is shown. 64 tier: WebGPU slower, 3.16 ms against 2.68 ms. The Dawn backend is not named in the record, so Vulkan is not witnessed. The follow-up queue went out with the next jayzee turn.
