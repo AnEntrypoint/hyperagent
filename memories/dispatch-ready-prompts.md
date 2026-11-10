@@ -46,3 +46,13 @@ End with REPORT: finished|open|blocked — <summary> — witness: <output eviden
 ## gm: installed-build step go-ahead
 
 gm's installed-build commits are on origin, and its skill habits are pushed (4101e4a). The install reaches every peer, so send gm the go only when no peer is busy.
+
+## fx: opencode template (dispatcher, 2026-11-10 11:20 UTC)
+
+Owner (2026-11-10): build a working opencode template for hyperagent, then get it in fx too. The hyperagent side is done and pushed (airc `opencode` template and `opencode-sqlite` transcript kind; commit d8d44e6). fx is busy, so send this on its idle event, folded into the superagent Phase A above.
+
+Send: we want fx to add an opencode template as part of the superagent change. Create superagent/templates/opencode.json with these fields and nothing else:
+{"argv": ["opencode", "--prompt", "{prompt}"], "resume": ["--session", "{session}"], "continue": ["--continue"]}
+It follows the same shape as claude.json and codex.json. Phase B: confirm the template launches opencode with the prompt, that opencode runs the turn, and quote the output. Do not copy any transcript reader into fx; fx's external templates only launch. If `--prompt` does not submit the prompt by itself, make the template submit it and record the change in docs/PENDING_VALIDATION.md.
+
+Measured for hyperagent (airc/templates/opencode.json, for reference): ready marker "Ask anything", busy marker "esc interrupt", live turn 4.8 s, transcript `~/.local/share/opencode/opencode.db`.
