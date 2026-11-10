@@ -264,6 +264,12 @@ A client that speaks MCP events can skip `bin/watch`: subscribe with
 the same idle and gone payloads as `notifications/resources/updated` and
 `notifications/message`; `hyperagent://events` holds the recent stream.
 
+Arm a Monitor on the watcher's output file (`tail -n 0 -F` on the file `bin/watch`
+writes, cut to a few hundred characters per line) so each idle or gone event wakes
+this session at once, and re-arm it when it expires. Check live state from git and the
+event line first; call `peer_status` only when those do not answer the question, since
+it returns every pane.
+
 Also start a loop that wakes this session every 10 minutes validating that all peers
 are making maximal progress. On each wake, run the cycle above. If loops are not
 possible, use monitors, waits, sleeps, or the CLI to do it.
