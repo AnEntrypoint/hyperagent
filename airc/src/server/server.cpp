@@ -700,6 +700,7 @@ void Hub::attach(std::shared_ptr<WsConnection> connection, std::string mode) {
 
 void Hub::detach(const WsConnection* connection) {
     std::erase_if(clients_, [connection](const Client& client) { return client.connection.get() == connection; });
+    last_touch_ = now_seconds();
 }
 
 void Hub::stop(StoppedHandler on_stopped) {
