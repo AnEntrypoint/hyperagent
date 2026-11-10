@@ -5,18 +5,22 @@ metadata:
   node_type: memory
   type: project
   originSessionId: bc092253-97dd-4f77-9001-5a59318251ee
-  modified: 2026-11-10T08:03:58.183Z
+  modified: 2026-11-10T08:59:29.623Z
 ---
 
 The orchestrate skill's wall-clock rule: each busy peer's next dispatch is written before its turn ends. On the idle event, read the peer's REPORT, adjust only what the report changes, send the prompt, and delete its section here.
 
 Every prompt ends with the standing lines: work only in your cwd on main in the shared checkout; commit as lanmower only, no trailer or attribution line; Phase A (code, docs, tests, listed in docs/PENDING_VALIDATION.md, committed locally) then Phase B (build once, witness, batch fixes, rerun only what failed, push once, one status check at most); treat any issue as a defect; stop processes by their own PID only; wait on a job once with a timeout sized from its recorded wall time; read git state once per phase; record witness wall times; `REPORT: finished|open|blocked — <summary> — witness: <output evidence>`.
 
-## jayzee: stretch 1 Phase B go-ahead (dispatcher, 2026-11-10 08:45 UTC)
+## jayzee: stretch 1 Phase B go-ahead (dispatcher, 2026-11-10 09:00 UTC)
 
-jayzee stretch 1 (tails) is Phase A complete with local commits 2296095 and 677f290, and blocked on Phase B: the project browser on port 10221 is down, and the controlled-run gate refuses PAUSED at host load above 0.20. gm was asked (turn 4b6cce525240) to start the browser through the playwriter setup and confirm it answers on 10221.
+jayzee stretch 1 (tails) is Phase A complete with local commits 2296095 and 677f290. Phase A is also complete for stretch 2 (8d9aa39) and stretch 3 (ae770a4), and stretch 4 Phase A was sent at 09:00 (turn 6f4be8d54eb3). Browser on 10221 is confirmed up by gm.
 
-Send jayzee the Phase B go-ahead only when both hold: gm reports the browser up on 10221, and no peer is busy, so the host load is quiet enough for the controlled gate. Then say: run stretch 1 Phase B (controlled tails LIVE and PAUSED, WebGPU and WebGL2, 1024 threaded, tail-report.mjs), push origin main once carrying 2296095 and 677f290, and REPORT for stretch 1 only. Stretches 2 to 5 follow as separate sends.
+Send jayzee the Phase B go-ahead only when no peer is busy, so the host load is quiet enough for the controlled gate (fx was busy at 09:00). Then say: run stretch 1 Phase B (controlled tails LIVE and PAUSED, WebGPU and WebGL2, 1024 threaded, tail-report.mjs), push origin main once carrying 2296095 and 677f290, and REPORT for stretch 1 only. Stretches 2, 3 and 4 Phase B follow as separate sends, each with its own push, and each waits for the quiet host.
+
+## gm: installed-build step go-ahead (dispatcher, 2026-11-10 09:00 UTC)
+
+gm's installed-build commits are all on origin. The install reaches every peer, so send gm the go only when no peer is busy. gm was given the waste-audit Phase A (turn 2c775d20e63a) in the meantime.
 
 ## Quiet window: restart the airc server on the rebuilt ccbridge
 
