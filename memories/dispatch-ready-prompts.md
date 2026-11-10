@@ -86,10 +86,7 @@ Measured for hyperagent (airc/templates/opencode.json, for reference): ready mar
 
 - 2026-11-10 09:53 UTC: fx pushed 108d86e6 (superagent habits, opencode template confirmed unchanged: --prompt submits by itself). Its open items went to stretch 9 Phase A as turn 4da24d18c531: Q16, Q10, queue rows 10+, and the ACP suite (48 of 173 failing at HEAD, treated as defects). jayzee idle on the single Phase B for stretches 1 to 7. gm still gone.
 
-## Queued for fx's next idle event (dispatcher, 2026-11-10 09:55 UTC)
+## fx: resize defect (queued, now in stretch 9 as turn f4783d59ad91)
 
-thebird's Phase B push is held on the resize defect, which lives in fx's checkout (src/ui/resize_runtime.zig; the witness "a resize after the command palette keeps the welcome panel and the rules at 70 columns", screen settled false). Decision: fix it in fx, not accept it as known. Send to fx on its idle event, folded into its open stretch 9 pass, or as its first item if that pass is done:
-
-we want fx to fix the resize defect in src/ui/resize_runtime.zig and rebuild fx-term.wasm, as a Phase A change with the witness listed in docs/PENDING_VALIDATION.md. The witness is thebird's "a resize after the command palette keeps the welcome panel and the rules at 70 columns" check, which screens `["𝒇x v0.0.16 · Run /help for commands","","┃",""]` with settled false. Find the cause in the resize path, the settle condition, and the palette close, then fix it. Phase B: build once, run that check through thebird's witness, push origin main once, and report the output.
-
-When fx pushes, send thebird the go-ahead (it has its own Phase A committed as 854c9a8 and its pin, orphan-cleanup and import-contract items queued in turn 038505de3032).
+Sent 09:55: fx's stretch 9 ended open at 09:53 after one commit (faabf61a). The continuation (turn f4783d59ad91) finishes Phase A first, includes the resize defect in src/ui/resize_runtime.zig, then one Phase B. thebird's push waits on that fx push; when it lands, send thebird the go-ahead (its Phase A is committed as 854c9a8, turn 038505de3032 adds the pin, orphan-cleanup and import-contract items).
+- 2026-11-10 09:56 UTC: thebird gone event was noise; thebird alive and busy on 038505de3032. fx continuation sent as f4783d59ad91.
