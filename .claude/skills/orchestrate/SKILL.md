@@ -124,15 +124,10 @@ goes to the gm project as a change to the gm skill.
   with its open queue.
 - Blocked items never leave capacity idle. When a peer has no reachable item, start
   the peer of another project whose ledger has reachable open work.
-- Peers do not sleep-and-poll. They block once on the job's PID in the foreground, with
-  a timeout, and do other queue items meanwhile.
-- Build, test and CLI-run checks run in the foreground of the peer's own turn, with
-  the shell timeout set to cover them (up to 600000 ms per call). This is a precaution
-  about the fx app, not about peer agents: the app's CLI under test has been seen to
-  suspend mid-run, and the owner has had to resume it with `fg`. The cause is not
-  confirmed (a Ctrl-Z is one suspect), so keep checks foreground until it is. A long
-  check that exceeds one call is split into sequential foreground calls.
-- A peer does not end its turn while its own job is still running.
+- Peers do not sleep-and-poll. They block once on the job's PID or use a background
+  job that notifies on exit, with a timeout, and do other queue items meanwhile.
+- A peer does not end its turn while its own job is still running, unless the job
+  re-invokes it on exit.
 - Build and check once per Phase B, after the last change. Reuse build directories and
   caches. Run only the tests the changed surface needs.
 - Shared installs, such as the gm binary, and `/model` switches run in a quiet window
@@ -205,9 +200,7 @@ Include these in every assignment prompt:
 - Verify by running the thing in Phase B. Quote the witness output. Fix any issues that arise.
 - Stop dev servers by their own PID; never use `pkill` or `killall`.
 - Work the whole queue without waiting for the dispatcher. No sleep-and-poll loops:
-  block once on the job's PID in the foreground with a timeout, or do the next item
-  while it runs. Build, test and CLI-run checks stay in the foreground, because the fx
-  app's CLI has suspended mid-run (cause unconfirmed). Batch
+  block once on the job's PID with a timeout, or do the next item while it runs. Batch
   gm verbs into one `run_code` body. Record each witness's wall time in the ledger.
 - End every turn with: `REPORT: finished|open|blocked — <your rhetoric> — witness: <output evidence>`.
 
