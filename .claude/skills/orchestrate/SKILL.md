@@ -133,7 +133,27 @@ goes to the gm project as a change to the gm skill.
 - Shared installs, such as the gm binary, and `/model` switches run in a quiet window
   when no peer is busy. Queue them and act the moment the window opens.
 - Each cycle, measure the waste from the transcripts (wait loops, repeated builds,
-  round trips per item) and report the worst item per peer with its fix.
+  round trips per item) and report the worst item per peer with its fix. The measure
+  is the gap between each journal `result` record and the next `instruct` record, plus
+  the peer transcript's long calls, repeated commands and token use.
+- The gap between a peer's `result` and its next `instruct` is dispatcher waste. The
+  target is under one minute. On 2026-11-10 the gaps over eight hours summed to 4 h for
+  fx, 3 h for spoint, 1.4 h for jayzee and 1.1 h for thebird, with a typical gap of five
+  to eight minutes, because the idle events never arrived and the timer did the work.
+- Keep each busy peer's next dispatch written before its turn ends: the full prompt in
+  a pending memory file, ready to send. The idle event is answered by sending that
+  file's prompt in the same wake, with no research in between.
+- Dispatch deep queues. A queue holds several stretches of work, enough for hours. A
+  turn that ends in under thirty minutes with reachable work left means the queue was
+  too shallow; send the rest at once and make the next queue deeper.
+- When one peer goes idle while the dispatcher is working on something else, dispatch
+  that peer first and return to the other work afterwards.
+- A peer waits on its own job once, for as long as the host's tool limit allows (about
+  590 s per call), sized from the wall time recorded in its ledger. Slices of 100 s
+  cost a round trip each.
+- Read busy state from the watcher's file and the journal's last record. Call
+  `peer_status` only for `alive`, since a server built before the pane change still
+  prints every pane.
 
 ## Two-phase work
 
@@ -264,9 +284,13 @@ A client that speaks MCP events can skip `build/hyperagent watch`: subscribe wit
 the same idle and gone payloads as `notifications/resources/updated` and
 `notifications/message`; `hyperagent://events` holds the recent stream.
 
-Arm a Monitor on the watcher's output file (`tail -n 0 -F` on the file `build/hyperagent watch`
-writes, cut to a few hundred characters per line) so each idle or gone event wakes
-this session at once, and re-arm it when it expires. Check live state from git and the
+Arm a Monitor on the watcher's output file so each idle or gone event wakes this
+session at once, and re-arm it when it expires. Every stage of the pipe must flush per
+line: `tail -n 0 -F /tmp/watch.out | grep --line-buffered -a -o -E '^.{1,400}'`. Do not
+shorten lines with `cut`, which holds its output in a block buffer when it writes to a
+pipe, so no event is delivered. A monitor that expires with no events while peers were
+finishing turns is a defect in the filter: compare it with the watcher's file before
+re-arming. Check live state from git and the
 event line first; call `peer_status` only when those do not answer the question. It
 returns the peer list without panes; add `pane_lines` only when a pane is needed.
 
