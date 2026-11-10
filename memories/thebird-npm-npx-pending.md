@@ -22,4 +22,8 @@ Owner direction (2026-11-10): "we want npm and npx working in thebird".
 
 **How to apply:** read the REPORT of that turn for the four witnesses.
 
+**Result (2026-11-10, push 79bd180):** npm and npx run on txiki as a pinned subset, version 0.1.0 (fflate 0.8.3, @noble/hashes 2.4.0, semver 7.8.6); 8 of 8 focused checks pass in headless Chromium, not playwriter. Limits: no lockfile, no .bin links, dependencies only, no auth, CommonJS bins only. Open: process.exit drops buffered output (needs a flush in scripts/txiki/browser/entry.c and a new wasm pin); the full witness was not rerun; scripts/esbuild-pin.mjs, untracked at session start, was overwritten by thebird. floosie is restored. The gm artifact web/vendor/txiki/tjs.wasm exports the seven gm_txiki_* functions (sha256 dcd3a434..., will change with the flush fix).
+
+**Follow-up sent (turn after 450f347730c5):** real npm (lockfile, .bin, dependency kinds, ESM bins, run/ci/uninstall/ls, auth), the exit flush, playwriter witnesses, the full witness rerun, the esbuild-pin account, URLs in npm errors.
+
 Related: [[thebird-tjs-as-node]], [[txiki-js-browser-runtime]], [[feedback-two-phase-work]].
