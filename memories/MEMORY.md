@@ -25,6 +25,7 @@
 - [Build locally, avoid Actions limits](feedback-build-locally-avoid-actions-limits.md) — owner rule: fx builds locally; fx hosted workflows disabled after the Actions spending limit; keep API and Actions usage low
 - [fx parity also matches the Claude Code docs](fx-parity-claude-code-docs.md) — owner direction: fx runs a read-only deep research pass over the Claude Code docs to collect parity issues into the matrix
 - [fx image reading: router fixed](fx-image-reading-router-fixed.md) — owner: the image problem was the router, now fixed; no fx image-reading change
+- [fx memory format: hyperagent layout](fx-memory-format-hyperagent.md) — owner direction: fx keeps only the hyperagent memory format and retires its own; the 16 memories carried over
 - [Wall-clock iteration times](feedback-wallclock-iteration-times.md) — owner direction: measured sleep-poll loops and per-step gm round trips; advice sent to peers to cut wall-clock per iteration
 - [hyperagent C++ and vendored airc](hyperagent-cpp-airc-vendored.md) — owner direction: hyperagent is C++ only with airc at airc/; import squashed because a git guard blocks the owner email
 - [gm QuickJS to txiki.js](gm-quickjs-to-txiki.md) — owner direction: gm swaps QuickJS-NG for embedded txiki.js; pins from thebird; dispatch waits for gm to go idle
