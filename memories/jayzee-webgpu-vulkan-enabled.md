@@ -1,6 +1,6 @@
 ---
 name: jayzee-webgpu-vulkan-enabled
-description: "Owner (2026-11-09): WebGPU support and Vulkan were just enabled in the environment. Pending delivery to jayzee, which is still on the WebGL2 1024 witness; deliver when its turn ends."
+description: "Owner (2026-11-09): WebGPU support and Vulkan are enabled; delivered to jayzee in turn dfc2ef024f18 (resume of its interrupted Phase A), folded into its Phase B."
 metadata:
   node_type: memory
   type: project
@@ -10,7 +10,7 @@ metadata:
 
 Owner statement (2026-11-09): "explain to jayzee that we've just enabled webgpu support and vulkan".
 
-**Status:** pending. Jayzee (turn b8595a34d3c9, Phase B) was busy on the WebGL2 1024 witness when the owner asked, so it was not prompted. Deliver it when that turn ends, as the next assignment for jayzee.
+**Status:** delivered in turn dfc2ef024f18 (2026-11-10), folded into jayzee's Phase B. The timings and adapter record are its REPORT witness.
 
 **Owner observation (2026-11-09):** the last test jayzee started ran significantly faster after WebGPU and Vulkan were enabled. This is unverified until the numbers are in. At the time of the check, the WebGPU 1024 run (build/diag/webgpu1024.json, started 02:03) had not finished and its output was empty. When jayzee's turn ends, ask it to quote the timings from that file and the matching WebGL2 run, side by side, in docs/PENDING_VALIDATION.md. Record the speedup only from those numbers.
 
