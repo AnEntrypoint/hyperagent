@@ -30,19 +30,19 @@ ccbridge drives an unmodified interactive coding agent in a pseudo-terminal: tex
 
 ## Harnesses
 
-A harness is a template, `templates/<name>.json`. Templates are read at run time from the search path: `--templates DIR`, `$CCBRIDGE_TEMPLATES`, `<resource root>/templates`, `./templates`. The built-in transcript kinds are `claude-jsonl`, `codex-jsonl` and `freebuff-json`.
+A harness is a template, `templates/<name>.json`. Templates are read at run time from the search path: `--templates DIR`, `$CCBRIDGE_TEMPLATES`, `<resource root>/templates`, `./templates`. The built-in transcript kinds are `claude-jsonl`, `codex-jsonl`, `freebuff-json` and `opencode-sqlite`.
 
-| fact | claude | codex | freebuff |
-|---|---|---|---|
-| ready markers (any) | `❯`, `esc to interrupt`, `Claude Code` | `Ask Codex to do anything`, `to get started, describe a task`, `esc to interrupt` | `Enter a coding task`, `for history · ? for help`, `Starting your model session` |
-| busy marker | `esc to interrupt` | `esc to interrupt` | `Starting your model session` |
-| transcript | `~/.claude/projects/<slug(cwd)>/*.jsonl` | `$CODEX_HOME/sessions/YYYY/MM/DD/rollout-*.jsonl` plus `state_*.sqlite` table `threads` | `$FREEBUFF_HOME` or `~/.config/manicode`, then `projects/<basename(cwd)>/chats/<id>/chat-messages.json` |
+| fact | claude | codex | freebuff | opencode |
+|---|---|---|---|---|
+| ready markers (any) | `❯`, `esc to interrupt`, `Claude Code` | `Ask Codex to do anything`, `to get started, describe a task`, `esc to interrupt` | `Enter a coding task`, `for history · ? for help`, `Starting your model session` | `Ask anything`, `esc interrupt` |
+| busy marker | `esc to interrupt` | `esc to interrupt` | `Starting your model session` | `esc interrupt` |
+| transcript | `~/.claude/projects/<slug(cwd)>/*.jsonl` | `$CODEX_HOME/sessions/YYYY/MM/DD/rollout-*.jsonl` plus `state_*.sqlite` table `threads` | `$FREEBUFF_HOME` or `~/.config/manicode`, then `projects/<basename(cwd)>/chats/<id>/chat-messages.json` | `~/.local/share/opencode/opencode.db` (SQLite, opened read-only): tables `session`, `message`, `part` |
 | record shape | `assistant`/`user` records; `message.content` blocks; text stitched by `apiBlockIndex` within `message.id`, accumulated across polls and emitted as deltas of the stitched text | `response_item` payloads: `message` (assistant and user text), `reasoning` (summary), `function_call`, `function_call_output`; `session_meta.payload.cwd` selects the session | JSON array of `{variant: user or ai, blocks: [{type, content, textType?}], isComplete?, userError?}` |
-| turn end | `system` record with `subtype: turn_duration` | `event_msg` with `payload.type: task_complete` | `isComplete`; a `userError` is sent as a result first; a notice line on the screen (`Not enough hours`, `Choose another model`, `not available on this connection`) also ends the turn |
-| resume | `--resume <id>` | `resume <id>` | `--continue <id>` |
-| continue | `--continue` | `resume --last` | `--continue` |
-| fork | `--resume <id> --fork-session`, `--continue --fork-session` | `fork <id>`, `fork --last` | none |
-| selector | absolute `.jsonl` path, session UUID, or name | session UUID or name | chat directory id |
+| turn end | `system` record with `subtype: turn_duration` | `event_msg` with `payload.type: task_complete` | `isComplete`; a `userError` is sent as a result first; a notice line on the screen (`Not enough hours`, `Choose another model`, `not available on this connection`) also ends the turn | assistant message with `time.completed` and `finish` other than `tool-calls`; its `error` is sent as a result first |
+| resume | `--resume <id>` | `resume <id>` | `--continue <id>` | `--session <id>` |
+| continue | `--continue` | `resume --last` | `--continue` | `--continue` |
+| fork | `--resume <id> --fork-session`, `--continue --fork-session` | `fork <id>`, `fork --last` | none | `--session <id> --fork`, `--continue --fork` |
+| selector | absolute `.jsonl` path, session UUID, or name | session UUID or name | chat directory id | session id `ses_…` |
 
 Binding: claude and codex bind an exact session id or path. An unknown non-UUID name binds the newest store for the cwd at its end. A UUID not found in the cwd is looked up across the whole store, and if that also fails the attach is refused; there is no silent fallback. Freebuff accepts chat ids only.
 

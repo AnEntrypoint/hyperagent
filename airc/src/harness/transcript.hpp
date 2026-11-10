@@ -42,5 +42,6 @@ std::unique_ptr<Transcript> make_transcript(const TranscriptSpec& spec);
 std::unique_ptr<Transcript> make_claude_transcript(const TranscriptSpec& spec);
 std::unique_ptr<Transcript> make_codex_transcript(const TranscriptSpec& spec);
 std::unique_ptr<Transcript> make_freebuff_transcript(const TranscriptSpec& spec);
+std::unique_ptr<Transcript> make_opencode_transcript(const TranscriptSpec& spec);
 
 }

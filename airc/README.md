@@ -6,7 +6,7 @@ Text in, text out, over a WebSocket, for interactive coding agents. A client sen
     server -> client   : a text frame is a chunk of the agent's output
                          an empty text frame means the turn finished
 
-Three agents ship as templates: claude, codex and freebuff. Anything else is a template file you can add without rebuilding.
+Four agents ship as templates: claude, codex, freebuff and opencode. Anything else is a template file you can add without rebuilding.
 
 ## Why it is built this way
 

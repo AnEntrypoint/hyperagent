@@ -1,0 +1,15 @@
+{
+  "argv": ["opencode"],
+  "argv_env": [
+    {"env": "AIRC_OPENCODE_AUTO", "equals": "1", "append": ["--auto"]},
+    {"env": "AIRC_OPENCODE_MODEL", "append": ["--model", "$VALUE"]}
+  ],
+  "submit_delay": 0.3,
+  "ready": ["Ask anything"],
+  "busy": ["esc interrupt"],
+  "transcript": {"kind": "opencode-sqlite", "root": "{home}/.local/share/opencode"},
+  "resume": ["--session", "{session}"],
+  "continue": ["--continue"],
+  "fork": ["--session", "{session}", "--fork"],
+  "fork_continue": ["--continue", "--fork"]
+}

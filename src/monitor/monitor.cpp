@@ -53,6 +53,9 @@ bool marker_busy(const Value* harness, const std::string& pane)
     if (name == "freebuff") {
         return core::text::replace_all(pane, "Starting your model session", "") != pane;
     }
+    if (name == "opencode") {
+        return core::text::replace_all(pane, "esc interrupt", "") != pane;
+    }
     return false;
 }
 

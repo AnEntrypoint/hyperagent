@@ -19,6 +19,7 @@ std::unique_ptr<Transcript> make_transcript(const TranscriptSpec& spec) {
     if (spec.kind == "claude-jsonl") return make_claude_transcript(spec);
     if (spec.kind == "codex-jsonl") return make_codex_transcript(spec);
     if (spec.kind == "freebuff-json") return make_freebuff_transcript(spec);
+    if (spec.kind == "opencode-sqlite") return make_opencode_transcript(spec);
     throw std::runtime_error("unknown transcript kind '" + spec.kind + "'");
 }
 
