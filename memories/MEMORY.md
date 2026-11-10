@@ -40,3 +40,4 @@
 - [Generalizations, not towers of checks](feedback-generalizations-not-check-towers.md) — owner rule: instructions are a few general habit anchors; no incident rules, numbers or enforcement gates in skills and prompts
 - [spoint parked](spoint-parked.md) — owner direction: spoint stopped at push 5f43c86c; do not resume until asked; open items listed
 - [fx superagent view matches the dispatcher's](fx-superagent-view-matches-hyperagent.md) — owner direction: the superagent sees final responses, turn-end events and status, not the full view of its agents
+- [thebird fx TUI parity](thebird-fx-tui-parity.md) — owner report: thebird is missing most of fx's TUI; queued for thebird's next idle event

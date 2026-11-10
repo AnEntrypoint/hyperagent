@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: bc092253-97dd-4f77-9001-5a59318251ee
-  modified: 2026-11-10T06:16:17.530Z
+  modified: 2026-11-10T07:25:07.245Z
 ---
 
 The orchestrate skill's wall-clock rule: each busy peer's next dispatch is written before its turn ends. On the idle event, read the peer's REPORT, adjust only what the report changes, send the prompt, and delete its section here.
@@ -31,6 +31,15 @@ My own experience as the dispatcher, so you can match it. I am the superagent in
 - When a root is idle or gone, that is an event; when it is busy, the superagent waits for the event rather than asking again.
 
 Fold this into the superagent stretch if it is still open; otherwise it is the next stretch, ahead of the ranked rows. The standing rules apply, and the turn stays open while your own jobs run.
+
+## thebird: fx TUI parity (owner report, 2026-11-10 07:30 UTC)
+
+we want thebird to show fx's full TUI in the browser, the way fx's own terminal shows it. The owner's words: "it looks like thebird is missing most of fx's tui we must fix that". This goes ahead of the rest of your queue and folds into your open Phase A.
+
+1. Diagnose by comparison: run fx in the native terminal and in thebird's terminal, and go surface by surface: the input box, footer, transcript, full transcript screen, approval screen, ask presentation, resize, colour, cursor, keys and the alternate screen. The surfaces are in /workspace/fx/fx/src/ui/. The browser build is /workspace/fx/fx/src/wasm_term_main.zig, which imports the same main.zig as the native binary. Find which modules the term build compiles out or stubs, and which terminal capabilities thebird's terminal does not provide.
+2. Fix every cause in Phase A. Record each cause and its fix in docs/PENDING_VALIDATION.md.
+3. Witness in Phase B: run the TUI in the browser through the playwriter setup, one surface at a time, and quote the screen text for each. Add a witness to the full witness, so a missing surface fails it.
+4. Keep your fx ask path and the rest of your queue. The standing rules apply, the turn stays open while your own jobs run, and you push once per Phase B.
 
 ## thebird (from gm's report, 2026-11-10 06:46: pin and artifact disagree)
 
