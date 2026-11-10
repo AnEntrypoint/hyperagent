@@ -129,6 +129,20 @@ in general terms, not another rule for one incident.
   peer is busy.
 - Waste is measured, not guessed: the gap between a peer's `result` and its next
   `instruct` in the journal, and the long calls, repeats and token use in its transcript.
+- The dispatch ledger is the one place that says what is sent and what is queued. Every
+  dispatch updates it in the same step, with the turn id, and every turn that ends
+  removes its entry. A stale entry sends the dispatcher looking for work that was
+  already done.
+- Tool schemas for the peer channel are loaded once per session, not once per cycle.
+  Each cycle reads the ledger and the watch line, and reads anything else only when a
+  decision needs it.
+- A peer's turn that ends while its own job is still running is not idle. The peer
+  keeps its turn open and waits on its job, as stated under Standing instructions. When
+  a peer ends early, the dispatcher sends the continuation with the job's result, not
+  a restart.
+- One watcher feeds one monitor. Peers do not arm monitors on the shared watch log, so
+  events are not repeated. The dispatcher's monitor is armed with the longest timeout
+  the tool allows and re-armed only at its expiry, not on every cycle.
 
 ## Two-phase work
 
