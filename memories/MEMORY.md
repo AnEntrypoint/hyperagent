@@ -33,3 +33,4 @@
 - [floosie integration wanted](floosie-integration-wanted.md) — owner direction: restore floosie in thebird's gm addition, reverting only the decoupling hunks; /workspace/floosie is in place; send when thebird is idle
 - [gm run_code under txiki in the browser](gm-run-code-under-txiki-browser.md) — owner direction: run_code needs project imports via txiki.js; thebird's tjs.wasm is the one browser txiki; queued until both peers are idle
 - [jayzee web architecture: static pools](jayzee-web-architecture-static-pools.md) — owner direction: size resources to the device once and scale within pre-allocated pools; graphics pre-initialized so models never hitch on first appearance
+- [fx memory carry-over](fx-memory-carry-over-pending.md) — pending: send to fx on idle; fx copies its memories in the same layout and format
