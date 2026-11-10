@@ -30,3 +30,4 @@
 - [gm QuickJS to txiki.js](gm-quickjs-to-txiki.md) — owner direction: gm swaps QuickJS-NG for embedded txiki.js; pins from thebird; dispatch waits for gm to go idle
 - [thebird accepts fx and gm work](thebird-accepts-fx-work.md) — owner direction: thebird takes the new fx work and the gm addition another agent is making; send the follow-up when thebird is idle
 - [fx features added, sent](fx-features-added-pending.md) — owner instruction: fx was told the features were added when it resumed after its Phase B (ae644306)
+- [floosie integration wanted](floosie-integration-wanted.md) — owner direction: restore floosie in thebird's gm addition, reverting only the decoupling hunks; /workspace/floosie is in place; send when thebird is idle
