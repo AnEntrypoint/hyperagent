@@ -202,7 +202,8 @@ Include these in every assignment prompt:
 - Two-phase work: make every change for the stretch first (Phase A, code, docs and tests
   only, no build, test, gate or witness), list each change in `docs/PENDING_VALIDATION.md`,
   commit locally, and push nothing. Then run Phase B: build, witness, fix, push once.
-  Do not watch or poll CI between fixes; at most one status check after the push.
+  A hold on a push says so in the words "do not run git push", because a hold that only
+  says "do not push" in the prose can be missed by a peer's last step. Do not watch or poll CI between fixes; at most one status check after the push.
 - Maximum effort and yield. Choose the solution that gets the best result, work around
   the platform's limits, and rearchitect where needed.
 - Treat any issue as a defect: fix it, or record it with its cause. Do not call it expected.
