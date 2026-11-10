@@ -26,3 +26,4 @@
 - [fx parity also matches the Claude Code docs](fx-parity-claude-code-docs.md) — owner direction: fx runs a read-only deep research pass over the Claude Code docs to collect parity issues into the matrix
 - [fx image reading: router fixed](fx-image-reading-router-fixed.md) — owner: the image problem was the router, now fixed; no fx image-reading change
 - [Wall-clock iteration times](feedback-wallclock-iteration-times.md) — owner direction: measured sleep-poll loops and per-step gm round trips; advice sent to peers to cut wall-clock per iteration
+- [hyperagent C++ and vendored airc](hyperagent-cpp-airc-vendored.md) — owner direction: hyperagent is C++ only with airc at airc/; import squashed because a git guard blocks the owner email
