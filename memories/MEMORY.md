@@ -33,3 +33,4 @@
 - [floosie integration wanted](floosie-integration-wanted.md) — owner direction: restore floosie in thebird's gm addition, reverting only the decoupling hunks; /workspace/floosie is in place; send when thebird is idle
 - [gm run_code under txiki in the browser](gm-run-code-under-txiki-browser.md) — owner direction: run_code needs project imports via txiki.js; thebird's tjs.wasm is the one browser txiki; queued until both peers are idle
 - [Foreground builds, no background checks](feedback-foreground-builds-no-background.md) — owner rule: peers run build, test and CLI checks in the foreground; a backgrounded check forces the owner to type fg by hand
+- [jayzee web architecture: static pools](jayzee-web-architecture-static-pools.md) — owner direction: size resources to the device once and scale within pre-allocated pools; graphics pre-initialized so models never hitch on first appearance
