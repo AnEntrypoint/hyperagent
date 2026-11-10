@@ -151,6 +151,11 @@ goes to the gm project as a change to the gm skill.
 - A peer waits on its own job once, for as long as the host's tool limit allows (about
   590 s per call), sized from the wall time recorded in its ledger. Slices of 100 s
   cost a round trip each.
+- After the idle events were repaired the gap fell to between 14 and 72 s. A gap over a
+  minute now means the next prompt was not written in advance.
+- A resumed peer continues its latest session. Pass the `session_id` of the newest
+  journal under `.orch/projects/<slug>/`, since the default once chose an older one and
+  the peer lost its last turn's context.
 - Read busy state from the watcher's file and the journal's last record. Call
   `peer_status` only for `alive`, since a server built before the pane change still
   prints every pane.
@@ -222,6 +227,8 @@ Include these in every assignment prompt:
 - Work the whole queue without waiting for the dispatcher. No sleep-and-poll loops:
   block once on the job's PID with a timeout, or do the next item while it runs. Batch
   gm verbs into one `run_code` body. Record each witness's wall time in the ledger.
+- A finished stretch is not the end of the turn. Start the next stretch at once, and end
+  the turn only when no reachable item is left. A turn does not end on a running job.
 - End every turn with: `REPORT: finished|open|blocked — <your rhetoric> — witness: <output evidence>`.
 
 ## Resume
@@ -286,12 +293,13 @@ the same idle and gone payloads as `notifications/resources/updated` and
 
 Arm a Monitor on the watcher's output file so each idle or gone event wakes this
 session at once, and re-arm it when it expires. Every stage of the pipe must flush per
-line: `tail -n 0 -F /tmp/watch.out | grep --line-buffered -a -o -E '^.{1,400}'`. Do not
+line: `tail -n 0 -F /tmp/watch.out | grep --line-buffered -a -v '"busy":true' | grep --line-buffered -a -o -E '^.{1,400}'`. Do not
 shorten lines with `cut`, which holds its output in a block buffer when it writes to a
 pipe, so no event is delivered. A monitor that expires with no events while peers were
 finishing turns is a defect in the filter: compare it with the watcher's file before
 re-arming. An idle event that carries `"busy":true` is not a finished turn: the peer
-ran a background job that re-invoked it, and its journal continues. Send nothing for it.
+compacted or a background job re-invoked it, and its journal continues. The filter drops
+those lines, since each one costs a dispatcher turn and sends nothing.
 Check live state from git and the
 event line first; call `peer_status` only when those do not answer the question. It
 returns the peer list without panes; add `pane_lines` only when a pane is needed.

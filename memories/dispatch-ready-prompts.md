@@ -38,6 +38,11 @@ The standing rules apply.
 
 we want gm's browser run_code to run under txiki.js with the project's imports, using thebird's artifact. thebird has built it: /workspace/thebird/web/vendor/txiki/tjs.wasm exports the seven gm_txiki_* shim functions (gm_txiki_new, gm_txiki_free, gm_txiki_context, gm_txiki_loop_alive, gm_txiki_loop_turn, gm_txiki_load_builtin, gm_txiki_refresh_loop_time), with pins txiki v26.11.0, libuv dd9f081cc55a4d83e2a976848d074f28ee5f34eb, quickjs-ng 7b5f588e0f9b643e2996f291bfc861abeaceddc2. Its sha256 changes once thebird adds an exit flush, so read the pin from thebird's TXIKI_WASM_SHA256 and do not hard-code today's value. Read the artifact; do not edit thebird. run_code bodies execute in the txiki context, project imports resolve through the module loader, the 120 s deadline still runs through the interrupt handler, and LeafVerbs stay as they are. Witness with a Node run and a browser run of the built site through playwriter. Then every open row left in your ledger, stretch after stretch. Also from the report: anything it left open in the waste-fix queue goes first.
 
+Second waste measurement (06:20 UTC, last half hour, /tmp/waste.py 0.5), to fix in the skill and in gm:
+- Peers stop using gm after a compaction. fx made 152 Bash calls and no run_code call, jayzee 63 and none, thebird 62 and none, spoint 30 and none. We want the gm skill re-read to survive compaction: the server refuses nothing today once the first read is done, so make the rule hold after a compaction too, and find why a peer that has the skill still prefers Bash.
+- fx ran `zig build` 18 times in thirty minutes. The once-per-Phase-B build rule is not followed; make it a check gm performs, not only text.
+- spoint edited one witness script by python heredoc three times, each coupled to a 160 s witness run in the same command. We want edits separate from runs, in place, and one run after the last edit.
+
 The new gm binary is installed over the shared one by the dispatcher in a quiet window, never by gm.
 
 ## jayzee (owner direction, 2026-11-10: realistic scenarios, flawless vegetation streaming, one landscape dataset)
