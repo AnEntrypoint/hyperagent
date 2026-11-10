@@ -65,3 +65,5 @@ Measured for hyperagent (airc/templates/opencode.json, for reference): ready mar
 - gm: idle; installed-build go still held until no peer is busy.
 
 - 2026-11-10 09:23 UTC: jayzee's stretch 6 turn c5ed44fb7844 ended "open" with uncommitted camera-relative work in its checkout. Redispatched as turn 6addf105c7c2 to finish Phase A in one pass (items 1 to 7 of its open report, no build, no push). Its claim that my instruction was text-only was wrong; the instruction did not say that, and the correction is in the prompt.
+
+- 2026-11-10 09:26 UTC: jayzee finished stretch 6 Phase A as 9a51e5a (turn 6addf105c7c2). Phase A is done for stretches 1 to 6; no reachable item is left except the Phase B runs, which wait for a quiet host (load 4.3 on 12 cores, PAUSED gate limit 0.20). Next go-ahead: when fx and thebird are both idle and the load is quiet, send jayzee the one Phase B for stretches 1 to 6 together, since they are all in the same checkout and share the witnesses.
