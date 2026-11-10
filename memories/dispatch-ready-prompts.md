@@ -26,11 +26,23 @@ gm's installed-build commits are all on origin. The install reaches every peer, 
 
 Peers whose turn ran longer than thirty minutes were retired within a minute or two of the turn ending (gm, spoint, jayzee and fx on 2026-11-10), and any job they had left running died with them. Cause: the hub's idle clock was last set when the prompt was submitted, so a long turn was already past the 1800 s reap limit when the dispatcher's client detached. Fixed in airc/src/server/server.cpp (detach now resets the clock) and built into build/ccbridge. The running servers (pids 884614 and 931565, the older .orch/ccbridge/v0.1.0.4 binary) still have the defect. When no peer is busy, restart the server on build/ccbridge and resume each peer's newest session. Until then: answer a finished turn within a minute, resume with `resume: true` when a peer is gone, and ask peers to keep the turn open while their own job runs.
 
-## gm: waste findings for the gm skill (dispatcher, 2026-11-10 09:10 UTC)
+## fx: superagent carries the dispatcher's habits (dispatcher, 2026-11-10)
 
-Send on gm's idle event, after turn 2c775d20e63a reports. Fold into gm's Phase A for the skill change, not a new pass. The findings are from this session:
-- gm's one-read-per-run habit: the skill is read again after each compaction; the read is cheap, but a run that reads the skill and then the verbs list separately costs two turns. Put the verb list and the rules in the same read.
-- Batch gm verbs into one run_code body per phase; where a run made one round trip per verb, change the skill to group them.
-- A witness that needs a running browser on 10221 checks the port once, not per step.
-- Duplicate status reads in one run (state, then state again to confirm) are waste; one read per phase.
-Then remove this section.
+Owner (2026-11-10): make sure the up-to-date orchestrate habits are built into fx's superagent instructions. Send on fx's idle event, after turn 93efeb13142f reports. Fold it into fx's open pass; do not start a second one. Leave fx's other uncommitted changes as they are until its current work ends.
+
+Send: we want fx to take the superagent instruction change now. Phase A is code and docs only, committed locally as lanmower with no trailer, listed in docs/PENDING_VALIDATION.md, nothing pushed.
+
+1. src/core/superagent/command.zig, system_prompt: add the wall-clock habits in general terms. Each root's next prompt is written before its turn ends and goes out on its turn-end event. A turn's end is read from the event, not asked for again. A root whose turn ends while its own job still runs is not idle, and its next prompt carries that job's result. One state read per decision, not per cycle. A change that touches every root waits until no root is busy. Blocked work is driven to unblocking while other roots take reachable work. The superagent keeps a dispatch ledger of what is sent and queued, updated at each send and each turn end.
+2. The same prompt says that the owner's standing rules are the owner's words and go into every queue verbatim: two-phase work (Phase A code only; Phase B build, witness, one push), commits as lanmower with no trailer, stop processes by PID only, treat issues as defects, decide reversible choices and report them. Reword "add no rules of your own" so it separates the owner's standing rules, which pass through, from the superagent's own rules, which are none.
+3. .fx/skills/superagent/SKILL.md: state the same habits in its Cycle section, in the same general wording.
+4. docs/superagent.md: in "The superagent's view of a root", say that the ledger lives in the superagent and that a turn-end event carries the final response.
+
+Phase B: build fx once; run the live superagent witness (start one root, instruct it, receive its turn-end event, read status once) and quote the output; fix every defect; push origin main once. Do not add a test that asserts the prompt's wording.
+
+Standing lines: work only in /workspace/fx on main, in the shared checkout. Commit as lanmower only, with no trailer. Stop processes by their own PID, never pkill or killall.
+
+End with REPORT: finished|open|blocked — <summary> — witness: <output evidence>.
+
+## gm: installed-build step go-ahead
+
+gm's installed-build commits are on origin, and its skill habits are pushed (4101e4a). The install reaches every peer, so send gm the go only when no peer is busy.
