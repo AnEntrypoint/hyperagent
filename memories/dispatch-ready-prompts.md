@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: bc092253-97dd-4f77-9001-5a59318251ee
-  modified: 2026-11-10T08:59:29.623Z
+  modified: 2026-11-10T09:58:51.630Z
 ---
 
 The orchestrate skill's wall-clock rule: each busy peer's next dispatch is written before its turn ends. On the idle event, read the peer's REPORT, adjust only what the report changes, send the prompt, and delete its section here.
@@ -90,3 +90,5 @@ Measured for hyperagent (airc/templates/opencode.json, for reference): ready mar
 
 Sent 09:55: fx's stretch 9 ended open at 09:53 after one commit (faabf61a). The continuation (turn f4783d59ad91) finishes Phase A first, includes the resize defect in src/ui/resize_runtime.zig, then one Phase B. thebird's push waits on that fx push; when it lands, send thebird the go-ahead (its Phase A is committed as 854c9a8, turn 038505de3032 adds the pin, orphan-cleanup and import-contract items).
 - 2026-11-10 09:56 UTC: thebird gone event was noise; thebird alive and busy on 038505de3032. fx continuation sent as f4783d59ad91.
+
+- 2026-11-10 09:58 UTC: thebird finished Phase A as df289ff (turn f913a6b9, REPORT finished, push held). Sent its Phase B witness pass now as turn 17f01d291f51: build, full witness, gm import checks, browser cleanup line, no push. Its push waits for fx's resize fix; then rerun only the failed checks and push once. fx busy on f4783d59ad91. jayzee is gone (not alive in orch status); resume it with resume_project for the single Phase B for stretches 1 to 7 only when fx is idle and the host is quiet. gm still gone.
