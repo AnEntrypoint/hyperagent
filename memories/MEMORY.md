@@ -29,3 +29,4 @@
 - [hyperagent C++ and vendored airc](hyperagent-cpp-airc-vendored.md) — owner direction: hyperagent is C++ only with airc at airc/; import squashed because a git guard blocks the owner email
 - [gm QuickJS to txiki.js](gm-quickjs-to-txiki.md) — owner direction: gm swaps QuickJS-NG for embedded txiki.js; pins from thebird; dispatch waits for gm to go idle
 - [thebird accepts fx and gm work](thebird-accepts-fx-work.md) — owner direction: thebird takes the new fx work and the gm addition another agent is making; send the follow-up when thebird is idle
+- [fx features added, pending](fx-features-added-pending.md) — owner instruction: tell fx that features were added; sent when fx is idle
