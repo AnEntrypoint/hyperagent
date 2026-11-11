@@ -693,3 +693,8 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 - Live fx ask still returns HTTP 400 "messages has no user or assistant turn" (two tests, 8793 status 400, zero console errors). The stub did not reproduce it.
 - Suspected cause: web/fx-in-page.js passes only gatewayChatUrl from THEBIRD_FX into the engine (~line 49), so claude-hy4[1m] model_metadata never reaches the provider.
 - Sent thebird: forward model_metadata to the engine, make the stub match the live path, witness on the live page with an ok reply.
+
+## 2026-11-11T21:54Z thebird turn 21:54:48Z finished (af8c248); live check after Pages
+- Root cause in the page: non-gateway gatewayChatUrl went through the AI-Gateway body, so the metadata never reached the provider. Fix routes non-gateway URLs to custom provider gy4 with the CLI's metadata (0b54eb2).
+- Witness (stub-free live 8793 path): fx ask returns ok, rc=0, 8793 status 200. Regression PASS 8/8.
+- Pages run for af8c248 queued; live site not yet checked. Test once it deploys.
