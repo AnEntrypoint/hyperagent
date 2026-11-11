@@ -643,3 +643,7 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 - gm idle with no report since 20:41:10Z. Sent continuation on session 57a3f21e (turn 5fbd66490c56): check the three parallel agents' output, do not restart committed work, then the queue (compile cap at one batch, port Node checks, shorten check-skill-reload). Swap 3.97 of 4.1 GB noted.
 - Still busy, no dispatch: jayzee (tool, session 01e1364f), thebird (tool, session f76f541c).
 - fx superagent root-driving prompt (f91ac06 / 6c40dad) still queued for fx's next idle event.
+
+## 2026-11-11T20:54Z gm turn end 20:54:16Z handled; next stretch sent
+- gm REPORT open: its three agents finished, committed and pushed at 0acfabe (compile cap, skill-reload change, driver and clock-mutation port). Tree clean, matches origin/main.
+- Open items sent (turn a9c642f96a2f): measure compile-batch peak memory under the cap (one batch at a time, swap 3.97 of 4.1 GB), and remove Node from CI via tools/check-build.mjs.
