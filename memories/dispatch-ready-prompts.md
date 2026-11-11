@@ -657,3 +657,8 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 - Decided: cap to 3 (GM_COMPILE_JOBS 3) to meet the target, swap 4090 of 4095 MB. Reversible.
 - Sent: remove the remaining five Node uses from CI (playwright-core install for playwriter, tools/package.mjs, three more), native where one exists, cause and owner decision where none does.
 - Swap was fully used at 20:57 (4095 of 4095); gm-tool check and jayzee witness are the large processes. Owner informed in the cycle report, no kill.
+
+## 2026-11-11T21:09Z gm turn 21:09:09Z (fe85770) handled; Node decisions dispatched (turn 557019b9e0bd)
+- gm REPORT open: cap 3 measured (3 concurrent, peak 1306 MiB total, under 1.5 GB). Release steps moved to gm-tool. Phase B passed, pushed fe85770.
+- Dispatcher decisions (reversible): keep Node for the playwriter browser runtime (pw is a Node package; browser-scope and lazy-browser checks stay); replace the three inline node -e steps in release.yml with shell.
+- Note for owner: an existing gm build dir keeps the cached cap of 4 until configured with -DGM_COMPILE_JOBS=3.
