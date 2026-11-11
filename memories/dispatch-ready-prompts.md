@@ -589,3 +589,8 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 - Decided: keep pin 24646cc and make browsers optional in check-lazy-browser and browser_scope.cpp; install-follows watches the gm-core install path and the worker's exe natively; refusal fix via sha on run-log events.
 - gm switched to claude-haiku-5-5 with /model (confirmed in pane). Sent gm queue items 1 to 5 with the connection held (background b9obo255n).
 - Stale replay ignored: gm session 526213ff event from 2026-11-10.
+
+## 2026-11-11T19:12Z gm turn end (blocked on pw entry) and dispatch
+- gm turn ended 19:11:59Z (handled): items 1, 2, 4 done locally; item 5 partial (check-cli-flags ported); nothing pushed. Phase B fails only on check-browser-scope (direct pw entry has no install step). Local commits through 4e08d15.
+- Decided: build the install step (npm ci of pw 24646cc into current/pw during gm install), not revert the pin. Push only if Phase B passes entirely.
+- Sent gm the install step with the connection held.
