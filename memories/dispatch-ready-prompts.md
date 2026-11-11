@@ -612,3 +612,7 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 - gm turn ended 19:38:54Z (handled): origin 0e0d272 (Phase B pass 226 s, check-skill-reload 82.7 s inside Phase B vs 5.2 s alone). Install 57fd18494d81-dev from build/release; six gm-core workers on it; both browser checks pass against the build tree.
 - gm-pin: the marker is current/pw/gm-pin (not current/gm-pin); nothing at runtime reads it, only the install skip check.
 - Sent gm (background bzkukct8l): port the remaining ~27 Node checks, the conformance run and parity-contract; shorten check-skill-reload in Phase B; remove Node from phase B only when fully replaced.
+
+## 2026-11-11T20:18Z memory pressure from gm's parallel compile
+- Available memory fell to about 4 GB and swap to 3.4 of 4.1 GB at 20:18 UTC. Source: 11 gm cc1plus compile processes in one batch, about 2.8 GB. Claude sessions about 1.7 GB. Nothing stopped; the compile is live Phase B work.
+- Ready item for gm's next prompt (gm mid-turn, not sent now): cap the parallel build jobs in gm's build so compile batches stay under about 1.5 GB resident; record the chosen cap in NATIVE_PLAN.
