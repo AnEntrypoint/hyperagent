@@ -18,3 +18,5 @@ Two dispatcher failures that look like "peers are still busy" and were each foun
 
 **`orch resume` on the CLI relaunches a live peer.** With the rebuilt binary, `orch resume NAME --session ID --prompt ...` stops the running process and starts it again (process age resets, a `gone` event fires for the peer, its gm relay restarts, any subagents it was waiting on are lost). For a peer that is alive and idle, `orch prompt NAME "text"` sends without a relaunch. A send that must leave a journal needs its client to stay connected: run it in the background with a long `--timeout`.
 
+**Busy peers vanish 30 minutes after a send.** The airc server reaps a session that has had no websocket client for `idle_reap_seconds` (default 1800, `airc/src/main.cpp`), even while the peer is busy. A send that returns quickly (`orch resume --timeout 40`, or an MCP send whose process has gone) leaves `clients=0` in `orch status`, and the peer's process is killed exactly 1800 s later; `watch` reports it as `gone`. Keep a client attached for the whole turn: run the send in the background with `--timeout 14400`. `orch status` shows `clients=` per peer.
+
