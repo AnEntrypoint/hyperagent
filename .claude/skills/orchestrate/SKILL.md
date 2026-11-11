@@ -179,12 +179,15 @@ in general terms, not another rule for one incident.
 - The ledger takes one write per cycle that carries every dispatch of that cycle with its
   turn id, so a cycle costs one ledger step rather than one per send.
 
-- A peer's model is part of its launch, not of its conversation. The airc server fixes the
-  launch model for the `claude` harness when the server starts (`ORCH_CLAUDE_MODEL`, default
-  `haiku`), so a `/model` typed into a session is lost whenever its process is relaunched,
-  and the process list shows the launch flag, not the model in use. After any relaunch of a
-  project with a set model, the first prompt is `/model <id>`, its "Set model" answer is
-  read, and the work goes out second. A resume of a live peer does not relaunch it.
+- A peer's model is part of its launch, not of its conversation. A project's model is kept
+  with the project: it is given once as `model` on `resume_project`, `instruct` or
+  `start_projects` (`--model` on the `orch` CLI), saved in the orchestrator's state, and
+  applied on every later launch and resume. The launch arguments are read once after a
+  relaunch to confirm it. A `/model` typed into a session is lost when its process is
+  relaunched, so it is not the way to set one.
+- A network outage ends every turn at once with an API error as its last text. That is not
+  finished work: the dispatcher checks the network answers, then resumes each peer on its
+  saved session with what it was doing.
 - A turn whose last text is a usage or credit limit message is blocked on the owner, not
   finished. The dispatcher sends the owner a push notification in the same step, and resumes
   the peer as soon as the owner says the limit is lifted.
