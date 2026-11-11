@@ -237,6 +237,9 @@ Value start_peers(const StartRequest& request)
         if (present(request.harness)) {
             entry["harness"] = *request.harness;
         }
+        if (present(request.model)) {
+            entry["model"] = *request.model;
+        }
         jobs.push_back(projects::normalize(entry, false));
     }
     projects::fill_cwds(jobs);
@@ -284,6 +287,7 @@ Value start_peers(const StartRequest& request)
         Value peer = Value::object();
         peer["name"] = name;
         peer["harness"] = text_of(core::json::member(&job, "harness"));
+        peer["model"] = text_of(core::json::member(&job, "model"));
         const std::string cwd = text_of(core::json::member(&job, "cwd"));
         peer["cwd"] = cwd.empty() ? config::root_dir().string() : cwd;
         peer["state"] = up ? "started" : "not alive";
@@ -307,6 +311,9 @@ Value prompt_peer(const PromptRequest& request, const TurnOptions& options)
     }
     if (present(request.harness)) {
         entry["harness"] = *request.harness;
+    }
+    if (present(request.model)) {
+        entry["model"] = *request.model;
     }
     entry["prompt"] = request.text;
     Value job = projects::normalize(entry, true);
@@ -393,6 +400,10 @@ Value resume_peer(const ResumeRequest& request, const TurnOptions& options)
     Value job = Value::object();
     job["name"] = name;
     job["harness"] = harness_name;
+    job["harness_explicit"] = present(request.target.harness);
+    if (present(request.model)) {
+        job["model"] = config::check_model(*request.model);
+    }
     job["cwd"] = cwd;
     job["resume"] = source_id;
     const std::string selector = text_of(core::json::member(&source, "selector"));
@@ -419,13 +430,18 @@ Value resume_peer(const ResumeRequest& request, const TurnOptions& options)
         const Value sessions = ccbridge::fetch_sessions();
         const Value* info = core::json::member(&sessions, name);
         const Value* live_harness = core::json::member(info, "harness");
-        if (info == nullptr || live_harness == nullptr || live_harness->is_null()
-            || text_of(live_harness) == harness_name) {
+        const Value* live_model = core::json::member(info, "model");
+        const bool same_harness = info == nullptr || live_harness == nullptr || live_harness->is_null()
+            || text_of(live_harness) == harness_name;
+        const bool same_model = !present(request.model) || live_model == nullptr || live_model->is_null()
+            || text_of(live_model) == *request.model;
+        if (same_harness && same_model) {
             Value payload = Value::object();
             payload["state"] = "already_alive";
             payload["project"] = name;
             payload["cwd"] = cwd;
             payload["harness"] = harness_name;
+            payload["model"] = text_of(core::json::member(&job, "model"));
             payload["session_id"] = source_id;
             const Value* launch = core::json::member(info, "launch_args");
             payload["launch_args"] = launch != nullptr ? *launch : Value::array();
@@ -467,6 +483,7 @@ Value resume_peer(const ResumeRequest& request, const TurnOptions& options)
     payload["project"] = name;
     payload["cwd"] = cwd;
     payload["harness"] = harness_name;
+    payload["model"] = text_of(core::json::member(&job, "model"));
     payload["session_id"] = !forked.empty() ? forked : (!resolved.empty() ? resolved : source_id);
     payload["source_session_id"] = source_id;
     payload["fork"] = request.fork;

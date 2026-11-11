@@ -40,6 +40,7 @@ struct PromptRequest {
     std::string text;
     std::optional<std::string> cwd;
     std::optional<std::string> harness;
+    std::optional<std::string> model;
     std::optional<std::string> session;
     bool resume = false;
     bool fork = false;
@@ -49,6 +50,7 @@ struct ResumeRequest {
     ProjectSelector target;
     std::optional<std::string> session;
     std::optional<std::string> prompt;
+    std::optional<std::string> model;
     bool continue_last = false;
     bool fork = false;
     double settle = 3.0;
@@ -59,6 +61,7 @@ struct StartRequest {
     std::vector<std::string> names;
     std::optional<std::string> cwd;
     std::optional<std::string> harness;
+    std::optional<std::string> model;
     bool resume = false;
     bool fork = false;
     bool trust = true;

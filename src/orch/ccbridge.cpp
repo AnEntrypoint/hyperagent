@@ -5,12 +5,14 @@
 #include <chrono>
 #include <cstdlib>
 #include <fcntl.h>
+#include <sys/file.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <thread>
 #include <unistd.h>
 
 #include <filesystem>
+#include <mutex>
 #include <stdexcept>
 
 #include "core/files.hpp"
@@ -108,9 +110,44 @@ pid_t spawn_detached(const std::string& binary)
         ::_exit(127);
     }
     ::close(log);
-    core::files::write_bytes(dir / "server.pid", std::to_string(child));
-    core::files::write_bytes(dir / "server.binary", binary);
     return child;
+}
+
+void record_server_process(pid_t server, const std::string& binary)
+{
+    const auto dir = config::orch_dir();
+    core::files::write_bytes(dir / "server.pid", std::to_string(server));
+    core::files::write_bytes(dir / "server.binary", binary);
+}
+
+class ServerStartLock {
+public:
+    ServerStartLock()
+    {
+        const auto path = config::orch_dir() / "server.lock";
+        std::filesystem::create_directories(path.parent_path());
+        descriptor_ = ::open(path.c_str(), O_CREAT | O_RDWR | O_CLOEXEC, 0644);
+        if (descriptor_ < 0 || ::flock(descriptor_, LOCK_EX) != 0) {
+            throw Error("cannot lock " + path.string());
+        }
+    }
+    ~ServerStartLock()
+    {
+        ::flock(descriptor_, LOCK_UN);
+        ::close(descriptor_);
+    }
+    ServerStartLock(const ServerStartLock&) = delete;
+    ServerStartLock& operator=(const ServerStartLock&) = delete;
+
+private:
+    int descriptor_ = -1;
+};
+
+constexpr int slow_server_probe_seconds = 5;
+
+bool server_answers()
+{
+    return server_alive() || server_alive(slow_server_probe_seconds);
 }
 
 }
@@ -246,21 +283,33 @@ std::string server_log_tail()
 
 void ensure_server()
 {
-    if (server_alive()) {
+    if (server_answers()) {
+        return;
+    }
+    static std::mutex start_in_this_process;
+    const std::lock_guard<std::mutex> one_thread(start_in_this_process);
+    const ServerStartLock one_process;
+    if (server_answers()) {
         return;
     }
     const std::string binary = ccbridge_binary();
     const pid_t child = spawn_detached(binary);
+    bool child_exited = false;
     const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(25);
     while (std::chrono::steady_clock::now() < deadline) {
         if (server_alive()) {
+            record_server_process(child, binary);
             return;
         }
         int status = 0;
         if (::waitpid(child, &status, WNOHANG) == child) {
+            child_exited = true;
             break;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    }
+    if (!child_exited) {
+        record_server_process(child, binary);
     }
     throw Error("airc server failed on " + config::base_url() + "\n" + server_log_tail());
 }

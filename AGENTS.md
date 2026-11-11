@@ -48,6 +48,29 @@ the peer's turn; `wait: false` returns a turn id for `turn_result`.
 `resume_project` continues a project's saved Claude conversation; with no project it
 resumes the last project used. `list_project_sessions` lists resumable sessions.
 
+## Server start and per-project model
+
+Every path that sends a prompt or launches a peer (`turn::run_job`, `turn::start_one`, and the
+MCP `instruct`, `instruct_many`, `resume_project`, `start_projects` tools) calls
+`ccbridge::ensure_server`, which starts `ccbridge serve` unless `GET /sessions` answers.
+`.orch/server.pid` is written only for a server that answered or is still starting; it is read
+only by `server_down`. Starts are serialised by `.orch/server.lock`.
+
+`.orch/state.json` keeps `harness`, `session_id` and `model` per project. `model` is set by the
+`model` argument of `start_projects`, `instruct`, `instruct_many` and `resume_project` or by
+`orch start|prompt|resume --model`, is sent to airc as `/ws?...&model=`, and replaces the
+template's `--model` on every later launch and resume of that project; `default` forgets it.
+A project without a saved model launches with `ORCH_CLAUDE_MODEL` (default `haiku`). A model
+change applies at the next launch; `resume_project` relaunches a live peer whose launch model
+differs from the one asked for. The `claude-fable` harness is remembered the same way and
+launches `claude --model claude-fable-5-2` from its own template. `/sessions` and `peer_status`
+report each peer's launch `model`. A `ccbridge serve` built before the `model` parameter
+ignores it, so a saved model takes effect only after that server is restarted.
+
+`tests/orch_launch.sh` (ctest `orch_launch`) covers both with the fake claude, a temporary
+`ORCH_HOME` and port `ORCH_TEST_PORT` (default 18947): `HYPERAGENT_BUILD=<build dir> bash
+tests/orch_launch.sh`.
+
 ## Session output journal
 
 Every frame a turn receives from airc is appended to

@@ -87,7 +87,8 @@ void update(const std::function<void(Value&)>& change)
 
 void record_project(const std::string& name, const std::string& cwd,
                     const std::optional<std::string>& session_id,
-                    const std::optional<std::string>& harness)
+                    const std::optional<std::string>& harness,
+                    const std::optional<std::string>& model)
 {
     update([&](Value& state) {
         Value& entry = state["projects"][name];
@@ -99,6 +100,11 @@ void record_project(const std::string& name, const std::string& cwd,
         entry["touched"] = now;
         if (harness && !harness->empty()) {
             entry["harness"] = *harness;
+        }
+        if (model && *model == config::saved_model_reset) {
+            entry.erase("model");
+        } else if (model && !model->empty()) {
+            entry["model"] = *model;
         }
         if (session_id && !session_id->empty()) {
             entry["session_id"] = *session_id;

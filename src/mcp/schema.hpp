@@ -35,7 +35,11 @@ inline constexpr const char* tools_json = R"schema([
         },
         "harness": {
           "type": "string",
-          "description": "claude, codex, freebuff or opencode; defaults to the project's remembered harness"
+          "description": "claude, claude-fable, codex, freebuff or opencode; defaults to the project's remembered harness"
+        },
+        "model": {
+          "type": "string",
+          "description": "model the peer launches with; saved with the project and reused on every later launch and resume, \"default\" forgets it"
         },
         "resume": {
           "type": "boolean",
@@ -83,7 +87,11 @@ inline constexpr const char* tools_json = R"schema([
         },
         "harness": {
           "type": "string",
-          "description": "claude, codex, freebuff or opencode; defaults to the project's remembered harness"
+          "description": "claude, claude-fable, codex, freebuff or opencode; defaults to the project's remembered harness"
+        },
+        "model": {
+          "type": "string",
+          "description": "model the peer launches with; saved with the project and reused on every later launch and resume, \"default\" forgets it"
         },
         "resume": {
           "type": "boolean",
@@ -125,6 +133,9 @@ inline constexpr const char* tools_json = R"schema([
               "harness": {
                 "type": "string"
               },
+              "model": {
+                "type": "string"
+              },
               "timeout_s": {
                 "type": "number"
               },
@@ -153,6 +164,10 @@ inline constexpr const char* tools_json = R"schema([
         },
         "harness": {
           "type": "string"
+        },
+        "model": {
+          "type": "string",
+          "description": "model the peer launches with; saved with the project and reused on every later launch and resume, \"default\" forgets it"
         },
         "resume": {
           "type": "boolean"
@@ -209,7 +224,11 @@ inline constexpr const char* tools_json = R"schema([
         },
         "harness": {
           "type": "string",
-          "description": "claude, codex, freebuff or opencode; defaults to the project's remembered harness"
+          "description": "claude, claude-fable, codex, freebuff or opencode; defaults to the project's remembered harness"
+        },
+        "model": {
+          "type": "string",
+          "description": "model the peer launches with; saved with the project and reused on every later launch and resume, \"default\" forgets it"
         },
         "prompt": {
           "type": "string",
@@ -263,7 +282,7 @@ inline constexpr const char* tools_json = R"schema([
   },
   {
     "name": "peer_status",
-    "description": "List live peers with alive and busy state, cwd, harness, client count, launch args and output journal paths. The pane tail is left out unless pane_lines is given.",
+    "description": "List live peers with alive and busy state, cwd, harness, launch model, client count, launch args and output journal paths. The pane tail is left out unless pane_lines is given.",
     "inputSchema": {
       "type": "object",
       "properties": {"pane_lines": {"type": "number"}},

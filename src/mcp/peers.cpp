@@ -85,13 +85,16 @@ Value merged(Value base, const Value& session)
 }
 
 Value prepare_job(const std::string& name, const std::string& prompt, bool resume,
-                  const std::optional<std::string>& harness, bool fork)
+                  const std::optional<std::string>& harness, const std::optional<std::string>& model, bool fork)
 {
     Value entry = Value::object();
     entry["name"] = name;
     entry["prompt"] = prompt;
     if (harness) {
         entry["harness"] = *harness;
+    }
+    if (model) {
+        entry["model"] = *model;
     }
     if (fork) {
         entry["fork"] = true;
@@ -177,12 +180,16 @@ std::string start_projects(const Value& args)
     }
     orch::ensure_server();
     const std::optional<std::string> harness = optional_text_arg(args, "harness");
+    const std::optional<std::string> model = optional_text_arg(args, "model");
     std::vector<Value> jobs;
     for (const auto& name : names) {
         Value entry = Value::object();
         entry["name"] = name;
         if (harness) {
             entry["harness"] = *harness;
+        }
+        if (model) {
+            entry["model"] = *model;
         }
         jobs.push_back(orch::projects::normalize(entry, false));
     }
@@ -224,6 +231,9 @@ std::string start_projects(const Value& args)
         const Value info = field(sessions, name);
         const bool alive = core::json::truthy(core::json::member(&info, "alive"));
         std::string suffix;
+        if (core::json::truthy(core::json::member(&job, "model"))) {
+            suffix += " model=" + core::json::py_str(core::json::member(&job, "model"));
+        }
         if (core::json::truthy(core::json::member(&job, "trusted"))) {
             suffix += " trust=accepted";
         }
@@ -247,8 +257,9 @@ std::string instruct(const Value& args)
     if (core::text::strip(prompt).empty()) {
         throw ToolFailure("ValueError", "prompt is required");
     }
+    orch::ensure_server();
     const Value job = prepare_job(name, prompt, flag_arg(args, "resume", false), optional_text_arg(args, "harness"),
-                                  flag_arg(args, "fork", false));
+                                  optional_text_arg(args, "model"), flag_arg(args, "fork", false));
     const auto options = turn_options(number_arg(args, "timeout_s", orch::config::default_timeout),
                                       number_arg(args, "idle_exit_s", orch::config::default_idle_exit),
                                       flag_arg(args, "tools", false), flag_arg(args, "trust", true));
@@ -259,6 +270,8 @@ std::string instruct(const Value& args)
     Value out = Value::object();
     out["turn_id"] = turn_book().start(job, options);
     out["name"] = field(job, "name");
+    out["harness"] = field(job, "harness");
+    out["model"] = field(job, "model");
     out["state"] = "running";
     return dumps_indented(out);
 }
@@ -279,6 +292,7 @@ std::string instruct_many(const Value& args)
         double idle;
     };
     std::vector<Prepared> prepared;
+    orch::ensure_server();
     for (const auto& entry : *entries) {
         if (!entry.is_object()) {
             throw ToolFailure("AttributeError", "'" + python_type_name(entry) + "' object has no attribute 'get'");
@@ -292,7 +306,11 @@ std::string instruct_many(const Value& args)
         if (!harness) {
             harness = optional_text_arg(args, "harness");
         }
-        Value job = prepare_job(name, prompt, flag_arg(args, "resume", false), harness,
+        std::optional<std::string> model = optional_text_arg(entry, "model");
+        if (!model) {
+            model = optional_text_arg(args, "model");
+        }
+        Value job = prepare_job(name, prompt, flag_arg(args, "resume", false), harness, model,
                                 flag_arg(args, "fork", false));
         prepared.push_back({std::move(job), number_arg(entry, "timeout_s", timeout),
                             number_arg(entry, "idle_exit_s", idle)});
@@ -333,6 +351,7 @@ std::string resume_project(const Value& args)
     const auto session_id = optional_text_arg(args, "session_id");
     const auto cwd = optional_text_arg(args, "cwd");
     const auto harness = optional_text_arg(args, "harness");
+    const auto model = optional_text_arg(args, "model");
     const std::string prompt = text_arg(args, "prompt");
     const bool fork = flag_arg(args, "fork", false);
 
@@ -348,6 +367,10 @@ std::string resume_project(const Value& args)
     Value job = Value::object();
     job["name"] = field(target, "name");
     job["harness"] = field(target, "harness");
+    job["harness_explicit"] = harness.has_value();
+    if (model) {
+        job["model"] = orch::config::check_model(*model);
+    }
     job["cwd"] = field(target, "cwd");
     job["resume"] = target_session;
     if (fork) {
@@ -362,9 +385,11 @@ std::string resume_project(const Value& args)
     job = jobs.front();
     const std::string name = core::json::py_str(core::json::member(&job, "name"));
 
+    orch::ensure_server();
     const bool present = orch::ccbridge::hub_exists(name);
     std::vector<Value> live_args;
     Value live_harness;
+    Value live_model;
     if (present && orch::ccbridge::server_alive()) {
         const Value sessions = orch::ccbridge::fetch_sessions();
         const Value live = field(sessions, name);
@@ -376,6 +401,7 @@ std::string resume_project(const Value& args)
                 }
             }
             live_harness = field(live, "harness");
+            live_model = field(live, "model");
         }
     }
     const Value* live_id = live_args.size() > 1 ? &live_args[1] : nullptr;
@@ -385,7 +411,8 @@ std::string resume_project(const Value& args)
     const bool listed = std::any_of(live_args.begin(), live_args.end(), [&](const Value& item) {
         return item.is_string() && item.get<std::string>() == target_session;
     });
-    const bool matches_live = present && same_harness && !fork
+    const bool same_model = !model || live_model.is_null() || core::json::py_str(&live_model) == *model;
+    const bool matches_live = present && same_harness && same_model && !fork
         && (!session_id || target_session == session_id.value() || live_id_matches || listed);
 
     if (matches_live && prompt.empty()) {
@@ -398,6 +425,7 @@ std::string resume_project(const Value& args)
         out["project"] = name;
         out["cwd"] = field(job, "cwd");
         out["harness"] = field(job, "harness");
+        out["model"] = field(job, "model");
         out["session_id"] = live_id != nullptr ? *live_id : Value();
         out["requested_session_id"] = target_session;
         out["fork"] = fork;
@@ -423,6 +451,7 @@ std::string resume_project(const Value& args)
             out["project"] = name;
             out["cwd"] = field(job, "cwd");
             out["harness"] = field(job, "harness");
+        out["model"] = field(job, "model");
             out["session_id"] = or_chain(field(result, "forked_session"), field(result, "resolved_session"),
                                          Value(target_session));
             out["source_session_id"] = target_session;
@@ -436,6 +465,7 @@ std::string resume_project(const Value& args)
         out["project"] = name;
         out["cwd"] = field(job, "cwd");
         out["harness"] = field(job, "harness");
+        out["model"] = field(job, "model");
         out["session_id"] = target_session;
         out["fork"] = fork;
         out["global"] = global;
@@ -443,7 +473,6 @@ std::string resume_project(const Value& args)
         return dumps_indented(out);
     }
 
-    orch::ensure_server();
     const Value started = orch::turn::start_one(job, start_settle_seconds, trust, orch::config::default_lock_wait);
     const Value sessions = orch::ccbridge::fetch_sessions();
     const Value info = field(sessions, name);
@@ -453,6 +482,7 @@ std::string resume_project(const Value& args)
     out["project"] = name;
     out["cwd"] = field(job, "cwd");
     out["harness"] = field(job, "harness");
+    out["model"] = field(job, "model");
     out["session_id"] = or_chain(field(started, "forked_session"), field(started, "resolved_session"),
                                  Value(target_session));
     out["source_session_id"] = target_session;
@@ -520,7 +550,7 @@ std::string rstrip_pane_line(std::string line)
 
 Value compact_peer(const Value& info, long long pane_lines)
 {
-    static const std::vector<std::string> fields{"alive", "busy", "harness", "cwd", "clients", "launch_args",
+    static const std::vector<std::string> fields{"alive", "busy", "harness", "model", "cwd", "clients", "launch_args",
                                                  "output_path", "output_session"};
     Value row = Value::object();
     for (const auto& key : fields) {

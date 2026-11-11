@@ -172,9 +172,11 @@ int cmd_start(const StartRequest& request)
     const Value summary = start_peers(request);
     for (const auto& peer : *core::json::member(&summary, "peers")) {
         const std::string suffix = core::json::truthy(core::json::member(&peer, "trusted")) ? " trust=clear" : "";
+        const std::string saved_model = text_of(core::json::member(&peer, "model"));
+        const std::string model = saved_model.empty() ? "" : " model=" + saved_model;
         print_line(text_of(core::json::member(&peer, "name")) + ": " + text_of(core::json::member(&peer, "state"))
                    + " harness=" + text_of(core::json::member(&peer, "harness")) + " cwd="
-                   + text_of(core::json::member(&peer, "cwd")) + suffix);
+                   + text_of(core::json::member(&peer, "cwd")) + model + suffix);
     }
     const auto alive = core::json::member(&summary, "alive")->get<std::size_t>();
     const auto total = core::json::member(&summary, "total")->get<std::size_t>();
@@ -409,6 +411,7 @@ void add_command(CLI::App& app)
         command->add_option("names", request->names, "project names");
         command->add_option("--cwd", request->cwd);
         command->add_option("--harness", request->harness, "harness for the peer; defaults to the project's remembered harness");
+        command->add_option("--model", request->model, "model for the peer; saved with the project and reused on every launch, \"default\" forgets it");
         command->add_option("--settle", request->settle);
         command->add_option("--concurrency", request->concurrency);
         command->add_flag("--resume", request->resume, "resume each project's latest session when it is not running");
@@ -433,6 +436,7 @@ void add_command(CLI::App& app)
         command->add_option("text", *text)->required();
         command->add_option("--cwd", request->cwd);
         command->add_option("--harness", request->harness, "harness for the peer; defaults to the project's remembered harness");
+        command->add_option("--model", request->model, "model for the peer; saved with the project and reused on every launch, \"default\" forgets it");
         command->add_option("--timeout", options->timing.timeout);
         command->add_option("--idle-exit", options->timing.idle_exit);
         command->add_option("--lock-wait", options->timing.lock_wait);
@@ -492,6 +496,7 @@ void add_command(CLI::App& app)
         command->add_flag("--fork", request->fork, "fork the session instead of reusing its id");
         command->add_option("--prompt", *prompt, "prompt to send after resuming");
         command->add_option("--harness", request->target.harness, "harness to resume; defaults to the project's remembered harness");
+        command->add_option("--model", request->model, "model for the peer; saved with the project and reused on every launch, \"default\" forgets it");
         command->add_option("--timeout", options->timing.timeout);
         command->add_option("--idle-exit", options->timing.idle_exit);
         command->add_option("--lock-wait", options->timing.lock_wait);

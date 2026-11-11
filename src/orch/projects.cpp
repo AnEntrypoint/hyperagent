@@ -354,6 +354,14 @@ void fill_cwds(std::vector<Value>& jobs)
         if (!core::json::truthy(explicit_flag) && core::json::truthy(core::json::member(entry, "harness"))) {
             job["harness"] = check_harness(text_of(core::json::member(entry, "harness")));
         }
+        const std::string requested_model = text_of(core::json::member(&job, "model"));
+        const std::string saved_model = text_of(core::json::member(entry, "model"));
+        if (requested_model == config::saved_model_reset) {
+            job.erase("model");
+            job["model_reset"] = true;
+        } else if (requested_model.empty() && !saved_model.empty()) {
+            job["model"] = saved_model;
+        }
     }
     for (const auto& job : jobs) {
         if (!core::json::truthy(core::json::member(&job, "cwd"))) {
@@ -365,8 +373,11 @@ void fill_cwds(std::vector<Value>& jobs)
         const std::optional<std::string> session_id = keep_source || resume.empty()
             ? std::nullopt : std::optional<std::string>(resume);
         const std::string harness_name = text_of(core::json::member(&job, "harness"));
+        const std::string model = core::json::truthy(core::json::member(&job, "model_reset"))
+            ? std::string(config::saved_model_reset) : text_of(core::json::member(&job, "model"));
         state::record_project(text_of(core::json::member(&job, "name")), text_of(core::json::member(&job, "cwd")),
-                              session_id, harness_name.empty() ? std::nullopt : std::optional<std::string>(harness_name));
+                              session_id, harness_name.empty() ? std::nullopt : std::optional<std::string>(harness_name),
+                              model.empty() ? std::nullopt : std::optional<std::string>(model));
     }
 }
 
@@ -425,6 +436,9 @@ Value normalize(const Value& entry, bool require_prompt)
     }
     if (core::json::truthy(core::json::member(&entry, "fork"))) {
         job["fork"] = true;
+    }
+    if (core::json::truthy(core::json::member(&entry, "model"))) {
+        job["model"] = config::check_model(core::json::py_str(core::json::member(&entry, "model")));
     }
     return job;
 }

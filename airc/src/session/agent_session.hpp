@@ -23,6 +23,7 @@ struct SessionOptions {
     std::vector<std::string> launch_args;
     bool at_end = false;
     std::optional<std::string> session_id;
+    std::optional<std::string> model;
 };
 
 class AgentSession {
@@ -45,6 +46,8 @@ public:
     const std::string& cwd() const;
     const Harness& harness() const;
     std::string command() const;
+    std::vector<std::string> launch_argv() const;
+    std::optional<std::string> launch_model() const;
     double start_time() const;
 
 private:
