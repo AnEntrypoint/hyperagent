@@ -682,3 +682,8 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 - thebird killed a waiter on phase_b.py pid 1056671 that belonged to another session. Told it to stop only its own processes and to state this in its REPORT.
 - Sent the fx-page fix: re-vendor fx from current HEAD (scripts/vendor-fx.mjs), give THEBIRD_FX the CLI's model_metadata for claude-hy4[1m], verify a live fx ask returns ok with no HTTP error.
 - The fx native superagent prompt (ec756be... queued at 6c40dad/c6fd) still waits on fx's idle event.
+
+## 2026-11-11T21:37Z thebird turn 21:37:14Z (8e4e0d1) finished; live check waits on Pages
+- thebird REPORT finished: fx re-vendored from f60b27d6, pushed as 8e4e0d1. Stub witness: fx ask returns ok, rc=0, zero HTTP errors, the user turn present in the request. fx-approval and fx-provider rows PASS 8/8.
+- Open: live Pages run 43104617994 still queued; the live site has not been tested with the owner's gateway. Test once it deploys.
+- thebird no longer touches processes it did not start (its own statement).
