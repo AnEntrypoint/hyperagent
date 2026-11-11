@@ -598,3 +598,7 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 2026-11-11T19:18Z gm leaked browser trees (cleaned by PID)
 - 12 Chromium processes from gm's check-browser-scope and check-lazy-browser runs were parented to init, in /tmp/gm-browser-scope-* and /tmp/gm-lazy-browser-* scratch dirs, 69 to 236 s old, 200 to 240 MB each. Stopped by PID with TERM; none remain.
 - Ready item for gm's next prompt (gm is mid-turn, so no second send now): each browser check must stop its whole process tree on success, failure and timeout, and its witness must fail if any process started by it is left behind.
+
+## 2026-11-11T19:23Z gm turn end (install step pushed) and dispatch
+- gm turn ended 19:22:37Z (handled): pushed dded62a (playwriter install step at 24646cc in current/pw; browsers via call_sibling); Phase B pass 3 min 54 s; live install 74d3dc2841ed-dev, six workers on it, pw entry resolves. Pin marker path unclear (current/gm-pin missing); asked gm to show and assert it.
+- Sent gm (background bxmq57tsf): leaked-browser teardown with survivor witness; commit timing note; pin marker location; next Node check group.
