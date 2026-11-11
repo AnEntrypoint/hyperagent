@@ -172,7 +172,9 @@ in general terms, not another rule for one incident.
   cycle where their target peer is idle. A gm push or install is not one of these items: it
   is sent as soon as gm's Phase A is done.
 - A gm update is validated after it lands, before the cycle ends: the installed build matches
-  the pushed HEAD, the gm skill serves, and a live peer's next gm call succeeds. The journals
+  the pushed HEAD, the gm skill serves, and a live peer's next gm call succeeds. The build a
+  peer runs is read from its worker's executable path, since a run that began before the
+  install can stay on the old build while the install link and gm's own check both look right. The journals
   of the peers that were busy during the update are checked for gm errors.
 - The ledger takes one write per cycle that carries every dispatch of that cycle with its
   turn id, so a cycle costs one ledger step rather than one per send.
