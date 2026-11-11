@@ -578,3 +578,8 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 2026-11-11T18:47Z gm turn ended with no work done (item 7 blocked)
 - gm turn ended 18:46:53Z (handled): no edits or commits; it reported item 7 blocked on npm ci in pw's checkout and on the defaults file shape. Decided: do not touch pw's tree; pin via the existing github install path; convert defaults to the pinned shape; record in NATIVE_PLAN.md.
 - Resent gm items 1 to 6 with the connection held; item 5 after item 4 by design. Watch for gm ending early again: a second empty turn means the model is the cause, which is an owner decision (haiku was approved by the owner, so raise it in the report, not as a change).
+
+## 2026-11-11T18:50Z owner: fx, thebird, gm, pw to haiku 5.5 (jayzee stays)
+- Owner asked for claude-haiku-5-5 on all peers except jayzee. The model is set only at launch, so a switch relaunches a peer. All four are busy mid-turn (fx 18:45:17 last record, thebird 18:47:58, gm 18:49:49, pw 18:49:00), and a relaunch now would cut in-flight work and held connections.
+- Decision: switch each peer at its own turn end, with resume on its saved session and --model claude-haiku-5-5, then send its queued prompt on that session. Ledger holds the four switches as ready items; the next idle event for each peer carries the switch.
+- Saved models in state.json: fx and jayzee fable-5-2; gm, thebird, pw have none (default).
