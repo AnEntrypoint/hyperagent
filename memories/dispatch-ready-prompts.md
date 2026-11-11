@@ -667,3 +667,7 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 - gm REPORT finished: last Node uses in CI gone except playwriter runtime (decision). Phase B 47/47, pushed c9dbb88. Windows worker-versions step unverified until the first Windows release run.
 - Defect left by gm: tools/witness-ci-replay-step.mjs is stale, failing before this round, nothing in CI calls it. Sent removal (grep for references first), narrowest check then full phase-b once, one push.
 - gm's two processes from /config/.gmnew (its MCP server and worker) are its own session; left running.
+
+## 2026-11-11T21:13Z jayzee turn 21:13:00Z (d28a599) handled; next stretch sent (turn d86e9fc7a288)
+- jayzee REPORT: stretch pushed d28a599, top tier 131,072 bodies, awake budget 4,096 held (6,144 p99 failed at 12.75 ms). Kaggle gate passed on run 35; took three runs (33, 34, 35). Turn ran 8854 s; longest step Kaggle run 33 at 864 s.
+- Open: two unexplained over-budget ticks; GPU batch cause. Sent: name the phase per over-budget tick and fix or record; name the GPU batch step; one Kaggle gate for the stretch; one heavy job at a time (swap full).
