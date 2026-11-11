@@ -616,3 +616,9 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 2026-11-11T20:18Z memory pressure from gm's parallel compile
 - Available memory fell to about 4 GB and swap to 3.4 of 4.1 GB at 20:18 UTC. Source: 11 gm cc1plus compile processes in one batch, about 2.8 GB. Claude sessions about 1.7 GB. Nothing stopped; the compile is live Phase B work.
 - Ready item for gm's next prompt (gm mid-turn, not sent now): cap the parallel build jobs in gm's build so compile batches stay under about 1.5 GB resident; record the chosen cap in NATIVE_PLAN.
+
+## 2026-11-11T20:40Z gm and thebird continuations sent
+- gm resumed session 57a3f21e (turn 836defa7df71): cap parallel build jobs (~1.5 GB per batch, record in NATIVE_PLAN); port remaining Node checks; shorten check-skill-reload (82.7 s in Phase B vs 5.2 s alone).
+- thebird resumed session f76f541c (turn f78cc3298a9a): fix failing approval row, one Pages status call, cold-start and memory-sampling items.
+- fx busy (tool, session 255b1fc0); jayzee busy (tool, session 01e1364f). No dispatch; their turns are open.
+- Memory at 20:40 UTC: 7.8 GB available, swap 3.6 of 4.1 GB.
