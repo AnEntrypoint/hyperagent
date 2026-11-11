@@ -130,6 +130,28 @@ std::string check_session_id(const std::string& session_id)
     return session_id;
 }
 
+bool valid_model(std::string_view model)
+{
+    if (model.empty() || model.size() > 128 || !is_alnum(model.front())) {
+        return false;
+    }
+    constexpr std::string_view punctuation = "._:-[]/";
+    for (const char symbol : model) {
+        if (!is_alnum(symbol) && punctuation.find(symbol) == std::string_view::npos) {
+            return false;
+        }
+    }
+    return true;
+}
+
+std::string check_model(const std::string& model)
+{
+    if (!valid_model(model)) {
+        throw Error("bad model " + python_repr(model) + ": use letters, digits and . _ : - [ ] /");
+    }
+    return model;
+}
+
 std::string safe_name(std::string_view raw)
 {
     std::string out;

@@ -470,6 +470,7 @@ struct LaunchRequest {
     KindSet kinds;
     std::vector<std::string> launch_args;
     std::optional<std::string> session_id;
+    std::optional<std::string> model;
 };
 
 SessionOptions hub_session_options(const LaunchRequest& request) {
@@ -479,6 +480,7 @@ SessionOptions hub_session_options(const LaunchRequest& request) {
     options.launch_args = request.launch_args;
     options.at_end = !request.launch_args.empty();
     options.session_id = request.session_id;
+    options.model = request.model;
     return options;
 }
 
@@ -764,6 +766,9 @@ OrderedJson Hub::describe_blocking(std::size_t client_count) const {
     described["cwd"] = cwd_;
     described["busy"] = session_.harness().pane_busy(pane);
     described["launch_args"] = launch_args_;
+    if (const auto model = session_.launch_model()) {
+        described["model"] = *model;
+    }
     described["pane_tail"] = std::move(tail);
     return described;
 }
@@ -1289,6 +1294,14 @@ void Server::open_websocket(const std::shared_ptr<WsConnection>& connection, std
         return;
     }
     request.kinds = kinds_from_csv(query_value(query, "kinds").value_or("text,tool"));
+    const std::string model = query_value(query, "model").value_or("");
+    if (model.starts_with('-')) {
+        connection->refuse("model " + python_repr(model) + " must not start with a dash");
+        return;
+    }
+    if (!model.empty()) {
+        request.model = model;
+    }
     const std::string resume_id = query_value(query, "resume").value_or("");
     const bool continue_last = is_truthy(query_value(query, "continue"));
     const bool fork = is_truthy(query_value(query, "fork"));

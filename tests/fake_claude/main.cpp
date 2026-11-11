@@ -26,13 +26,14 @@ namespace {
 
 constexpr std::string_view paste_open = "\x1b[200~";
 constexpr std::string_view paste_close = "\x1b[201~";
-constexpr std::string_view model_name = "fake-claude";
+constexpr std::string_view default_model_name = "fake-claude";
 constexpr std::string_view version_name = "0.0.0-fake";
 
 struct Options {
     std::optional<std::string> resume;
     bool continue_last = false;
     bool fork_session = false;
+    std::string model{default_model_name};
 };
 
 Options parse_options(int argc, char** argv)
@@ -49,7 +50,7 @@ Options parse_options(int argc, char** argv)
         } else if (arg == "--fork-session") {
             options.fork_session = true;
         } else if (arg == "--model" && i + 1 < argc) {
-            ++i;
+            options.model = argv[++i];
         }
     }
     return options;
@@ -112,8 +113,11 @@ void write_all(std::string_view text)
 
 class Session {
 public:
-    Session(fs::path transcript, std::string session_id, std::string cwd)
-        : transcript_(std::move(transcript)), session_id_(std::move(session_id)), cwd_(std::move(cwd))
+    Session(fs::path transcript, std::string session_id, std::string cwd, std::string model)
+        : transcript_(std::move(transcript))
+        , session_id_(std::move(session_id))
+        , cwd_(std::move(cwd))
+        , model_(std::move(model))
     {
     }
 
@@ -121,7 +125,7 @@ public:
     {
         std::string out = "\x1b[2J\x1b[H";
         out += "Claude Code (fake harness)\r\n\r\n";
-        out += "  model:   " + std::string(model_name) + "\r\n";
+        out += "  model:   " + model_ + "\r\n";
         out += "  cwd:     " + cwd_ + "\r\n";
         out += "  session: " + session_id_ + "\r\n\r\n";
         if (busy) {
@@ -221,7 +225,7 @@ private:
         message["id"] = message_id;
         message["type"] = "message";
         message["role"] = "assistant";
-        message["model"] = std::string(model_name);
+        message["model"] = model_;
         message["content"] = json::array({block});
         message["stop_reason"] = stop_reason;
         record["message"] = message;
@@ -257,6 +261,7 @@ private:
     fs::path transcript_;
     std::string session_id_;
     std::string cwd_;
+    std::string model_;
     std::string input_;
     std::string parent_uuid_;
 };
@@ -331,6 +336,21 @@ long long turn_pause_ms()
     return std::max<long long>(4, std::atoll(value));
 }
 
+void log_launch_argv(int argc, char** argv)
+{
+    const char* log_path = std::getenv("FAKE_CLAUDE_ARGV_LOG");
+    if (log_path == nullptr || *log_path == '\0') return;
+    json words = json::array();
+    for (int i = 0; i < argc; ++i) {
+        words.push_back(std::string(argv[i]));
+    }
+    json record = json::object();
+    record["cwd"] = fs::current_path().lexically_normal().string();
+    record["argv"] = words;
+    std::ofstream out(log_path, std::ios::app | std::ios::binary);
+    out << record.dump() << '\n';
+}
+
 fs::path newest_transcript(const fs::path& dir)
 {
     fs::path best;
@@ -352,6 +372,7 @@ fs::path newest_transcript(const fs::path& dir)
 int main(int argc, char** argv)
 {
     const Options options = parse_options(argc, argv);
+    log_launch_argv(argc, argv);
     const char* home = std::getenv("HOME");
     if (home == nullptr || *home == '\0') {
         std::fprintf(stderr, "fake claude: HOME is not set\n");
@@ -400,7 +421,7 @@ int main(int argc, char** argv)
         ::tcsetattr(STDIN_FILENO, TCSANOW, &raw);
     }
 
-    Session session(transcript, session_id, cwd);
+    Session session(transcript, session_id, cwd, options.model);
     session.draw(false);
     std::string inbox;
     bool pasting = false;

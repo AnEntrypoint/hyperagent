@@ -395,7 +395,7 @@ Value session_created_after(const std::string& harness_name, const std::string& 
 }
 
 std::string websocket_target(const std::string& name, const std::string& cwd, const std::string& harness_name,
-                             const std::string& resume, bool continue_last, bool fork)
+                             const std::string& resume, bool continue_last, bool fork, const std::string& model)
 {
     std::string query = "session=" + url_encode(name) + "&harness=" + url_encode(harness_name)
         + "&mode=tagged&kinds=" + url_encode("text,tool,you");
@@ -411,6 +411,9 @@ std::string websocket_target(const std::string& name, const std::string& cwd, co
     if (fork && (!resume.empty() || continue_last)) {
         query += "&fork=1";
     }
+    if (!model.empty()) {
+        query += "&model=" + url_encode(model);
+    }
     return "/ws?" + query;
 }
 
@@ -421,7 +424,8 @@ std::string target_of(const Value& job)
     return websocket_target(text_of(core::json::member(&job, "name")), text_of(core::json::member(&job, "cwd")),
                             text_of(core::json::member(&job, "harness")), text_of(core::json::member(&job, "resume")),
                             core::json::truthy(core::json::member(&job, "continue")),
-                            core::json::truthy(core::json::member(&job, "fork")));
+                            core::json::truthy(core::json::member(&job, "fork")),
+                            text_of(core::json::member(&job, "model")));
 }
 
 void record_latest(Value& result, const Value& job)
@@ -448,6 +452,7 @@ Value run_job(const Value& job, const TurnOptions& options)
     const std::string name = text_of(core::json::member(&job, "name"));
     const std::string harness_name = text_of(core::json::member(&job, "harness"));
     const std::string prompt = text_of(core::json::member(&job, "prompt"));
+    ccbridge::ensure_server();
     const double started = epoch_now();
     OutputWriter output(job, started);
 
@@ -578,6 +583,9 @@ Value run_job(const Value& job, const TurnOptions& options)
     result["name"] = name;
     result["harness"] = harness_name;
     result["cwd"] = text_of(core::json::member(&job, "cwd"));
+    if (const std::string model = text_of(core::json::member(&job, "model")); !model.empty()) {
+        result["model"] = model;
+    }
     result["status"] = status;
     result["text"] = response;
     result["acked"] = acked;
@@ -597,6 +605,7 @@ Value start_one(const Value& job, double settle, bool trust, double lock_wait)
         || core::json::truthy(core::json::member(&job, "continue"));
     bool trusted = false;
     bool restarted = false;
+    ccbridge::ensure_server();
     {
         SessionLock lock(name, lock_wait);
         if (resuming) {

@@ -36,11 +36,18 @@ if(TARGET Boost::system)
 endif()
 target_compile_options(hyperagent PRIVATE -Wall -Wextra -Wpedantic)
 
+enable_testing()
+
 add_subdirectory(airc)
 set_target_properties(ccbridge PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 add_dependencies(hyperagent ccbridge)
 target_compile_definitions(hyperagent PRIVATE HYPERAGENT_CCBRIDGE="$<TARGET_FILE:ccbridge>")
 
 add_subdirectory(tests/fake_claude)
+
+add_test(NAME orch_launch
+    COMMAND ${CMAKE_COMMAND} -E env HYPERAGENT_BUILD=${CMAKE_BINARY_DIR}
+        bash ${CMAKE_CURRENT_SOURCE_DIR}/tests/orch_launch.sh)
+set_tests_properties(orch_launch PROPERTIES TIMEOUT 600)
 
 install(TARGETS hyperagent RUNTIME DESTINATION bin)

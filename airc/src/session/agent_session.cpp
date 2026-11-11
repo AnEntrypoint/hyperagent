@@ -20,6 +20,9 @@ namespace ccb {
 
 namespace {
 
+constexpr std::string_view model_flag = "--model";
+constexpr std::string_view model_flag_assignment = "--model=";
+
 long long current_process_id() {
 #if defined(_WIN32)
     return static_cast<long long>(_getpid());
@@ -67,8 +70,7 @@ AgentSession& AgentSession::start() {
     if (!options_.launch_args.empty()) {
         stop();
     }
-    std::vector<std::string> argv = harness_->argv;
-    argv.insert(argv.end(), options_.launch_args.begin(), options_.launch_args.end());
+    std::vector<std::string> argv = launch_argv();
     std::lock_guard lock(screen_mutex_);
     screen_ = std::make_unique<Screen>(options_.cols, options_.rows, [this](std::string_view bytes) {
         if (pty_) {
@@ -176,19 +178,48 @@ const Harness& AgentSession::harness() const {
     return *harness_;
 }
 
+std::vector<std::string> AgentSession::launch_argv() const {
+    std::vector<std::string> argv;
+    const bool overriding = options_.model && !options_.model->empty();
+    for (std::size_t index = 0; index < harness_->argv.size(); ++index) {
+        const std::string& word = harness_->argv[index];
+        if (overriding && word == model_flag) {
+            ++index;
+            continue;
+        }
+        if (overriding && word.starts_with(model_flag_assignment)) {
+            continue;
+        }
+        argv.push_back(word);
+    }
+    if (overriding) {
+        argv.emplace_back(model_flag);
+        argv.push_back(*options_.model);
+    }
+    argv.insert(argv.end(), options_.launch_args.begin(), options_.launch_args.end());
+    return argv;
+}
+
+std::optional<std::string> AgentSession::launch_model() const {
+    const std::vector<std::string> argv = launch_argv();
+    std::optional<std::string> model;
+    for (std::size_t index = 0; index < argv.size(); ++index) {
+        if (argv[index] == model_flag && index + 1 < argv.size()) {
+            model = argv[index + 1];
+        } else if (argv[index].starts_with(model_flag_assignment)) {
+            model = argv[index].substr(model_flag_assignment.size());
+        }
+    }
+    return model;
+}
+
 std::string AgentSession::command() const {
     std::string joined;
-    auto append = [&joined](const std::string& part) {
+    for (const auto& part : launch_argv()) {
         if (!joined.empty()) {
             joined += ' ';
         }
         joined += shell_quote(part);
-    };
-    for (const auto& part : harness_->argv) {
-        append(part);
-    }
-    for (const auto& part : options_.launch_args) {
-        append(part);
     }
     return joined;
 }
