@@ -637,3 +637,9 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 2026-11-11T20:55Z fx superagent: native code only, not instructions (queued, fx busy)
 - Owner: a skill file in fx's folder is not a native mechanism, and most of the behaviour is not to be achieved by instructions. Every loop step is implemented in fx's Zig runtime.
 - Clarified ready prompt (supersedes 20:52 for wording): "we want the superagent turn-end loop implemented natively in src/core/superagent/runtime.zig and roots_ledger.zig, with no reliance on skill or instruction text. The runtime, not the model, reads each root's turn-end event, decides continue / wait-on-PID / unblock / stop, and performs the send on the saved session id. The superagent skill is description only; reduce its cycle text to a pointer to the native behaviour once the code does it. Phase A then Phase B per stretch, lanmower commits with no trailer, stop processes by PID only. Witness: a root that ends finished with a queued item is continued by runtime code alone, shown in its journal and in roots_ledger."
+
+## 2026-11-11T20:53Z fx turn timeout recorded; gm continuation sent
+- fx turn ended with status timeout at 20:53:40Z (4 h wait deadline, duration 14400 s). Not a failure: peer_status shows fx busy, pane on final-tree validation. No prompt sent while busy. Removed the wait from the ledger.
+- gm idle with no report since 20:41:10Z. Sent continuation on session 57a3f21e (turn 5fbd66490c56): check the three parallel agents' output, do not restart committed work, then the queue (compile cap at one batch, port Node checks, shorten check-skill-reload). Swap 3.97 of 4.1 GB noted.
+- Still busy, no dispatch: jayzee (tool, session 01e1364f), thebird (tool, session f76f541c).
+- fx superagent root-driving prompt (f91ac06 / 6c40dad) still queued for fx's next idle event.
