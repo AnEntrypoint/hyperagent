@@ -706,3 +706,8 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 - Owner asked whether the fx path is efficient; asked the fx agent (not thebird) to measure: model turns, tool calls and requests per fx ask, time to first and final token, where each second goes, longest step.
 - Same turn: build the native turn-end loop in runtime.zig and roots_ledger.zig (continue, wait-on-PID, unblock, stop), no skill text, witness from the journal.
 - fx's last turn was a timeout at 20:53; it is alive and idle at 21:5x.
+
+## 2026-11-11T22:23Z thebird interactive TUI still 400 (queued; thebird busy on efficiency check 173eb673f1b4)
+- Owner: fx ask works on the live page, but the interactive prompt fails: typing "hi" gives HTTP 400 "messages has no user or assistant turn; system and developer messages alone are not a conversation".
+- So the TUI (web/fx-tui.js) builds the chat request without the user turn, while fx ask does not.
+- Ready prompt for thebird's next idle event (session f76f541c, resume_project): "we want the interactive fx TUI to send the user's message as a user turn, same as fx ask. Phase A: trace how fx-tui.js builds the chat messages versus the fx ask path, fix the difference, add a witness that types hi in the TUI and gets a reply. Phase B: build, run the TUI witness and the live page check, push once. Stop only processes you started. REPORT: ..."
