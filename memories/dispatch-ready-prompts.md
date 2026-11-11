@@ -559,3 +559,8 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 2026-11-11T18:37Z gm push validated mid-turn
 - gm pushed f3152d8 (fetch and wiki leaves native, wiki.mjs removed), install f087ce058144-dev; 6 workers on it, 1 older run still on dd69fcd38562; no gm errors in jayzee or thebird transcripts.
 - Ready item for gm's next prompt: d5b7048 leaves a regex thread running after a timed-out fetch match until the process exits; replace std::regex there with an engine that can be bounded (RE2-style linear matcher or a step-counted matcher) so nothing outlives the call, and witness that thread count returns to baseline.
+
+## 2026-11-11T18:40Z pw turn end and dispatch
+- pw turn ended 18:40:05Z (handled): pushed a01a3aa, pin 24646cc. Tests stop only their own token's processes; browser session 1392 -> 1326 MB; idle 60 s with lease -> browser closed, 3 procs 312 MB. Relay: decided no work here, new pin runs direct mode and starts none.
+- Sent pw (held connection): idle-with-lease down to one launcher; identify and cut the four renderers; gate 117 MB and launcher 58 MB module load; zygotes and crashpad; final pin in CONSUMERS.
+- Ready pin for gm and jayzee is now 24646cc or its successor.
