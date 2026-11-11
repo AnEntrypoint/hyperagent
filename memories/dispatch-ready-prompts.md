@@ -564,3 +564,8 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 - pw turn ended 18:40:05Z (handled): pushed a01a3aa, pin 24646cc. Tests stop only their own token's processes; browser session 1392 -> 1326 MB; idle 60 s with lease -> browser closed, 3 procs 312 MB. Relay: decided no work here, new pin runs direct mode and starts none.
 - Sent pw (held connection): idle-with-lease down to one launcher; identify and cut the four renderers; gate 117 MB and launcher 58 MB module load; zygotes and crashpad; final pin in CONSUMERS.
 - Ready pin for gm and jayzee is now 24646cc or its successor.
+
+## 2026-11-11T18:45Z jayzee turn end and dispatch
+- jayzee turn ended 18:44:59Z (handled): pushed 46e80b2 through Kaggle run 32. Top tier 40,960 bodies (1,024 MiB plan); held bodies out of the world; three settle options measured, none adopted; gate now on mean awake tick (10%) with quiet p99 guard (25%); AMD class recorded; check memory 1.8 GB -> 694 MB, page 1,551 -> 1,035 MB.
+- Decisions: gate change stands; budget stays 4,096 until the all-awake tick is cheaper; jayzee closes its own browser after witnesses.
+- Sent jayzee (held connection): airborne planet-pair skip and incremental broadphase; per-body memory; handle slot past 16 bits and 65,536/81,920/98,304 tiers; release by distance and visibility; unmarked slow ticks; 1024-webgpu intervals; display-independent witness; pw pin from CONSUMERS.md.
