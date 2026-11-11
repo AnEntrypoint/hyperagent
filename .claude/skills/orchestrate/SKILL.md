@@ -63,8 +63,9 @@ decision to a person.
 1. `list_projects`.
 2. `start_projects` for the peers this instruction calls for. Never start a peer with
    no work for it. Never restart one that is alive unless its context is wrong.
-3. Ask every started peer for its full ranked remaining work, with current item and
-   status, through `instruct_many`.
+3. Ask a started peer for its full ranked remaining work, through `instruct_many`, only
+   when its ledger queue is empty or stale. Otherwise the dispatch continues the queue
+   already in the ledger.
 4. Decide the best next step for each peer.
 5. Send each peer an ordered queue of every reachable item it has, in the same turn as
    its report requirement. Use `instruct_many` for parallel assignments and `instruct`
@@ -125,8 +126,9 @@ in general terms, not another rule for one incident.
   a job for as long as it needs, one read of state per phase, other work while a job runs.
 - Capacity is never parked behind a blocked item. Blocked work is driven towards
   unblocking, and meanwhile the peer, or another project's peer, takes reachable work.
-- Changes that touch every peer, such as a shared install, wait for a moment when no
-  peer is busy.
+- The gm project's pushes and installs go out whenever they are ready, whether or not
+  peers are busy. Peers keep working through the update: the dispatcher validates the
+  install and watches the peers' journals for gm errors across the update window.
 - Waste is measured, not guessed: the gap between a peer's `result` and its next
   `instruct` in the journal, and the long calls, repeats and token use in its transcript.
 - The dispatch ledger is the one place that says what is sent and what is queued. Every
@@ -143,6 +145,64 @@ in general terms, not another rule for one incident.
 - One watcher feeds one monitor. Peers do not arm monitors on the shared watch log, so
   events are not repeated. The dispatcher's monitor is armed with the longest timeout
   the tool allows and re-armed only at its expiry, not on every cycle.
+- A turn that ends while its job still runs is not finished work. The dispatcher starts
+  a bounded wait on that job's process in the same step, and sends the continuation with
+  the job's result when it exits. It does not send a new prompt while the job runs.
+- A send is checked once. Within about a minute of an `instruct`, the journal shows the
+  `instruct` record and the peer's next tool or text record. A turn that ends without the
+  assigned work done is answered by sending the same prompt again at once.
+- The journal decides a turn's end. A `pane` trigger can fire while a turn is still
+  running, and a watch line can repeat an old turn. The ledger keeps the last handled `ts`
+  per peer, and a line whose `last.ts` is already handled is dropped without a re-read.
+- The journal is the state read. `peer_status` returns every peer's full pane tail, so it
+  is called only for a question the journal and git cannot answer, such as whether a peer
+  is alive.
+- The dispatcher's periodic wake validates the ledger and the watch line. It runs the full
+  cycle only when a peer's turn has ended since the last cycle.
+- Each cycle reads state in one call: the watch tail, the running job processes, the repo
+  sync, and each live peer's last journal record with a short per-record limit. A full
+  report is read once, at the turn end, not on every check.
+- A peer's question about scope, size or a reversible choice is answered by the dispatcher
+  in the same cycle, with the reason, and the peer is sent the answer at once. A peer that
+  ends its turn to ask has cost a turn, so the answer is the next dispatch.
+- A `gone` event for a peer whose last turn was already handled is a process exit, not work.
+  The dispatcher resumes that peer's saved session only when a reachable item exists, and
+  records the exit in the ledger.
+- Items waiting for a moment stay in the ledger as ready prompts and are sent on the next
+  cycle where their target peer is idle. A gm push or install is not one of these items: it
+  is sent as soon as gm's Phase A is done.
+- A gm update is validated after it lands, before the cycle ends: the installed build matches
+  the pushed HEAD, the gm skill serves, and a live peer's next gm call succeeds. The journals
+  of the peers that were busy during the update are checked for gm errors.
+- The ledger takes one write per cycle that carries every dispatch of that cycle with its
+  turn id, so a cycle costs one ledger step rather than one per send.
+
+## Iteration-time housekeeping
+
+Iteration time grows unless someone keeps cutting it. The dispatcher, the gm skill and
+each project all do this continually, as part of the work and not as a separate task.
+
+- The dispatcher measures, from the journals and the peers' transcripts: each peer's
+  share of time busy, the turns that ended early, the gap from a turn's end to its next
+  prompt, and the commands that repeat with their total wall time. It measures on a
+  regular rhythm and whenever progress feels slow.
+- The largest measured waste is fixed in the cycle that finds it. Dispatcher time goes
+  into this skill. Repeated work, turns and tokens go to the gm project as a gm skill
+  change. A project's own slow loop goes to that project as an instruction, with the
+  numbers. Fx carries the same habits in its own instructions, so it gets the same change.
+- Each project owns its iteration time. It records the wall time of every build and
+  check, proves a change with the narrowest check that can fail for it, runs the full set
+  once before the push, and shortens or splits whatever step dominates its loop. Its
+  `REPORT:` names its longest step and what it did about it.
+- A check that passed on a tree is not run again on the same tree. A failing row is
+  rerun alone. The same test run several times in one stretch is the first place to look.
+- A peer is not parked behind another peer's push. It takes the upstream's local commits
+  from the shared path, or other reachable work, and an idle peer with an empty queue is
+  asked for its ranked work in the same cycle.
+- The dispatcher's own tools are checked the same way. A monitor is confirmed to deliver
+  a known event after it is armed, and a resume uses the full session id from
+  `list_project_sessions`, so a silent monitor or a peer left at a picker is found at
+  once and not at the next poll.
 
 ## Two-phase work
 
@@ -169,6 +229,10 @@ validate, and it is not split into several small Phase A passes.
   pass. Do not start a second Phase A or a validation in the middle.
 - A peer that is already running a gate or Pages build may finish that check, since it
   validates earlier work.
+- A Phase B job is valid only for the tree it started on. When an edit lands after the job
+  starts, the peer stops that job by PID and runs one job on the final tree.
+- Builds, gates and witnesses run in Phase B. A peer that cannot run a check during its Phase A
+  moves that check into Phase B, and does not end the turn with the check undone.
 
 ## Decision rules
 
@@ -213,6 +277,15 @@ Include these in every assignment prompt:
   block once on the job's PID with a timeout, or do the next item while it runs. Batch
   gm verbs into one `run_code` body. Record each witness's wall time in the ledger.
 - A finished stretch is not the end of the turn; carry on until no reachable item is left.
+- Never end a turn to ask about scope, size or a reversible choice. Decide, state the reason
+  in the `REPORT:` line, and carry on. A turn ends only when no reachable item is left or the
+  peer is waiting on a job it started.
+- A job the peer waits on is waited on in the same turn, with a bounded `timeout` on the
+  job's PID. A peer does not arm a Monitor to wake itself, because a turn that ends to wait
+  for one costs the dispatcher a turn and the peer its progress.
+- Keep the iteration loop short. Prove each change with the narrowest check, rerun a
+  failing row alone, run the full set once before the push, never sleep to wait, and
+  shorten the step that takes longest. Name that step and its wall time in the report.
 - End every turn with: `REPORT: finished|open|blocked — <your rhetoric> — witness: <output evidence>`.
 
 ## Resume
@@ -239,6 +312,11 @@ Send the continuation of a peer whose turn ended through `resume_project` with i
 in the project's root with none of the saved work, so the peer searches for files it
 already knows about. After the send, check the journal for the new `instruct` record
 under the saved session id.
+
+A resume is accepted only when `peer_status` shows the saved session id as the peer's
+`output_session`. If it shows a new session with no launch arguments, stop that peer and
+resume the saved session again before sending the work. A fresh session re-reads what the
+saved one already knew.
 
 ## Blocked peers
 
@@ -281,10 +359,12 @@ A client that speaks MCP events can skip `build/hyperagent watch`: subscribe wit
 the same idle and gone payloads as `notifications/resources/updated` and
 `notifications/message`; `hyperagent://events` holds the recent stream.
 
-Arm a Monitor on the watcher's output file so each finished turn wakes this session at
-once, and re-arm it when it expires:
-`tail -n 0 -F /tmp/watch.out | grep --line-buffered -a -v '"busy":true' | grep --line-buffered -a -o -E '^.{1,400}'`.
-Every stage flushes per line, and events from a peer that is still busy are dropped.
+Arm a Monitor on the journals of the sessions that hold work, so each finished turn wakes
+this session at once, and re-arm it when it expires or when a peer moves to a new session:
+`cd .orch/projects && tail -q -n 0 -F <each live session's .jsonl> | grep --line-buffered -a '"kind":"result"' | grep --line-buffered -a -o -E '^.{1,340}'`.
+The journal's `result` record is the turn end, so the monitor reads it directly; the watch
+file can repeat old turns and miss a live one. Every stage must flush per line: `awk`
+(mawk) and `paste` hold piped input and deliver nothing.
 Check live state from git and the
 event line first; call `peer_status` only when those do not answer the question. A
 resumed peer continues its newest session.
