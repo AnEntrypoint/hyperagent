@@ -622,3 +622,8 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 - thebird resumed session f76f541c (turn f78cc3298a9a): fix failing approval row, one Pages status call, cold-start and memory-sampling items.
 - fx busy (tool, session 255b1fc0); jayzee busy (tool, session 01e1364f). No dispatch; their turns are open.
 - Memory at 20:40 UTC: 7.8 GB available, swap 3.6 of 4.1 GB.
+
+## 2026-11-11T20:50Z fx superagent: drive stopped roots (queued, fx busy)
+- Owner: fx's superagent tooling lets roots stop and does not drive their progress the way /orchestrate does. Fix is in fx's runtime, not the skill text (fx/.fx/skills/superagent/SKILL.md already describes the cycle).
+- Ready prompt for fx's next idle event (session 255b1fc0), via resume_project with session_id:
+  "we want the superagent runtime to drive every root the way /orchestrate does. On each root's turn end: read its REPORT line; if finished with reachable work, continue it on its saved session id with its next queued item; if a job is still running, wait on its PID once with a timeout and continue with the job's result; if open or blocked, decide the reversible blocker and send the next step on the same session; a root with no work is stopped. Keep the dispatch ledger updated at each send and each turn end. Phase A then Phase B per stretch, lanmower commits with no trailer, stop processes by PID only. Witness: a root that ends finished with a queued item is continued without a dispatcher prompt, shown by its journal."
