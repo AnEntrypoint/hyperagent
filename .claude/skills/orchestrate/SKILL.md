@@ -199,6 +199,14 @@ in general terms, not another rule for one incident.
   and prints one result line per configuration, and a check whose verdict depends on host
   load gets a load-independent budget or moves to the remote run.
 
+- Memory is read every cycle with the peer state: used and available memory, swap, and the
+  processes whose parent is init. A test or check that leaves a process tree behind is a defect
+  in the project that started it, sent to that project with the process names, ages and sizes
+  in the same cycle. A leaked test process in a scratch directory that is plainly dead weight
+  is stopped by its PID; a process that may belong to the owner's own sessions is reported, not
+  stopped. An instruction that asks a peer for a new check also asks that the check stops every
+  process it starts, as a tree.
+
 ## Iteration-time housekeeping
 
 Iteration time grows unless someone keeps cutting it. The dispatcher, the gm skill and
