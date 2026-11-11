@@ -583,3 +583,9 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 - Owner asked for claude-haiku-5-5 on all peers except jayzee. The model is set only at launch, so a switch relaunches a peer. All four are busy mid-turn (fx 18:45:17 last record, thebird 18:47:58, gm 18:49:49, pw 18:49:00), and a relaunch now would cut in-flight work and held connections.
 - Decision: switch each peer at its own turn end, with resume on its saved session and --model claude-haiku-5-5, then send its queued prompt on that session. Ledger holds the four switches as ready items; the next idle event for each peer carries the switch.
 - Saved models in state.json: fx and jayzee fable-5-2; gm, thebird, pw have none (default).
+
+## 2026-11-11T18:59Z gm turn end (Phase B blocked) and dispatch
+- gm turn ended 18:58:38Z (handled): nothing pushed; Phase B failed on check-install-follows (ENOENT after code-ast removal). Local commits 10, on 1214e20; pin reverted to ebbba11-era check failure at 24646cc (browsers tool gone).
+- Decided: keep pin 24646cc and make browsers optional in check-lazy-browser and browser_scope.cpp; install-follows watches the gm-core install path and the worker's exe natively; refusal fix via sha on run-log events.
+- gm switched to claude-haiku-5-5 with /model (confirmed in pane). Sent gm queue items 1 to 5 with the connection held (background b9obo255n).
+- Stale replay ignored: gm session 526213ff event from 2026-11-10.
