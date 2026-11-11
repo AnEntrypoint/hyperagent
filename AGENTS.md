@@ -71,6 +71,12 @@ ignores it, so a saved model takes effect only after that server is restarted.
 `ORCH_HOME` and port `ORCH_TEST_PORT` (default 18947): `HYPERAGENT_BUILD=<build dir> bash
 tests/orch_launch.sh`.
 
+`tests/idle_reap.sh` (ctest `idle_reap`) starts a private `ccbridge serve --idle-reap 3` on
+port `IDLE_REAP_TEST_PORT` (default 18948) with the fake claude and a temporary `HOME`: a
+session left mid-turn with no client outlives four reap periods and is reaped only after
+its turn ends, and a session that was never prompted is reaped after one. `ccbridge client
+--turn-timeout` does not end a blocking read, so the test ends its client with `timeout`.
+
 ## Session output journal
 
 Every frame a turn receives from airc is appended to

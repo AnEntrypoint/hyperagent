@@ -57,7 +57,8 @@ using QueryParams = std::vector<std::pair<std::string, std::string>>;
 constexpr std::size_t max_inbound_message = std::size_t{16} << 20;
 constexpr auto pump_interval = std::chrono::milliseconds(150);
 constexpr int liveness_check_ticks = 20;
-constexpr auto reap_interval = std::chrono::seconds(60);
+constexpr auto longest_reap_interval = std::chrono::seconds(60);
+constexpr auto shortest_reap_interval = std::chrono::seconds(1);
 constexpr auto ready_timeout = std::chrono::seconds(60);
 constexpr auto ready_probe = std::chrono::seconds(1);
 constexpr auto websocket_idle_timeout = std::chrono::seconds(60);
@@ -69,6 +70,12 @@ constexpr std::string_view json_content_type = "application/json; charset=utf-8"
 constexpr std::string_view text_content_type = "text/plain; charset=utf-8";
 constexpr std::string_view server_name = "ccbridge";
 constexpr std::string_view sessions_route_prefix = "/sessions/";
+
+std::chrono::steady_clock::duration reap_interval(double idle_reap_seconds) {
+    const auto period = std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+        std::chrono::duration<double>(std::max(idle_reap_seconds, 0.0)));
+    return std::clamp<std::chrono::steady_clock::duration>(period, shortest_reap_interval, longest_reap_interval);
+}
 
 std::string_view as_std(beast::string_view view) {
     return {view.data(), view.size()};
@@ -518,7 +525,7 @@ public:
     const std::vector<std::string>& launch_args() const { return launch_args_; }
     bool has_clients() const { return !clients_.empty(); }
     std::size_t client_count() const { return clients_.size(); }
-    double last_touch() const { return last_touch_; }
+    bool idle_for(double seconds) const;
 
 private:
     struct Client {
@@ -531,6 +538,7 @@ private:
     bool wait_until_ready();
     void flush_queue(bool ready);
     void pump();
+    void note_activity(const std::string& pane, bool produced_events, std::string& seen_pane);
     void wait_for_stop_request();
     void finish();
     bool stop_requested() const;
@@ -547,7 +555,8 @@ private:
     AgentSession session_;
     std::shared_ptr<Hub> predecessor_;
     std::vector<Client> clients_;
-    double last_touch_ = now_seconds();
+    std::atomic<double> last_activity_{now_seconds()};
+    std::atomic<bool> busy_{false};
     mutable std::mutex mutex_;
     std::condition_variable wake_;
     std::deque<std::string> queued_;
@@ -687,7 +696,7 @@ void Hub::launch(StartedHandler on_started) {
 }
 
 void Hub::submit(std::string text) {
-    last_touch_ = now_seconds();
+    last_activity_ = now_seconds();
     {
         std::lock_guard lock(mutex_);
         queued_.push_back(std::move(text));
@@ -697,12 +706,25 @@ void Hub::submit(std::string text) {
 
 void Hub::attach(std::shared_ptr<WsConnection> connection, std::string mode) {
     clients_.push_back(Client{std::move(connection), std::move(mode)});
-    last_touch_ = now_seconds();
+    last_activity_ = now_seconds();
 }
 
 void Hub::detach(const WsConnection* connection) {
     std::erase_if(clients_, [connection](const Client& client) { return client.connection.get() == connection; });
-    last_touch_ = now_seconds();
+    last_activity_ = now_seconds();
+}
+
+bool Hub::idle_for(double seconds) const {
+    return !has_clients() && !busy_ && now_seconds() - last_activity_ > seconds;
+}
+
+void Hub::note_activity(const std::string& pane, bool produced_events, std::string& seen_pane) {
+    const bool busy = session_.harness().pane_busy(pane);
+    busy_ = busy;
+    if (busy || produced_events || pane != seen_pane) {
+        last_activity_ = now_seconds();
+    }
+    seen_pane = pane;
 }
 
 void Hub::stop(StoppedHandler on_stopped) {
@@ -793,6 +815,7 @@ void Hub::work(StartedHandler on_started) {
     } catch (const std::exception&) {
         starting_ = false;
     }
+    busy_ = false;
     wait_for_stop_request();
     try {
         session_.stop();
@@ -844,6 +867,7 @@ void Hub::send_text(const std::string& text) {
 
 void Hub::pump() {
     int ticks = 0;
+    std::string seen_pane = session_.pane();
     while (true) {
         std::deque<std::string> outgoing;
         {
@@ -864,6 +888,7 @@ void Hub::pump() {
         } catch (const std::exception&) {
             return;
         }
+        note_activity(session_.pane(), !events.empty(), seen_pane);
         if (!events.empty()) {
             asio::post(io_, [self = shared_from_this(), events = std::move(events)] { self->emit(events); });
         }
@@ -1175,7 +1200,7 @@ void Server::accept_next(tcp::acceptor& acceptor) {
 }
 
 void Server::schedule_reap() {
-    reap_timer_.expires_after(reap_interval);
+    reap_timer_.expires_after(reap_interval(options_.idle_reap_seconds));
     reap_timer_.async_wait([this](const beast::error_code& error) {
         if (error || shutting_down_) {
             return;
@@ -1186,10 +1211,9 @@ void Server::schedule_reap() {
 }
 
 void Server::reap_idle() {
-    const double now = now_seconds();
     const auto snapshot = hubs_;
     for (const auto& [name, hub] : snapshot) {
-        if (!hub->has_clients() && now - hub->last_touch() > options_.idle_reap_seconds) {
+        if (hub->idle_for(options_.idle_reap_seconds)) {
             take_hub(name);
             hub->stop({});
         }

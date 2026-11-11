@@ -50,4 +50,9 @@ add_test(NAME orch_launch
         bash ${CMAKE_CURRENT_SOURCE_DIR}/tests/orch_launch.sh)
 set_tests_properties(orch_launch PROPERTIES TIMEOUT 600)
 
+add_test(NAME idle_reap
+    COMMAND ${CMAKE_COMMAND} -E env HYPERAGENT_BUILD=${CMAKE_BINARY_DIR}
+        bash ${CMAKE_CURRENT_SOURCE_DIR}/tests/idle_reap.sh)
+set_tests_properties(idle_reap PROPERTIES TIMEOUT 180)
+
 install(TARGETS hyperagent RUNTIME DESTINATION bin)
