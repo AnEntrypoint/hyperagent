@@ -1,6 +1,6 @@
 {
   "default": false,
-  "argv": ["claude", "--model", "claude-fable-5-1"],
+  "argv": ["claude", "--model", "claude-fable-5-2"],
   "argv_env": [
     {"env": "AIRC_CLAUDE_SKIP_PERMISSIONS", "equals": "1", "append": ["--dangerously-skip-permissions"]}
   ],

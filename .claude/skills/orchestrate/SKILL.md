@@ -177,6 +177,23 @@ in general terms, not another rule for one incident.
 - The ledger takes one write per cycle that carries every dispatch of that cycle with its
   turn id, so a cycle costs one ledger step rather than one per send.
 
+- A peer's model is part of its launch, not of its conversation. The airc server fixes the
+  launch model for the `claude` harness when the server starts (`ORCH_CLAUDE_MODEL`, default
+  `haiku`), so a `/model` typed into a session is lost whenever its process is relaunched,
+  and the process list shows the launch flag, not the model in use. After any relaunch of a
+  project with a set model, the first prompt is `/model <id>`, its "Set model" answer is
+  read, and the work goes out second. A resume of a live peer does not relaunch it.
+- A turn whose last text is a usage or credit limit message is blocked on the owner, not
+  finished. The dispatcher sends the owner a push notification in the same step, and resumes
+  the peer as soon as the owner says the limit is lifted.
+- A cycle in which no turn ended and nothing was sent writes nothing: no ledger entry and no
+  commit. The ledger records dispatches, turn ends and decisions only.
+- A peer commits each Phase A change locally as it makes it, so a turn that stops without
+  warning leaves no uncommitted work for anyone to untangle.
+- Heavy measurement runs off the host when it can. One remote run carries every configuration
+  and prints one result line per configuration, and a check whose verdict depends on host
+  load gets a load-independent budget or moves to the remote run.
+
 ## Iteration-time housekeeping
 
 Iteration time grows unless someone keeps cutting it. The dispatcher, the gm skill and
