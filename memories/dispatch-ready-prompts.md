@@ -651,3 +651,9 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 2026-11-11T20:56Z gm compile drained; continuation sent (turn db49c78814f3)
 - gm turn 20:55:16Z ended while its compile batch ran in background. Waited with a bounded background drain (b5d5ein4r); no gm cc1plus left at 20:56:08Z. Swap 3.97 of 4.1 GB, unchanged by the drain.
 - Sent gm continuation: read the batch's sampler summary (peak per cc1plus and total under the cap, into NATIVE_PLAN), then route the last Node step in tools/check-build.mjs through gm-tool. Its earlier wait on rotating PIDs ended early; a drain on the process name is the correct wait for a fanned-out compile.
+
+## 2026-11-11T20:58Z gm turn 20:58:36Z finished (137edf9); next stretch sent (turn d75115cf4771)
+- gm REPORT finished: Phase B passed at 137edf9, pushed. Compile batch peak 1581 MiB total at cap 4 (480 MiB per cc1plus), 80 MiB over the 1.5 GB target. CI check-build now runs gm-tool phase-b; tools/check-build.mjs removed.
+- Decided: cap to 3 (GM_COMPILE_JOBS 3) to meet the target, swap 4090 of 4095 MB. Reversible.
+- Sent: remove the remaining five Node uses from CI (playwright-core install for playwriter, tools/package.mjs, three more), native where one exists, cause and owner decision where none does.
+- Swap was fully used at 20:57 (4095 of 4095); gm-tool check and jayzee witness are the large processes. Owner informed in the cycle report, no kill.
