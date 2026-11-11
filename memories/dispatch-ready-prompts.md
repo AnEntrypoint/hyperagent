@@ -701,3 +701,8 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 
 ## 2026-11-11T21:55Z efficiency check sent to thebird (turn 173eb673f1b4)
 - Owner asked whether the fx page path is efficient. Sent thebird: time the live path after the af8c248 deploy (page load to shell, ask keystroke to ok, 8793 wall time), break down the cold start by asset and size, count the 8793 calls per ask, and give one change for each step over 10 s with its expected saving.
+
+## 2026-11-11T21:55Z fx idle; efficiency measurement and native superagent loop sent (turn dea720474ba1)
+- Owner asked whether the fx path is efficient; asked the fx agent (not thebird) to measure: model turns, tool calls and requests per fx ask, time to first and final token, where each second goes, longest step.
+- Same turn: build the native turn-end loop in runtime.zig and roots_ledger.zig (continue, wait-on-PID, unblock, stop), no skill text, witness from the journal.
+- fx's last turn was a timeout at 20:53; it is alive and idle at 21:5x.
