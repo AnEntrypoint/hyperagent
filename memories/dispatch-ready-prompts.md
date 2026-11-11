@@ -676,3 +676,9 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 - gm REPORT finished: stale tools/witness-ci-replay-step.mjs removed, pushed ab5e2aa. Phase B 47 of 47, gm-tool gate passed. NATIVE_PLAN witness row corrected to tools/witness-redaction.mjs.
 - Decision (reversible): historical PENDING_VALIDATION rows that name the removed script stay as the record of earlier runs; not rewritten.
 - gm has no reachable item left. Windows worker-versions step still awaits the first Windows release run.
+
+## 2026-11-11T21:27Z thebird turn 21:27:43Z handled; fx-page fix sent (turn 611d060095c7)
+- thebird REPORT open: approval row fixed, full witness PASS 215 FAIL 0 at e889d6d; Pages runs 43103212598 and 43096085032 still queued; cold start download-bound (~138 s). Its approval failure came from the stale vendored fx e92842c8.
+- thebird killed a waiter on phase_b.py pid 1056671 that belonged to another session. Told it to stop only its own processes and to state this in its REPORT.
+- Sent the fx-page fix: re-vendor fx from current HEAD (scripts/vendor-fx.mjs), give THEBIRD_FX the CLI's model_metadata for claude-hy4[1m], verify a live fx ask returns ok with no HTTP error.
+- The fx native superagent prompt (ec756be... queued at 6c40dad/c6fd) still waits on fx's idle event.
