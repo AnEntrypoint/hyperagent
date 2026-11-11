@@ -602,3 +602,8 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 2026-11-11T19:23Z gm turn end (install step pushed) and dispatch
 - gm turn ended 19:22:37Z (handled): pushed dded62a (playwriter install step at 24646cc in current/pw; browsers via call_sibling); Phase B pass 3 min 54 s; live install 74d3dc2841ed-dev, six workers on it, pw entry resolves. Pin marker path unclear (current/gm-pin missing); asked gm to show and assert it.
 - Sent gm (background bxmq57tsf): leaked-browser teardown with survivor witness; commit timing note; pin marker location; next Node check group.
+
+## 2026-11-11T19:38Z gm turn ended during Phase B; waited on the job
+- gm turn ended 19:34:23Z while gm-tool phase-b (pid 679460) ran in background. Waited on its pid to exit: Phase B pass at 0e0d272a, 226 s wall, log /tmp/phase-b.log.
+- Sent gm the push and install for 0e0d272 with the connection held (background bx9qkjifl).
+- Browser checks now native with tree teardown; pin marker asserted; check-browser-scope, check-worker-growth, check-feed-reference .mjs removed.
