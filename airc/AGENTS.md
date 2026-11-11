@@ -78,7 +78,7 @@ HTTP:
 Lifecycle:
 
 - A hub whose agent is not alive is replaced on the next attach. An alive hub asked for different launch args is refused; stop it first.
-- A hub with no clients and no activity for `CCBRIDGE_IDLE_REAP` seconds (default 1800) is stopped. The reaper runs every 60 s.
+- A hub is reaped only when it has no clients, its pane shows no busy marker, and it has had no activity for `CCBRIDGE_IDLE_REAP` seconds (`--idle-reap`, default 1800). Activity is a prompt, a client attach or detach, a transcript event, a change of the pane, or a pane that is busy; the hub's pump samples the pane every 150 ms. A busy hub is never reaped, however long no client is attached, and its idle period starts when the busy marker leaves. The reaper runs once per idle period, clamped to between 1 s and 60 s.
 - Limits: 16 MiB per inbound frame; WebSocket idle timeout 60 s with keep-alive pings.
 
 ## Run
