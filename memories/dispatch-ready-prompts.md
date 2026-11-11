@@ -687,3 +687,9 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 - thebird REPORT finished: fx re-vendored from f60b27d6, pushed as 8e4e0d1. Stub witness: fx ask returns ok, rc=0, zero HTTP errors, the user turn present in the request. fx-approval and fx-provider rows PASS 8/8.
 - Open: live Pages run 43104617994 still queued; the live site has not been tested with the owner's gateway. Test once it deploys.
 - thebird no longer touches processes it did not start (its own statement).
+
+## 2026-11-11T21:47Z live thebird test: still 400; thebird sent the metadata fix (turn 9d5413e0bff2)
+- Pages run 43104617994 (8e4e0d1) succeeded. Live manifest source is f60b27d6, so the deploy has the fix.
+- Live fx ask still returns HTTP 400 "messages has no user or assistant turn" (two tests, 8793 status 400, zero console errors). The stub did not reproduce it.
+- Suspected cause: web/fx-in-page.js passes only gatewayChatUrl from THEBIRD_FX into the engine (~line 49), so claude-hy4[1m] model_metadata never reaches the provider.
+- Sent thebird: forward model_metadata to the engine, make the stub match the live path, witness on the live page with an ok reply.
