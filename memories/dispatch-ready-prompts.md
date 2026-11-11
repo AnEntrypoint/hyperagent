@@ -671,3 +671,8 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 2026-11-11T21:13Z jayzee turn 21:13:00Z (d28a599) handled; next stretch sent (turn d86e9fc7a288)
 - jayzee REPORT: stretch pushed d28a599, top tier 131,072 bodies, awake budget 4,096 held (6,144 p99 failed at 12.75 ms). Kaggle gate passed on run 35; took three runs (33, 34, 35). Turn ran 8854 s; longest step Kaggle run 33 at 864 s.
 - Open: two unexplained over-budget ticks; GPU batch cause. Sent: name the phase per over-budget tick and fix or record; name the GPU batch step; one Kaggle gate for the stretch; one heavy job at a time (swap full).
+
+## 2026-11-11T21:13Z gm turn 21:13:31Z (ab5e2aa) handled; queue empty
+- gm REPORT finished: stale tools/witness-ci-replay-step.mjs removed, pushed ab5e2aa. Phase B 47 of 47, gm-tool gate passed. NATIVE_PLAN witness row corrected to tools/witness-redaction.mjs.
+- Decision (reversible): historical PENDING_VALIDATION rows that name the removed script stay as the record of earlier runs; not rewritten.
+- gm has no reachable item left. Windows worker-versions step still awaits the first Windows release run.
