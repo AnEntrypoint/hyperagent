@@ -698,3 +698,6 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 - Root cause in the page: non-gateway gatewayChatUrl went through the AI-Gateway body, so the metadata never reached the provider. Fix routes non-gateway URLs to custom provider gy4 with the CLI's metadata (0b54eb2).
 - Witness (stub-free live 8793 path): fx ask returns ok, rc=0, 8793 status 200. Regression PASS 8/8.
 - Pages run for af8c248 queued; live site not yet checked. Test once it deploys.
+
+## 2026-11-11T21:55Z efficiency check sent to thebird (turn 173eb673f1b4)
+- Owner asked whether the fx page path is efficient. Sent thebird: time the live path after the af8c248 deploy (page load to shell, ask keystroke to ok, 8793 wall time), break down the cold start by asset and size, count the 8793 calls per ask, and give one change for each step over 10 s with its expected saving.
