@@ -555,3 +555,7 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 - pw turn ended 18:31:14Z (handled): pushed 84601ed, pin 2927d0f. Idle MCP session 173 MB/2 procs -> 57 MB/1 proc; port-claim race fixed (EADDRINUSE gave the empty execute reply); docs/CONSUMERS.md has pin and direct node entry.
 - Sent pw (held connection): tests stop only their own PIDs; relay playwriter-ws-server gets a last-client lifetime; per-process cut of the 1387 MB browser session; CONSUMERS pin update.
 - Ready item for gm's next prompt (replaces dd77686): pin pw 2927d0f or its successor in defaults/mcp.json with the direct node entry from pw docs/CONSUMERS.md. Ready item for jayzee: its .mcp.json pins pw#1488a92, move to the same pin.
+
+## 2026-11-11T18:37Z gm push validated mid-turn
+- gm pushed f3152d8 (fetch and wiki leaves native, wiki.mjs removed), install f087ce058144-dev; 6 workers on it, 1 older run still on dd69fcd38562; no gm errors in jayzee or thebird transcripts.
+- Ready item for gm's next prompt: d5b7048 leaves a regex thread running after a timed-out fetch match until the process exits; replace std::regex there with an engine that can be bounded (RE2-style linear matcher or a step-counted matcher) so nothing outlives the call, and witness that thread count returns to baseline.
