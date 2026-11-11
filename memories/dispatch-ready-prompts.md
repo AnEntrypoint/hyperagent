@@ -607,3 +607,8 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 - gm turn ended 19:34:23Z while gm-tool phase-b (pid 679460) ran in background. Waited on its pid to exit: Phase B pass at 0e0d272a, 226 s wall, log /tmp/phase-b.log.
 - Sent gm the push and install for 0e0d272 with the connection held (background bx9qkjifl).
 - Browser checks now native with tree teardown; pin marker asserted; check-browser-scope, check-worker-growth, check-feed-reference .mjs removed.
+
+## 2026-11-11T19:39Z gm push and install validated; next batch sent
+- gm turn ended 19:38:54Z (handled): origin 0e0d272 (Phase B pass 226 s, check-skill-reload 82.7 s inside Phase B vs 5.2 s alone). Install 57fd18494d81-dev from build/release; six gm-core workers on it; both browser checks pass against the build tree.
+- gm-pin: the marker is current/pw/gm-pin (not current/gm-pin); nothing at runtime reads it, only the install skip check.
+- Sent gm (background bzkukct8l): port the remaining ~27 Node checks, the conformance run and parity-contract; shorten check-skill-reload in Phase B; remove Node from phase B only when fully replaced.
