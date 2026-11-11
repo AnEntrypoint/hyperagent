@@ -662,3 +662,8 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 - gm REPORT open: cap 3 measured (3 concurrent, peak 1306 MiB total, under 1.5 GB). Release steps moved to gm-tool. Phase B passed, pushed fe85770.
 - Dispatcher decisions (reversible): keep Node for the playwriter browser runtime (pw is a Node package; browser-scope and lazy-browser checks stay); replace the three inline node -e steps in release.yml with shell.
 - Note for owner: an existing gm build dir keeps the cached cap of 4 until configured with -DGM_COMPILE_JOBS=3.
+
+## 2026-11-11T21:12Z gm turn 21:12:04Z (c9dbb88) handled; stale witness removal sent (turn f01099ff92b1)
+- gm REPORT finished: last Node uses in CI gone except playwriter runtime (decision). Phase B 47/47, pushed c9dbb88. Windows worker-versions step unverified until the first Windows release run.
+- Defect left by gm: tools/witness-ci-replay-step.mjs is stale, failing before this round, nothing in CI calls it. Sent removal (grep for references first), narrowest check then full phase-b once, one push.
+- gm's two processes from /config/.gmnew (its MCP server and worker) are its own session; left running.
