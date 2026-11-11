@@ -647,3 +647,7 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 2026-11-11T20:54Z gm turn end 20:54:16Z handled; next stretch sent
 - gm REPORT open: its three agents finished, committed and pushed at 0acfabe (compile cap, skill-reload change, driver and clock-mutation port). Tree clean, matches origin/main.
 - Open items sent (turn a9c642f96a2f): measure compile-batch peak memory under the cap (one batch at a time, swap 3.97 of 4.1 GB), and remove Node from CI via tools/check-build.mjs.
+
+## 2026-11-11T20:56Z gm compile drained; continuation sent (turn db49c78814f3)
+- gm turn 20:55:16Z ended while its compile batch ran in background. Waited with a bounded background drain (b5d5ein4r); no gm cc1plus left at 20:56:08Z. Swap 3.97 of 4.1 GB, unchanged by the drain.
+- Sent gm continuation: read the batch's sampler summary (peak per cc1plus and total under the cap, into NATIVE_PLAN), then route the last Node step in tools/check-build.mjs through gm-tool. Its earlier wait on rotating PIDs ended early; a drain on the process name is the correct wait for a fanned-out compile.
