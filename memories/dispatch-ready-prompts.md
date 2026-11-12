@@ -1235,3 +1235,7 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Ready prompt for gm, sent on its next idle: run_code refuses node:fs, and a call past 120 s moves to background, so long waits poll repeatedly. job_start names allow only letters, digits, _ and -. Fix the gate or document these so one run_code can wait with a bounded timeout. The owner is informed per CLAUDE.md invariant 1.
 - Commit 26174f5 has an "Unchanged:" line in its body that git reads as a trailer. It is not a Co-Authored-By line, and the commit is pushed, so it is not rewritten. Noted for the owner.
 - Monitor bcm1ri8j3 is armed; re-arm it near 19:24Z. Wake loop 19812248 fires at 19:27Z.
+
+## 19:28Z cycle: no turn ended since fx 19:17:10. Running: pw 208d9c3e9305 (run_code at 19:27); gm 12163625bc3f (compaction finished; gm-tool phase-b running on build/release, log /tmp/gm-phase-b-433.log, 2m13s at 19:27); index 2d8f5d9d27a2 (run_code at 19:27; job 583629 alive); fx b11bc4279045 (Phase B PID 615623 at 680 s; wait bqbbskppa open until about 20:47). Monitor bozmvgotf armed to about 19:55Z.
+- Decision: gm's Phase B writes to a fixed /tmp name (/tmp/gm-phase-b-433.log). That is the same collision defect pw hit with /tmp/phase-b3*. Ready prompt for gm, sent on its next idle: write Phase B logs and results under mktemp -d, never a fixed /tmp name, and record the collision in its REPORT.
+- Orphan 286399 (fx ask, owner-held) is at 475 MB and rising about 7 MB a minute. Memory 8 GB available of 14 GB; swap 2 of 3 GB used.
