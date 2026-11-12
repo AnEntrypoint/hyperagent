@@ -971,3 +971,5 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 11:08Z jayzee idle with empty queue: continuation sent on session 01e1364f, turn f60fb8203710: ranked list, one Phase A, one Phase B, one push; decide the WebGPU driver-lock classification. fx Phase B pid 3247491 still under wait bul0qxg84.
 
 ## 11:15Z jayzee f60fb8203710 ended after Phase A (five local commits, HEAD 664ea2c, Phase R queue in PENDING_VALIDATION): driver-lock decision recorded by the peer (excuse host waits only up to a bound). Phase B sent on session 01e1364f, turn 154337030588: build once, Phase R witnesses once each, full test once, one push if green. fx Phase B pid 3247491 still running at 2823 s under wait bul0qxg84 (job limit 3600 s).
+
+## 11:21Z jayzee 154337030588 ended mid-Phase B: build green (25 glues, 4 pins changed), 22 narrow gates pass, measurement builds done. Kaggle regress running (pid 3423588, 557 s at start of wait). Bounded wait started; continuation on exit: remaining Phase R witnesses, full test once, one push if green. fx Phase B pid 3247491 still running at 3422 s (its job timeout is 3600 s); its wait bul0qxg84 still armed.
