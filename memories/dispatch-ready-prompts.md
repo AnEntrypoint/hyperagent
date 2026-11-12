@@ -857,3 +857,5 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 06:13Z 2026-11-12 gm turn 5c4dd52fc3c4 done: pushed c0540a0 (47/47) restoring check-restart-jobs and check-install-switch to the asan set (079a9fc). Seven timing checks dispatched as run 43166024906 (on 707b58b, before the set change); bounded wait started, restore only if it passes. LSan: no leak after 500 calls; 8.5 KB per call is reachable memory, not a leak.
 
 ## 06:14Z 2026-11-12 seven-timing run 43166024906 was cancelled with no jobs (superseded by the c0540a0 push); re-dispatched the same seven checks once on main; bounded wait started; restore only if it passes.
+
+## 06:21Z 2026-11-12 owner: fx set to haiku; resumed fx session 255b1fc0 on haiku (turn 3dc0bb0c2e3a), Phase B and one push for the stretch. Resumed jayzee session 01e1364f (turn 4f1351a2753a): Kaggle check first; blocked if still unsigned, else kaggle:regress, Phase B, one push. jayzee model unchanged (claude-fable-5-2).
