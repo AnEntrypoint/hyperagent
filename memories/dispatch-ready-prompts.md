@@ -879,3 +879,5 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 07:05Z 2026-11-12 gm turn 8a2ad44aa261 ended with its 300 s witness running (pid 2675649); bounded wait started, continuation after exit (doc entry, explicit commit paths, one Phase B, one push). Hosted push run e2ec546 still in progress.
 
 ## 07:09Z 2026-11-12 gm 300 s job_status witness passed in one call (ok true, waitedMs 300001). Sent gm the continuation: doc entry, explicit commit, Phase B once, one push.
+
+## 07:13Z 2026-11-12 gm turn 8e93bc0b60a6 done: job_status wait fixed (bounded by the job timeout plus 250 ms grace), pushed dd41d5f after Phase B 48/48; check-job-wait 65 s passed in one body. Hosted run e2ec546 still in progress. Monitor event 07:13Z is that turn ending.
