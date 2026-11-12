@@ -827,3 +827,5 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 2026-11-12T07:58Z gm turn ff896a83e6c4 done: 15 s bound fix plus 0639cba pushed as a57f0e3 (47/47). Queue empty; sent gm ranked-work request. Host: init-parented playwriter-ws-server (pid 307851, ~10.5 h) reported, not stopped, as it may belong to the owner browser setup.
 
 ## 2026-11-12T08:00Z gm turn 7dd593aba7d7 done: ranked queue received (1-2 restore to asan set; 3 local ASan trials of excluded timing checks; 4-5 owner; browser and macOS blocked). Dispatched items 1-2 as one hosted run and item 3 locally; item 4 kept at memory-safety only.
+
+## 2026-11-12T08:20Z item 3 local ASan trials: 7 of 9 ok; check-worker-growth (+19504 KB over 400 calls, limit 2048) and clock-mutations (30 s wait cap; mutant passes check-turn-economy) failed; sent gm both as defects plus the held hosted dispatch. Monitor bg5n0qoim re-armed.
