@@ -799,3 +799,5 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 
 ## 2026-11-12T04:17Z asan-arm 43149998911 on 2e2f8cc green; sent gm the verdict read for the moved checks on the normal arm job
 ## 2026-11-12T04:17Z fx still on the Fable usage limit (turn 1af6320ef4fe); not resumed until the owner says the limit is lifted
+
+## 2026-11-12T04:23Z gm turn d8df0525239a: moved checks not in run 43149998911 log; release run 43149998872 is where phase-b runs; dispatcher authorised one read-only log read; gm records per-name verdict then one push
