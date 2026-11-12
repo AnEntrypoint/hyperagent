@@ -845,3 +845,5 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 05:57Z 2026-11-12 hosted verification run 43161954533 (fixed workflow, checks=check-restart-jobs,check-install-switch): still pending with no jobs after 25 min; bounded wait timed out (exit 124). The fix is verified only by the local gm-tool check and workflow read. Re-dispatch is needed once the arm runners start jobs; no push is needed for that.
 
 ## 05:58Z 2026-11-12 release run 43161925475 on 2eefcce: x64-macos Test failed; all other jobs passed. Sent gm the log read and a fix (second push approved: the first push broke a release witness), or a recorded flake with no push.
+
+## 05:59Z 2026-11-12 gm turn 2bc3cb79695b done: x64-macos failure is check-worker-growth (3580 KB vs 2048 limit; Linux 352 KB). Decision: limit not raised; treated as a defect (10x gap). Sent gm the cause hunt and fix in Phase A, one Phase B, one push. gm local commit 0cae644 holds the evidence doc.
