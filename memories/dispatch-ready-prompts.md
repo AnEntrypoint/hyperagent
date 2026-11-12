@@ -765,3 +765,7 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 2026-11-12T02:26Z gm turn b7d996647aa7 done: asan-arm memory-safety only, timeout 15 min, pushed 785e8e1
 - Decision (dispatcher, reversible): check-worker-growth also left out of the ASan job (its 2 MB RSS limit trips under ASan allocator growth). Revisit with an ASan-aware limit if wanted.
 - Hosted asan-arm 43140275825 on 785e8e1 in progress; one bounded wait (540 s) timed out with it still running. Re-check at the next cycle.
+
+## 2026-11-12T02:32Z asan-arm 43140275825 on 785e8e1 cancelled by its 15-min timeout (02:16:51Z to 02:32:05Z)
+- Sent gm the root-cause continuation: find the hanging check from the hosted log, fix or move it, set timeout from hosted wall time, Phase A, one Phase B, one push.
+- gm and thebird idle; thebird has no reachable work; fx turn 35e14bf02a7f still running (ranking, 29 min).
