@@ -796,3 +796,6 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 2026-11-12T03:57Z fx idle since 03:51Z with Phase A (98c4e5ec, 1ae19d57, b66a6cb4, 935ceb23) and untracked benchmarks/term_wasm_probe.mjs; sent continuation turn 1af6320ef4fe: collect measurement, Phase B, one push
 
 ## 2026-11-12T03:58Z fx turn 1af6320ef4fe ended on a usage limit (Fable). Owner pushed; resume fx when the limit is lifted (session 255b1fc0).
+
+## 2026-11-12T04:17Z asan-arm 43149998911 on 2e2f8cc green; sent gm the verdict read for the moved checks on the normal arm job
+## 2026-11-12T04:17Z fx still on the Fable usage limit (turn 1af6320ef4fe); not resumed until the owner says the limit is lifted
