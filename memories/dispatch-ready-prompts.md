@@ -732,3 +732,7 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 2026-11-12T00:55Z jayzee process exited; not resumed (no reachable item until Kaggle sign-in)
 - jayzee (session 01e1364f) no longer appears in peer_status. Its last turn b52512480dd9 was handled and recorded; no work is reachable until `! kaggle auth login`.
 - Its Phase A (four local commits: cbc3ff3, 9c99984, 1af7a00, 8096ca1, plus 5684433, df4e009, e05eef6, 2169f8a) stays unpushed. Resume session 01e1364f with the gate prompt once the owner signs in.
+
+## 2026-11-12T01:18Z gm continuation: arm-diagnose 43129887842 now in_progress (turn sent on session 57a3f21e)
+- gm turn 0b56f40aec32 ended 01:08 with the job pending; resumed the saved session with one bounded wait on asan-arm and the fix-and-push rule.
+- Monitor b4fi6f908 still armed; re-arm at ~01:28.
