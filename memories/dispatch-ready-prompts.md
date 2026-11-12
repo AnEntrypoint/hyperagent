@@ -885,3 +885,7 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 - 07:25Z thebird: turn 3a5a52b4724f ended (87c7c2f local, full witness exit 1 on npm 404 row, not pushed). Sent continuation ca2c1d0c4e54: find npm row cause, fix, one Phase B push.
 
 ## 08:28Z cycle: gm resumed 57a3f21e turn 5b5f4af8ca31 (96b31f0 README stretch, Phase B once, one push). jayzee resumed 01e1364f turn 886eb407eb27 (slot-order release tuning, Phase B once, one push). fx 3dc0bb0c2e3a and thebird ca2c1d0c4e54 still running. gm hosted 43173608005 (dd41d5f) success.
+
+## 08:29Z gm turn 5b5f4af8ca31 ended early at 30.8 s while its release build (pid 2792905) runs. Bounded wait b9kf5harj started; continuation to be sent with the build result on exit (Phase B once, one push).
+
+## 08:34Z gm build wait b9kf5harj exited 0 (BUILD_EXIT 0). Continuation sent on gm session 57a3f21e, turn 2ecd3202088d: witnesses, fix, one push.
