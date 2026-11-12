@@ -957,3 +957,5 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 10:37Z cycle: fx turn 64c9b55cd214 ended with superagent Phase B running (pid 3247491): bounded wait started; continuation on exit (consolidation). jayzee Kaggle regress still running (pid 3238640, 674 s): wait bhvym5u0v holds. gm and extra no longer in peer list, no processes, recorded as exits (idle, no reachable item left; extra record commit 5875152 local).
 
 ## 10:37Z jayzee Kaggle regress bhvym5u0v exited 0: RESULT PASS (8.862 ms vs 9.72, limit 12.15, 0 over). Continuation sent on session 01e1364f, turn f08a6682aa62: planet, full test, one push.
+
+## 10:4xZ jayzee f08a6682aa62 ended (turn_end, 163 s) with prefault removed: local commit 7b80822 reverts it (six alternated pairs show no gain, 6.44 vs 6.51 ms). Nothing pushed. Continuation sent on session 01e1364f, turn e3543bde4f1e: planet witness, Kaggle regress on the reverted HEAD, full test, one push. fx Phase B pid 3247491 still running under wait b2jsdvhur (exit at most 1500 s).
