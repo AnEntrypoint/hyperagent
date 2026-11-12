@@ -817,3 +817,5 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 2026-11-12T06:50Z gm turn 0d56dc45b088 done: item 3 ok locally on build/asan; browser install "Unsupported platform" on arm and 503 hosted are launcher causes; 22357a1 pushed (47/47). Items 1 and 2 open; sent turn to read the hosted per-check logs (read-only) and close them with one push. Monitor event 04:40Z is stale.
 
 ## 2026-11-12T06:58Z gm turn b38823171236 done: item 2 closed, fixture sleep 8 -> 30 (check-restart-jobs timing), pushed 7bad952. Item 1 open: no per-rpc log in the cancelled run. Sent turn to run check-install-switch alone on hosted asan-arm with per-rpc log; push only if code cause. Monitor event 04:46Z is stale.
+
+## 2026-11-12T06:59Z gm turn 7876e5bffb01 done: blocked on a workflow_dispatch input push and per-rpc logging. Dispatcher approved both as a diagnostic change: one Phase B push, then one hosted check-install-switch run. Sent turn; no fx or jayzee change. Monitor 04:47Z stale.
