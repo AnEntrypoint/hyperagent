@@ -1003,3 +1003,5 @@ Ranked items, in order: (1) size the engine to the configured world, not the tie
 Closed, do not revisit: prefault, -Os, release prepare, WebGPU culling, WebGL2 HZB, by-view vs slot order.
 Owner directives: a proper spherical planet, with physics on it, large and small objects interleaved; reference assets and ../maps used for flat-surface tests where a real read is needed; the spherical scale and math checked against its own caveats; state placement done as efficiently as possible; display efficiency via deferred or defer-style rendering, accepting its disadvantages.
 Repo note from the owner's paste: origin/main is the reference; the remote branches are deleted; local backup/pre-squash (142 commits, stored at 3bf6a80) is kept unmerged.
+
+## 12:5xZ owner yes: extra record commit 5875152 pushed to AnEntrypoint/extra main; wiki-site published to gh-pages as fast-forward commit 5ba0be6 (84 wiki pages plus .nojekyll; old published tree 9b10f4f kept in history). Two interim gh-pages commits (2bbbca0, 289c58f) were wrong trees (first build read the temp index); their final tree is correct and they are history only. Not force-pushed.
