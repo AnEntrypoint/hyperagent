@@ -841,3 +841,5 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 05:29Z 2026-11-12 hosted run 43159800334 completed: asan-arm failure (exit 2 at the conformance step, ~0.2 s in, checks=check-restart-jobs,check-install-switch); gdb-arm success. Sent gm the log read and fix (Phase A, one Phase B, one push).
 
 ## 05:31Z 2026-11-12 gm turn 1f0a03719371 done: asan exit 2 was gm-tool no-match on the comma-joined name; fixed 77ab64e (tr), pushed 2eefcce after Phase B 47/47. Dispatcher ran the verification hosted dispatch 43161954533 (checks=check-restart-jobs,check-install-switch) and started a bounded wait. Result goes to gm on exit.
+
+## 05:57Z 2026-11-12 hosted verification run 43161954533 (fixed workflow, checks=check-restart-jobs,check-install-switch): still pending with no jobs after 25 min; bounded wait timed out (exit 124). The fix is verified only by the local gm-tool check and workflow read. Re-dispatch is needed once the arm runners start jobs; no push is needed for that.
