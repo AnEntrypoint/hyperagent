@@ -778,3 +778,8 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 2026-11-12T02:47Z thebird process exited (not in peer_status); last turn d396d431473b handled; no reachable item, not resumed
 - Package going live blocked on the other session's build hunks; Pyodide split needs the owner's pyodide-minimal repo.
 - fx turn 35e14bf02a7f running about 50 min. gm idle; hosted asan-arm 43142719018 on b5eec42 still in progress at about 04:47 local.
+
+## 2026-11-12T03:08Z asan-arm 43142719018 on b5eec42 failed on timing checks (run-code-budget, restart-jobs, run-code-progress)
+- Decision (dispatcher, reversible): move those three out of the ASan set, keep them in the normal arm job; restart-jobs process-gone finding recorded for a look on the normal job.
+- Sent gm Phase A, one Phase B, one push.
+- fx turn 35e14bf02a7f running about 70 min, in Phase B (witness wait by PID); not stuck.
