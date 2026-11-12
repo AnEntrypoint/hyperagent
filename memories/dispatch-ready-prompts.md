@@ -849,3 +849,5 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 05:59Z 2026-11-12 gm turn 2bc3cb79695b done: x64-macos failure is check-worker-growth (3580 KB vs 2048 limit; Linux 352 KB). Decision: limit not raised; treated as a defect (10x gap). Sent gm the cause hunt and fix in Phase A, one Phase B, one push. gm local commit 0cae644 holds the evidence doc.
 
 ## 06:03Z 2026-11-12 gm turn c0291816086a done: check-worker-growth now measures a second 400-call window after warm-up (limit unchanged); Phase B 47/47; pushed 707b58b. Open: macOS per-call retention (next macOS release run decides); ASan per-call retention 8.5 KB/call with quarantine off (excluded from asan job). Accepted: a true leak still shows in the second window.
+
+## 06:07Z 2026-11-12 hosted verification run 43161954533 success: asan-arm and gdb-arm green on the fixed workflow (2eefcce). Closed the exit-2 item. Sent gm the ranked-work request with the open ASan retention and macOS items.
