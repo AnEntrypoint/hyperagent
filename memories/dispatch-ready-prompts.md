@@ -749,3 +749,7 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 - fx turn 34a3a12ddb29: FX_CONFIGURED_PROVIDERS honoured on wasm, pushed 22d48e96 (Phase B green). Next for thebird: re-vendor fx-term.wasm and pass the env.
 - thebird turn a885a3537d0e: manifest retry and jsDelivr fallback pushed 04b7685 (PASS 16). Sent: re-vendor wasm, TUI hi row, Pyodide-lock row, one push.
 - asan-arm 43129887842 on 4b74e21 cancelled (not failed) at 01:55; newer run 43135395150 on b9188aa in progress. Sent gm one bounded wait and the fix-and-push rule for that run; gm asked to find what cancelled it if cancelled again.
+
+## 2026-11-12T01:57Z fx idle with empty queue; asked for ranked remaining work (session 255b1fc0)
+- thebird turn 96e9c3aa2510 and gm turn 5ff9c745a05d running; no new sends to them.
+- gm asan-arm 43135395150 in_progress; gdb-arm success.
