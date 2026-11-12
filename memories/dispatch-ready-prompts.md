@@ -1342,3 +1342,12 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Decision: the launcher keeps refusing without PLAYWRITER_NO_SANDBOX. No automatic --no-sandbox fallback. That is a security downgrade and is flagged to the owner.
 - Foreign processes 9567, 10301 and 10302 are gm's live worker tree (run 2026-11-12-16-13-13), not pw's; left alone.
 - Sent pw turn a48d287a1cbe (instruct, alive peer, wait false): push origin main once from 53d4051; record item 10 and gate 2531 as a later stretch; find the origin of /tmp/pw-test-KVdRFs, lG6Lle and start, fix any leak in its own witness, remove only dirs proven its own; record the sandboxed-path item as open.
+
+## 21:04Z pw: turn a48d287a1cbe ended 21:03:58 (376 s). Pushed f17a6d5..53d4051 once (exit 0); main in sync with origin/main at 53d4051. Two docs commits stay local: af5deab (items 10 and 4 wait on gm's kill-scope fix; witness is `node test/stale.cjs foreign` alone once it lands) and 43e330d (items 7, 3, 2, 5, 6).
+- Item 7: /tmp/pw-test-KVdRFs was created at 19:25:34Z by a lifecycle run in this session, and pw removed it after confirming no live process used it. /tmp/pw-test-lG6Lle and /tmp/pw-test-start predate this gm run; their owner is not proven, so they stay.
+- The 19:25:34Z lifecycle failure (held-lease check, `false !== true`) is labelled a flake. Not accepted: it is a defect until its cause is found.
+- kwanmy0wm: pw searched gm's run log, /tmp, /config/.claude, /data/cache and /workspace and did not find it. Not acted on.
+- Item 3 (sandboxed launch) needs the owner's host setting: kernel.apparmor_restrict_unprivileged_userns=1 blocks the Chromium sandbox, and there is no chrome-sandbox helper. Owner item.
+- Item 2: decided, refusal stays, no automatic --no-sandbox fallback. Owner's call.
+- Foreign processes 9567, 10301 and 10302 belong to gm's live worker and are untouched.
+- Sent pw turn 60ba5e4eba4f (instruct, alive peer, wait false): find the cause of the 19:25:34Z lifecycle failure (read first, fix as Phase A, then Phase B: five bounded runs of lifecycle alone, rerun, full set once, one push including af5deab and 43e330d). Items 10, 4 and 3 stay open.
