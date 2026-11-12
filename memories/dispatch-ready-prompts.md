@@ -1279,3 +1279,11 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Validation after the install: the installed build matches the pushed HEAD, the skill serves, a live peer's next gm call succeeds, and no gm errors appear in the peers' journals in the update window.
 
 ## 19:57Z owner go-ahead: pid 2531 (orphaned gm npx gate, ppid 1, age 13624 s) was verified as the playwriter-project --gate process, sent SIGTERM, and exited. Still held for the owner: pid 88264 (playwriter-ws-server on port 19988).
+
+## 19:59Z owner decision on f26b5ce (AnEntrypoint/pw, launcher: a start replaces a gate whose browser has a different fingerprint, when no lease holds it): keep it, do not revert. Fix what is wrong with it and witness it. The owner's rule: keep all progress and fix issues.
+- Issues found in the diff (bin/playwriter-project, replaceStaleGate): (a) the 15 s waitFor result is ignored, so a gate that will not die is treated as stopped; (b) process.kill uses status.gate.pid from HTTP with no identity check, so a reused PID could be signalled; (c) the empty catch hides every error except ESRCH; (d) no witness exists for the replace path or for the lease-held path.
+- Ready prompt for pw, queued until its turn a4be00350360 ends (pw is busy now). Fold it into the same Phase A as the queue already sent:
+  1. Witness: a row that starts a gate with a different browser fingerprint and no lease, and asserts the old gate and its browser are gone and the new gate answers. A second row holds a lease and asserts the old gate is not replaced and the note prints.
+  2. Fix: if the old gate still answers after 15 s, return an error and do not acquire a lease on it.
+  3. Fix: before SIGTERM, confirm the PID is still this project's gate (command line and this project's profile or port). Signal nothing that fails the check. Replace the empty catch: ignore ESRCH only, and log anything else.
+  4. Phase B: run every witness touched, npm test once, record wall times, and push once if green. The local commits go with it.
