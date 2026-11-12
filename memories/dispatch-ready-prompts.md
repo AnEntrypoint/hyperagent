@@ -923,3 +923,5 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 09:27Z cycle: jayzee turn 60690dfe3975 ended with Kaggle regress running (pid 2989698): bounded wait b1tl7veyg; continuation on exit (planet, full test, one push). gm hosted release run 43188977416 (37c1da7) completed FAILURE: sent gm turn 43cc42be4349 to read the failed log once, fix in Phase A, Phase B once, one push. thebird latest turn ended 09:21 (c470584 run 5); still blocked on hy4 8793 rows, no push. Queued jayzee branch consolidation (558dba8) still waits for its push.
 
 ## 09:29Z jayzee Kaggle regress b1tl7veyg exited 0: RESULT PASS (7.939 ms vs 9.484, limit 11.855, 0 over). Continuation sent on session 01e1364f: planet, full test, one push.
+
+## 09:30Z extra started (haiku, cwd /workspace/extra). Turn 08fa3de39173: complete wiki from ../index, ../savi (renamed cleetus), ../spawn (renamed jayzee); Phase A docs, Phase B site build and link check, one push. Owner asked for it mid-turn.
