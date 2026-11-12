@@ -851,3 +851,5 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 06:03Z 2026-11-12 gm turn c0291816086a done: check-worker-growth now measures a second 400-call window after warm-up (limit unchanged); Phase B 47/47; pushed 707b58b. Open: macOS per-call retention (next macOS release run decides); ASan per-call retention 8.5 KB/call with quarantine off (excluded from asan job). Accepted: a true leak still shows in the second window.
 
 ## 06:07Z 2026-11-12 hosted verification run 43161954533 success: asan-arm and gdb-arm green on the fixed workflow (2eefcce). Closed the exit-2 item. Sent gm the ranked-work request with the open ASan retention and macOS items.
+
+## 06:08Z 2026-11-12 gm turn 179ba82f9384 done: ranked queue. Decided: restore check-restart-jobs and check-install-switch to the asan set in one push (both passed hosted); seven timing checks need a hosted dispatch first; ASan retention via LSan locally; macOS waits for its release run. Owner items 5-7 unchanged. Sent gm the queue turn.
