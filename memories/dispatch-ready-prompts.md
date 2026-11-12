@@ -758,3 +758,6 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 
 ## 2026-11-12T02:08Z gm turn 5ff9c745a05d ended: asan-arm cancelled by its 40-min timeout, timing checks fail under ASan
 - Decision (dispatcher, reversible): ASan job keeps memory-safety checks only; mcp-conformance, check-turn-economy, check-cancel-record, check-job-status-cancel move to the normal arm job. Sent gm the Phase A, one Phase B, one push.
+
+## 2026-11-12T02:10Z thebird turn d396d431473b done: localhost TUI reply confirmed; live witness row pushed 7d23621
+- Remaining reachable work: none. Package going live is blocked on the other session's uncommitted build hunks; Pyodide split needs the owner's pyodide-minimal repo. Not sent anything new; thebird idle.
