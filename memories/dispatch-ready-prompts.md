@@ -1239,3 +1239,10 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 ## 19:28Z cycle: no turn ended since fx 19:17:10. Running: pw 208d9c3e9305 (run_code at 19:27); gm 12163625bc3f (compaction finished; gm-tool phase-b running on build/release, log /tmp/gm-phase-b-433.log, 2m13s at 19:27); index 2d8f5d9d27a2 (run_code at 19:27; job 583629 alive); fx b11bc4279045 (Phase B PID 615623 at 680 s; wait bqbbskppa open until about 20:47). Monitor bozmvgotf armed to about 19:55Z.
 - Decision: gm's Phase B writes to a fixed /tmp name (/tmp/gm-phase-b-433.log). That is the same collision defect pw hit with /tmp/phase-b3*. Ready prompt for gm, sent on its next idle: write Phase B logs and results under mktemp -d, never a fixed /tmp name, and record the collision in its REPORT.
 - Orphan 286399 (fx ask, owner-held) is at 475 MB and rising about 7 MB a minute. Memory 8 GB available of 14 GB; swap 2 of 3 GB used.
+
+## 19:31Z cycle: pw turn 208d9c3e9305 ended 19:29:29 (672.8 s). REPORT open, nothing pushed. Local commits e851ebe, 26d6554, 7edb948 sit on b957ba4. npm test exit 1 (32208 ms) at test/lifecycle.cjs:102, where the browser was gone mid-hold; f1 exit 0 (8444 ms); lifecycle alone exit 0 (41393 ms).
+- Fact: pid 9567 is gm's own npx gate (cwd /workspace/gm, parent 9560, gm run 2026-11-12-16-13-13), not another tool's. Pw is told to rule gm's gate in or out as the cause.
+- Decision: pw's runner must exit with the worst exit of its rows. Its Phase B reported 0 on a red npm test. Pw's Phase A fixes it first, with a witness.
+- Sent pw turn a4be00350360 (instruct, wait false): queue 1, 4, 6, 5, 8, 7, 2, 11. Items 9 (waits on the owner's repro) and 10 (gm's own repo) are excluded.
+- Ready prompt for gm, sent on its next idle, in the same send as the 19:18 run_code item: run_code does not reap a child a run started once the run returns; a broad grep kept running and needed a manual PID stop. The run tool must time out and reap what it starts.
+- Owner go-ahead: pid 286399 (fx ask orphan) was verified as the fx ask process, sent SIGTERM, and exited.
