@@ -769,3 +769,8 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 2026-11-12T02:32Z asan-arm 43140275825 on 785e8e1 cancelled by its 15-min timeout (02:16:51Z to 02:32:05Z)
 - Sent gm the root-cause continuation: find the hanging check from the hosted log, fix or move it, set timeout from hosted wall time, Phase A, one Phase B, one push.
 - gm and thebird idle; thebird has no reachable work; fx turn 35e14bf02a7f still running (ranking, 29 min).
+
+## 2026-11-12T02:46Z gm turn 9541a46dbc66 done: asan-arm cancelled at 15 min while check-install-switch ran; moved install-switch and parity-contract out; timeout 30 min; pushed b5eec42
+- Hosted asan-arm 43142719018 on b5eec42 in progress; one bounded wait (540 s) timed out.
+- Product lead for later (from gm): a relay re-exec under ASan did not complete on the hosted runner.
+- fx turn 35e14bf02a7f still running (about 40 min).
