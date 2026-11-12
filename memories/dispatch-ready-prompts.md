@@ -875,3 +875,5 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 06:49Z 2026-11-12 jayzee kaggle regress job exited 0, RESULT PASS (top tier median p99 10.532 ms, limit 15.009, 0 ticks over). Sent continuation turn 81558d5b7b78 (resume 01e1364f): Phase B once, then one push of 9 unpushed commits.
 
 ## 06:59Z 2026-11-12 jayzee turn 81558d5b7b78 done: pushed 5f8e497 (10 commits, Kaggle PASS, 306/0). Friction for gm: job_status wait moved to background after 60-120 s inside one run_code body; sent gm turn for the fix. fx turn 3dc0bb0c2e3a still running at 2236 s (5 ahead, 2 dirty); thebird turn 3a5a52b4724f still running at 2141 s (1 ahead). gm hosted e2ec546 in progress; df2bc0f success.
+
+## 07:05Z 2026-11-12 gm turn 8a2ad44aa261 ended with its 300 s witness running (pid 2675649); bounded wait started, continuation after exit (doc entry, explicit commit paths, one Phase B, one push). Hosted push run e2ec546 still in progress.
