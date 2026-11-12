@@ -881,3 +881,7 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 07:09Z 2026-11-12 gm 300 s job_status witness passed in one call (ok true, waitedMs 300001). Sent gm the continuation: doc entry, explicit commit, Phase B once, one push.
 
 ## 07:13Z 2026-11-12 gm turn 8e93bc0b60a6 done: job_status wait fixed (bounded by the job timeout plus 250 ms grace), pushed dd41d5f after Phase B 48/48; check-job-wait 65 s passed in one body. Hosted run e2ec546 still in progress. Monitor event 07:13Z is that turn ending.
+
+- 07:25Z thebird: turn 3a5a52b4724f ended (87c7c2f local, full witness exit 1 on npm 404 row, not pushed). Sent continuation ca2c1d0c4e54: find npm row cause, fix, one Phase B push.
+
+## 08:28Z cycle: gm resumed 57a3f21e turn 5b5f4af8ca31 (96b31f0 README stretch, Phase B once, one push). jayzee resumed 01e1364f turn 886eb407eb27 (slot-order release tuning, Phase B once, one push). fx 3dc0bb0c2e3a and thebird ca2c1d0c4e54 still running. gm hosted 43173608005 (dd41d5f) success.
