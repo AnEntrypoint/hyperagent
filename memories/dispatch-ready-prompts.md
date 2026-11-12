@@ -1177,3 +1177,9 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Decision: option 1. It changes only the test, keeps the product's open-page behaviour (F1 needs it), and idle retirement stays covered by lifecycle.cjs and leases.cjs. Decided by the dispatcher rather than handed back, since it is reversible.
 - Sent pw turn c66020c764a7 (wait false): test change re-derived from the tree, row in PENDING_VALIDATION, no comments in code; Phase B runs all five rows once; one push when green. Pw also reports the gm feedback (run_code refuses node:fs, so /proc checks need a script file plus a shell call).
 - Ready prompt for gm, queued (gm is busy in dadc260e6f83; send on its idle): the node:fs refusal in run_code, so simple /proc checks need a script file plus a shell call. Either allow the reads the verbs cannot cover, or document the allowed module list in the skill.
+
+## 18:21Z index: bounded wait bs9ig98q0 timed out at one hour (wait-exit 124), job 193720 still alive (4026 s, zero-GLB compaction). A new bounded wait, bqg1dugg2 (timeout 14400 s on PID 193720), is running in the background. Index's continuation (404 fix, then 918 unindexed GLBs, then zero-GLB resume) waits for that job to exit, per the rule. The zero-GLB scope stays with the owner: at about 129 KB/s the job is estimated at about a day.
+- Monitor expired at 18:21Z (4 events delivered). Re-armed as bnyw1cun1 with the journals of fx, index, gm, extra and pw.
+- Pw: turn c66020c764a7 is running (194 s at 18:20Z); its Phase A commit 0c807f9 closes the memory test's pages before session end. Gm: turn dadc260e6f83 is running (1320 s); journal active at 18:20:43Z.
+- Fx: turn bd4dcc366c1c ended 18:06:35Z. Its Phase A workers are still committing (repo head 9581a917). Journal quiet for 14 minutes, claude process alive; no continuation sent.
+- Orphan fx ask PID 286399: 369 MB and growing. Owner-held.
