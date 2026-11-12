@@ -935,3 +935,5 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 09:37Z model switch for fx queued at turn end: type /model claude-fable-5-5 into the session (probe; fall back to claude-fable-5-1 if rejected), then relaunch-safe model via resume_project model param on session 255b1fc0. jayzee already on claude-fable-5-2 (no change). Owner asked to use the slash commands.
 
 ## 09:38Z REVISION: fx model is claude-fable-5-2 (owner: the intended one). Replaces the 5-5 probe in the queued fx switch: send /model claude-fable-5-2 at turn end, then set the launch model via resume_project model claude-fable-5-2 on session 255b1fc0.
+
+## 09:41Z fx model changeover to claude-fable-5-2 started now (owner: interruption intentional): resume_project model on session 255b1fc0, task k23ju270h. One instruction follows the changeover: the orchestrator-native superagent work, then consolidation.
