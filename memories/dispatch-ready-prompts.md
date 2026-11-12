@@ -835,3 +835,5 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 05:11Z 2026-11-12 gm turn 0c53bbe7df33 done: clock-mutations ok on the final run (both mutants caught; 41.76 s); worker-growth quarantine in place with the 4.6 MB ASan remainder open. gm commit 9e2d184 local. Sent Phase B and held hosted dispatch.
 
 ## 05:23Z 2026-11-12 gm turn bd20e50267ea done: Phase B pushed as edb8fa4 (47/47). Hosted run 43159800334 (check-restart-jobs, check-install-switch) running; bounded gh run watch started, result to be sent to gm on exit.
+
+## 05:29Z 2026-11-12 hosted run 43159800334 on edb8fa4: asan-arm completed with failure at "Check asan build (conformance, one run)"; gdb-arm in progress; log not available until the run completes. Background wait (b6ik7nr3r) still running; result goes to gm on exit.
