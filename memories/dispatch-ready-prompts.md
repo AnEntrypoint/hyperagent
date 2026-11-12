@@ -786,3 +786,6 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 
 ## 2026-11-12T03:20Z gm turn 422e589ffd5f done: timing checks out of asan, pushed 14c0a33; hosted run 43146403244 pending (one bounded wait timed out)
 - restart-jobs process-gone finding recorded for the normal arm job.
+
+## 2026-11-12T03:40Z fx turn 35e14bf02a7f done: top item pushed 8127c652 (native loop wait-on-PID, restart defect fixed). CI refused by account billing (owner). Sent next items: loop gaps, TUI wasm efficiency, yolo name.
+## 2026-11-12T03:40Z gm asan-arm 43146403244 on 14c0a33 failed on check-lazy-browser and check-browser-scope; moved out of asan set (dispatcher decision), gm Phase A/B/push.
