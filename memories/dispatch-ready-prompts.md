@@ -859,3 +859,5 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 06:14Z 2026-11-12 seven-timing run 43166024906 was cancelled with no jobs (superseded by the c0540a0 push); re-dispatched the same seven checks once on main; bounded wait started; restore only if it passes.
 
 ## 06:21Z 2026-11-12 owner: fx set to haiku; resumed fx session 255b1fc0 on haiku (turn 3dc0bb0c2e3a), Phase B and one push for the stretch. Resumed jayzee session 01e1364f (turn 4f1351a2753a): Kaggle check first; blocked if still unsigned, else kaggle:regress, Phase B, one push. jayzee model unchanged (claude-fable-5-2).
+
+## 06:23Z 2026-11-12 owner: all agents must drive progress and push all work. State: fx 4 unpushed (Phase B running, turn 3dc0bb0c2e3a); jayzee 8 unpushed (turn 4f1351a2753a); thebird ba83e3d committed locally, resumed f76f541c on haiku (turn 3a5a52b4724f) for check, verify, witness, one push; gm clean, waiting on timing run. hy4-relay has no remote and only gm runtime memory modified, left alone.
