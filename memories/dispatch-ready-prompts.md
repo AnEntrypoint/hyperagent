@@ -925,3 +925,5 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 09:29Z jayzee Kaggle regress b1tl7veyg exited 0: RESULT PASS (7.939 ms vs 9.484, limit 11.855, 0 over). Continuation sent on session 01e1364f: planet, full test, one push.
 
 ## 09:30Z extra started (haiku, cwd /workspace/extra). Turn 08fa3de39173: complete wiki from ../index, ../savi (renamed cleetus), ../spawn (renamed jayzee); Phase A docs, Phase B site build and link check, one push. Owner asked for it mid-turn.
+
+## 09:33Z READY PROMPT for extra (send at turn 08fa3de39173 end, instruct on project extra): we want the wiki to match the reference look: open https://www.spawn.co/@lanmower/game-16@dev and use it as the visual and structural target for the site (layout, navigation, typography, page structure). Browse it with the playwriter setup, not another browser tool, and record in docs/PENDING_VALIDATION.md what it shows and how the site matches it. Keep the savi-to-cleetus and spawn-to-jayzee renames.
