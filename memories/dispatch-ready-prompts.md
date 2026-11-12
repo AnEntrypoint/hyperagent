@@ -739,3 +739,8 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 
 ## 2026-11-12T01:25Z thebird turn 6d8e26f35ef9 ended (680559a pushed; package not live until the other session commits build hunks; Pyodide split blocked on owner bundle repo)
 - Sent continuation on session f76f541c: manifest 503 retry, jsDelivr IPv6 reset fallback, Phase A/B, one push.
+
+## 2026-11-12T01:47Z gm turn 3a723c6d11f7 ended with asan-arm still running (arm-diagnose 43129887842)
+- gm: asan-arm in_progress after its bounded wait; gdb-arm success. No fix or push.
+- Dispatcher waited twice on the run (540 s each, timeout 124); asan-arm still in_progress at about 03:50 local. Not re-prompted: a new prompt while the job runs is not allowed.
+- Next: read asan-arm when it exits, fix and push once if it fails.
