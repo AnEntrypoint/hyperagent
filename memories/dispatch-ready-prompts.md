@@ -744,3 +744,8 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 - gm: asan-arm in_progress after its bounded wait; gdb-arm success. No fix or push.
 - Dispatcher waited twice on the run (540 s each, timeout 124); asan-arm still in_progress at about 03:50 local. Not re-prompted: a new prompt while the job runs is not allowed.
 - Next: read asan-arm when it exits, fix and push once if it fails.
+
+## 2026-11-12T01:56Z fx and thebird turns ended; continuations sent; asan-arm cancelled and superseded
+- fx turn 34a3a12ddb29: FX_CONFIGURED_PROVIDERS honoured on wasm, pushed 22d48e96 (Phase B green). Next for thebird: re-vendor fx-term.wasm and pass the env.
+- thebird turn a885a3537d0e: manifest retry and jsDelivr fallback pushed 04b7685 (PASS 16). Sent: re-vendor wasm, TUI hi row, Pyodide-lock row, one push.
+- asan-arm 43129887842 on 4b74e21 cancelled (not failed) at 01:55; newer run 43135395150 on b9188aa in progress. Sent gm one bounded wait and the fix-and-push rule for that run; gm asked to find what cancelled it if cancelled again.
