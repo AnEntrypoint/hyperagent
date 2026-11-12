@@ -1020,3 +1020,5 @@ Phase A: copy those scripts into ../index scripts/compact/ with the same behavio
 Phase B: download each GLB (bounded parallel workers), classify skinned (has skins) or static, compact, write ./model/<name>.glb; verify every file as above; report count, failures with cause, bytes before and after. Commit scripts and .gitignore only, one push to origin main. No token or invite code in files.
 
 ## 14:0xZ jayzee Kaggle regress for 31c41e4 tree exited FAIL: machine class GenuineIntel-6-79-0 holds 131072 bodies; candidate median p99 8.313 ms with 1 tick over 16.7 ms. Not pushed. Continuation sent on session 01e1364f, turn 1fe02198fe7c: find cause (real or noise), fix in Phase A if real, regress once more, push only on PASS with planet and full test green.
+
+## 14:1xZ owner: compact each GLB as it downloads and delete the original; textures NOT resized, only meshopt and KTX, skinning preserved. Index was idle (eeba4dac4b44 ended 12:38; docs/ALL_GLBS.md has 5783). Sent compaction turn 23fb789f26b0 on index session d3697fdf-eacf-4f5e-9343-9250f17e3fa2. Index is not a git repo (/workspace/index): no commit or push possible, no remote named; reported to owner.
