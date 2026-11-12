@@ -933,3 +933,5 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 09:37Z cycle: gm turn 43cc42be4349 pushed db264f6 (Phase B 49/49; windows asan_retention guard and relay-reexec hold 45 s). Hosted run 43192324781 in progress, relay-reexec witness pending; not polled. jayzee turn 3d1b0c8e0f68: Kaggle run 43 PASS (ratio 0.83; 7500 minor faults per run, load 1143 to 182 ms, decided accepted with no tick over); planet running, then full test and one push. extra busy on 68b3567b6a26 (Spawn access and wiki). fx busy 3dc0bb0c2e3a. thebird idle, blocked on hy4 rows.
 
 ## 09:37Z model switch for fx queued at turn end: type /model claude-fable-5-5 into the session (probe; fall back to claude-fable-5-1 if rejected), then relaunch-safe model via resume_project model param on session 255b1fc0. jayzee already on claude-fable-5-2 (no change). Owner asked to use the slash commands.
+
+## 09:38Z REVISION: fx model is claude-fable-5-2 (owner: the intended one). Replaces the 5-5 probe in the queued fx switch: send /model claude-fable-5-2 at turn end, then set the launch model via resume_project model claude-fable-5-2 on session 255b1fc0.
