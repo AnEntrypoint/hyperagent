@@ -794,3 +794,5 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 2026-11-12T03:52Z fx turn 5b00cc16bc3e ended with Phase A committed; TUI wasm measurement running in its sub-agent; Phase B then one push follows; no new prompt sent
 
 ## 2026-11-12T03:57Z fx idle since 03:51Z with Phase A (98c4e5ec, 1ae19d57, b66a6cb4, 935ceb23) and untracked benchmarks/term_wasm_probe.mjs; sent continuation turn 1af6320ef4fe: collect measurement, Phase B, one push
+
+## 2026-11-12T03:58Z fx turn 1af6320ef4fe ended on a usage limit (Fable). Owner pushed; resume fx when the limit is lifted (session 255b1fc0).
