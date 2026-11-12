@@ -1477,3 +1477,9 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Sent gm turn 25c689238246 (instruct, alive peer, same session): name the pw relay's first-pass cause or fix it with a witness; a red control for the commit-time legs against 3971b52; the doc entries held as a local commit with no push; clock-mutations excluded and recorded; Phase B for items 1 and 2, one push if green, one hosted status call; validate the install only if the link changes.
 - Fx: turn 48c6579b82a5 is still running: the pane shows a Phase B job PID 1591761 writing /tmp/fx-phase-b/final5.log, with a bounded wait. Not idle; no send.
 - Monitor bs6qkam6u was stopped at 23:38 and replaced by brv08nror, armed 23:38, expires about 00:08 local (23:08 UTC next day is wrong; it expires about 00:08 UTC).
+
+## 23:44Z index: the result event for index is status "timeout", duration 14400 s: the four-hour turn deadline of an instruct that was sent with wait true at about 19:43. Per the skill, timeout is not failure. peer_status shows index alive and busy, with output_session d3697fdf, and the pane shows it calling gm ten times. No send while busy. Its compaction chain is alive: gm-job shell 1538787, node compact.mjs 1538792 (the process that was 1266446 earlier; index restarted it at about 23:00). Its last journaled text is from 19:43; its tool calls continue.
+- Dispatcher habit recorded for index: a long turn goes out with wait false and is collected with turn_result, so no client call outlives the four hours. The current index turn cannot be changed; the next index send uses wait false.
+- Still open: index's lost body-2064 (killed by the 22:40:33Z re-exec, before the hold change in 7223f3d) is not in its report; the continuation names it.
+- Monitor brv08nror (armed 23:38, expires about 00:08 UTC) caught this timeout.
+- Correction to the 23:38Z entry: the monitor expiry is about 00:08 UTC, the same day.
