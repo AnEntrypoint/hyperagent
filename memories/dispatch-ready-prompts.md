@@ -1277,3 +1277,5 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
   4. Phase B: build, every witness touched, phase-b once on the final tree, wall times recorded, one push with ship --push only if green. Then install with no settings write and report the installed build's commit. The dispatcher validates the install.
   Standing: commit as lanmower only, with no trailer. Any check stops every process it starts, as a tree. Stop your own processes by PID; never pkill or killall. End with the REPORT line.
 - Validation after the install: the installed build matches the pushed HEAD, the skill serves, a live peer's next gm call succeeds, and no gm errors appear in the peers' journals in the update window.
+
+## 19:57Z owner go-ahead: pid 2531 (orphaned gm npx gate, ppid 1, age 13624 s) was verified as the playwriter-project --gate process, sent SIGTERM, and exited. Still held for the owner: pid 88264 (playwriter-ws-server on port 19988).
