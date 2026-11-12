@@ -1197,3 +1197,7 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Gm, ready prompt queued (gm is busy in c557528de0cf; send on its idle): correction to the earlier instruction. There is no revert. Keep the pin on a41c6af and the patch, and fix scenario 2 forward: the gate-side fix, plus a pin to the pw commit that extends the patch when pw pushes it. Phase B must be green before the push, and scenario 2 is not weakened.
 
 ## 18:36Z index: job 193720 exited (bounded wait bqg1dugg2, exit 0, job no longer alive). Index turn 1ef976508f50 (GLB-only re-scope) is running, 80 s in. Pw turn c66020c764a7 running (1097 s); gm turn c557528de0cf running (211 s). The pw and gm corrections (keep the patch, push ahead; no revert) stay queued until those peers go idle.
+
+## 18:47Z cycle: no turn ended. Running: index 1ef976508f50 (789 s, active 18:46:49Z); pw c66020c764a7 (1806 s, active 18:46:13Z, head still 0c807f9); gm c557528de0cf (919 s, active 18:46:48Z). Fx workers still committing (head 693e3c9a). Memory 8.2 of 15 GB used, 0.2 GB free, swap 2.8 of 4 GB.
+- Defect in pw's Phase B: pw's logs in /tmp/phase-b3* are overwritten by another process (it found a 2026-11-11 file there), so its runner misreads its own result. Ready prompt for pw, queued until its turn ends (busy now): write Phase B logs and results into a directory from mktemp -d, never a fixed /tmp name, because other projects use /tmp too. Record the collision in its REPORT.
+- Orphan fx ask 286399: 259 MB, owner-held.
