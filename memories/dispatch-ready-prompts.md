@@ -761,3 +761,7 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 
 ## 2026-11-12T02:10Z thebird turn d396d431473b done: localhost TUI reply confirmed; live witness row pushed 7d23621
 - Remaining reachable work: none. Package going live is blocked on the other session's uncommitted build hunks; Pyodide split needs the owner's pyodide-minimal repo. Not sent anything new; thebird idle.
+
+## 2026-11-12T02:26Z gm turn b7d996647aa7 done: asan-arm memory-safety only, timeout 15 min, pushed 785e8e1
+- Decision (dispatcher, reversible): check-worker-growth also left out of the ASan job (its 2 MB RSS limit trips under ASan allocator growth). Revisit with an ASan-aware limit if wanted.
+- Hosted asan-arm 43140275825 on 785e8e1 in progress; one bounded wait (540 s) timed out with it still running. Re-check at the next cycle.
