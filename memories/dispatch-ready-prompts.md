@@ -861,3 +861,5 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 06:21Z 2026-11-12 owner: fx set to haiku; resumed fx session 255b1fc0 on haiku (turn 3dc0bb0c2e3a), Phase B and one push for the stretch. Resumed jayzee session 01e1364f (turn 4f1351a2753a): Kaggle check first; blocked if still unsigned, else kaggle:regress, Phase B, one push. jayzee model unchanged (claude-fable-5-2).
 
 ## 06:23Z 2026-11-12 owner: all agents must drive progress and push all work. State: fx 4 unpushed (Phase B running, turn 3dc0bb0c2e3a); jayzee 8 unpushed (turn 4f1351a2753a); thebird ba83e3d committed locally, resumed f76f541c on haiku (turn 3a5a52b4724f) for check, verify, witness, one push; gm clean, waiting on timing run. hy4-relay has no remote and only gm runtime memory modified, left alone.
+
+## 06:24Z 2026-11-12 owner: gm must enforce commit-and-push for all work as part of its own setup. Sent gm turn a1eec2d35323: check every workspace repo (gm, fx, thebird, jayzee, hy4-relay, hyperagent) for uncommitted or unpushed work, with a Phase B step that commits and pushes or reports the blocker.
