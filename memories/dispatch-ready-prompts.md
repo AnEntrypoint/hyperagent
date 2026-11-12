@@ -937,3 +937,5 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 09:38Z REVISION: fx model is claude-fable-5-2 (owner: the intended one). Replaces the 5-5 probe in the queued fx switch: send /model claude-fable-5-2 at turn end, then set the launch model via resume_project model claude-fable-5-2 on session 255b1fc0.
 
 ## 09:41Z fx model changeover to claude-fable-5-2 started now (owner: interruption intentional): resume_project model on session 255b1fc0, task k23ju270h. One instruction follows the changeover: the orchestrator-native superagent work, then consolidation.
+
+## 09:51Z stale chain stopped by owner order: gm serve 2914278 and gm-core worker 2914279 (cwd /workspace/sa, parent freebuff 2911414 in /workspace/bota left running). Earlier PIDs 453465, 728082, 728083 were already gone.
