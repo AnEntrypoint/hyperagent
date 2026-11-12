@@ -728,3 +728,7 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 - Owner: fx ask works in the browser with the local key; the interactive TUI still fails on "hi". The blocker is the fx terminal surface not reading FX_CONFIGURED_PROVIDERS.
 - Priority: first item for fx when its turn ends, ahead of the native loop and efficiency items. fx is busy on 5ea3ebbcdc50 (memory agent Phase A).
 - Ready prompt for fx's next idle event (session 255b1fc0, resume_project): "we want the fx terminal surface to honour FX_CONFIGURED_PROVIDERS the way the core wasm does, first, before anything else in the queue, so the thebird TUI sends hi as a user turn with the local provider. Phase A: the change in src/wasm_term_main.zig and fx.runWasmTerminal, with a witness that a custom provider from the env answers a typed hi in the terminal surface. Phase B: build, witness, push once. REPORT: ..."
+
+## 2026-11-12T00:55Z jayzee process exited; not resumed (no reachable item until Kaggle sign-in)
+- jayzee (session 01e1364f) no longer appears in peer_status. Its last turn b52512480dd9 was handled and recorded; no work is reachable until `! kaggle auth login`.
+- Its Phase A (four local commits: cbc3ff3, 9c99984, 1af7a00, 8096ca1, plus 5684433, df4e009, e05eef6, 2169f8a) stays unpushed. Resume session 01e1364f with the gate prompt once the owner signs in.
