@@ -755,3 +755,6 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 - gm asan-arm 43135395150 in_progress; gdb-arm success.
 
 ## 2026-11-12T02:06Z thebird turn 96e9c3aa2510 done: TUI on configured provider, pushed 1a0f347; asked for ranked work and a localhost browser TUI check (session f76f541c)
+
+## 2026-11-12T02:08Z gm turn 5ff9c745a05d ended: asan-arm cancelled by its 40-min timeout, timing checks fail under ASan
+- Decision (dispatcher, reversible): ASan job keeps memory-safety checks only; mcp-conformance, check-turn-economy, check-cancel-record, check-job-status-cancel move to the normal arm job. Sent gm the Phase A, one Phase B, one push.
