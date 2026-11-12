@@ -805,3 +805,5 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 2026-11-12T04:24Z gm turn d5dc215182eb done: seven moved checks ok on release run 43149998872 (47 run, 0 failed); gm pushed 22695bb, 369ff52, 8da6cb1 (docs only)
 
 ## 2026-11-12T04:27Z gm idle after 8da6cb1 (docs, hosted run 43154592183 pending); asked for ranked work incl. relay re-exec ASan lead. fx still on the Fable usage limit (owner not yet confirmed lifted).
+
+## 2026-11-12T04:29Z gm turn f46f0ebdc169 done: ASan relay re-exec and restart-jobs pass locally on build/asan; hosted causes open; pushed caf9e7f (docs, 47/47). Dispatcher decision on item 4: timing checks stay out of ASan (already decided).
