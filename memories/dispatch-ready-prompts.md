@@ -783,3 +783,6 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 - Decision (dispatcher, reversible): move those three out of the ASan set, keep them in the normal arm job; restart-jobs process-gone finding recorded for a look on the normal job.
 - Sent gm Phase A, one Phase B, one push.
 - fx turn 35e14bf02a7f running about 70 min, in Phase B (witness wait by PID); not stuck.
+
+## 2026-11-12T03:20Z gm turn 422e589ffd5f done: timing checks out of asan, pushed 14c0a33; hosted run 43146403244 pending (one bounded wait timed out)
+- restart-jobs process-gone finding recorded for the normal arm job.
