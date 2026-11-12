@@ -813,3 +813,5 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 2026-11-12T06:39Z gm turn c2143cd0b1f5 sent: ranked work request (no push). Ledger commit 64fbcb2.
 
 ## 2026-11-12T06:45Z gm turn c2143cd0b1f5 done: ranked queue (1 relay re-exec hosted cause, 2 restart-jobs hosted cause, 3 lazy-browser/browser-scope local on build/asan, 4 timing owner decision, 5 macOS blocked, 6 owner items). Authorised one read-only gh log read for 1 and 2; sent continuation turn for items 1-3 with one Phase B push. Stale monitor event 04:38Z (gm turn end) was already covered by f46f0ebdc169 and is not new work.
+
+## 2026-11-12T06:50Z gm turn 0d56dc45b088 done: item 3 ok locally on build/asan; browser install "Unsupported platform" on arm and 503 hosted are launcher causes; 22357a1 pushed (47/47). Items 1 and 2 open; sent turn to read the hosted per-check logs (read-only) and close them with one push. Monitor event 04:40Z is stale.
