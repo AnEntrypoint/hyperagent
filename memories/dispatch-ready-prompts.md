@@ -819,3 +819,5 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 2026-11-12T06:58Z gm turn b38823171236 done: item 2 closed, fixture sleep 8 -> 30 (check-restart-jobs timing), pushed 7bad952. Item 1 open: no per-rpc log in the cancelled run. Sent turn to run check-install-switch alone on hosted asan-arm with per-rpc log; push only if code cause. Monitor event 04:46Z is stale.
 
 ## 2026-11-12T06:59Z gm turn 7876e5bffb01 done: blocked on a workflow_dispatch input push and per-rpc logging. Dispatcher approved both as a diagnostic change: one Phase B push, then one hosted check-install-switch run. Sent turn; no fx or jayzee change. Monitor 04:47Z stale.
+
+## 2026-11-12T07:03Z gm turn 99cdd85df4e6 done: pushed 9c5f690 (dispatch input and per-rpc trace; 47/47). Bounded wait on hosted run 43157368074 exited 0; sent gm the continuation to read its per-rpc log and record item 1.
