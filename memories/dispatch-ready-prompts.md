@@ -941,3 +941,5 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 09:51Z stale chain stopped by owner order: gm serve 2914278 and gm-core worker 2914279 (cwd /workspace/sa, parent freebuff 2911414 in /workspace/bota left running). Earlier PIDs 453465, 728082, 728083 were already gone.
 
 ## 09:52Z cycle: gm hosted release run 43192324781 (db264f6) SUCCESS. jayzee pushed 286fe7b (Phase P, Kaggle 43 PASS): sent branch consolidation turn eb652d199d8a (archive tag for backup/pre-squash, delete engine-phase-b-ci and youthful-edison after ancestor checks). extra turn 68b3567b6a26 ended early; wiki download documented and clone on main; push held: /workspace/extra has no remote, owner must name it. Continuation turn 04851dfdef1b: finish toc, build, link check locally, no push. fx still busy: changeover k23ju270h not returned; model still haiku. thebird ahead 6, idle, blocked on hy4.
+
+## 09:58Z freebuff: global npm package was 0.2.34 (stale), registry latest 0.2.36. Updated with npm install -g freebuff@latest to 0.2.36 (verified). Running freebuff pid 2911414 runs the current manicode binary 0.2.36 and was left running.
