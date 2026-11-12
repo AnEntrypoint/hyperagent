@@ -829,3 +829,5 @@ Owner asked to set jayzee's model to fable 5.2 with /model. Jayzee is busy on f6
 ## 2026-11-12T08:00Z gm turn 7dd593aba7d7 done: ranked queue received (1-2 restore to asan set; 3 local ASan trials of excluded timing checks; 4-5 owner; browser and macOS blocked). Dispatched items 1-2 as one hosted run and item 3 locally; item 4 kept at memory-safety only.
 
 ## 2026-11-12T08:20Z item 3 local ASan trials: 7 of 9 ok; check-worker-growth (+19504 KB over 400 calls, limit 2048) and clock-mutations (30 s wait cap; mutant passes check-turn-economy) failed; sent gm both as defects plus the held hosted dispatch. Monitor bg5n0qoim re-armed.
+
+## 05:07Z 2026-11-12 gm turn 7b0adf4c09aa done: check-worker-growth quarantine disabled for its session (18 of 19.5 MB accounted; 4.6 MB ASan remainder open); clock-mutations still fails on the pid-path mutant (job.cpp:545) after the turn-economy edit. Sent gm the defect to fix before the held hosted dispatch. Earlier ledger lines dated 08:xx were written with a wrong clock; the real times are about 05:00-05:10Z.
