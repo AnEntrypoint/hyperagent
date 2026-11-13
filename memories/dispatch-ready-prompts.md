@@ -1664,3 +1664,7 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 
 ## 02:14Z gm: turn 4362d3e26649 ended 02:14:01 (474.7 s) with its Phase B running. Job: gm-tool phase-b build/release, PID 2312996 (started about 02:14:08 on HEAD 1a9017a, origin 8834329). Bounded wait started as background bnw2xozgy, 2700 s; the continuation goes out with the job's result when it exits. No new prompt while it runs. Last handled gm ts 2026-11-13T02:14:01.102Z.
 - Pw's full set on ee4d3d7 (PID 2297557) is still running under bmalki05s. Its continuation is queued as in the 02:05Z entry.
+
+## 02:17Z gm: bounded wait bnw2xozgy exited 0 at 02:16:41Z (Phase B PID 2312996 gone). Full set on 1a9017a: 58 run, 0 failed, rc 0, wall 151.2 s, longest check-job-wait 65.1 s; log /tmp/pb15/phase-b-full.log. Gm's turn 4362d3e26649 had ended 02:14:01 with this job running; gm had not resumed on its own.
+- Sent gm turn 101bd6f36eb4 (instruct, wait false): one push of 1a9017a with ship --push, then one hosted status call; install 1a9017a with gm install --local, validate from the worker's executable path, the skill, one live peer call, and gm errors in the busy peers' journals from 02:05Z; the REPORT names each listed witness of the job-cap change and of c65eb4a with its output line, and the longest step and its wall time. Last handled gm ts 2026-11-13T02:14:01.102Z.
+- Pw's full set on ee4d3d7 (PID 2297557) is still running under bmalki05s.
