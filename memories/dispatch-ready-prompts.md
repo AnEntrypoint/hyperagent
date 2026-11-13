@@ -1996,3 +1996,11 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - jayzeefile.io, 10 rows: DNS does not resolve from this host (curl error 6). Unreachable here, not a 404.
 - spawnfile.io, 9 rows: reachable (200 HEAD, 206 ranged GET, content-type model/gltf-binary). Missing from disk. They are not the 9 index downloaded at 09:58Z; those were value.<hash> play.spawn.co names, and the re-probe shows that set now 404.
 - Index's turn 7c00692d16cf is covering the 852 unindexed rows and the 31 non-spawn rows, which includes these 9 spawnfile rows.
+
+## 10:38Z index turn 7c00692d16cf ended (turn_end 10:34:05Z) while its compaction still runs; continuation waits on the job
+- Step 1: 852 unindexed play.spawn.co rows downloaded, 0 failed. Each passed the glTF magic and was hard-linked into glb-original/, never overwritten. Index dropped my name-hash gate, because 0 of 852 matched it.
+- My check of that gate: the name hash is not a reliable content hash. In a sample of 5 existing value.* originals, 1 matched; in 5 new downloads, 0 matched. So the gate cannot be applied across the set. Checks in use: glTF magic, the download's recorded sha256, and strict verify. Accepted as a dispatcher decision; the reason is recorded here.
+- Step 2: the 31 non-spawn rows probed. 9 spawnfile.io rows downloaded (206, glTF magic). 12 www.jayzee.co rows 404. 10 jayzeefile.io rows ENOTFOUND. The 22 unreachable rows are to be retried later.
+- Compaction of the 861 new originals (docs/UNINDEXED_LINKS.md, compact-state/unindexed-compact-results.jsonl, lock compact-state/locks/unindexed-compact.lock) is running as pid 3724208 at 10:37Z, 22 of 861 done at 10:34Z.
+- Counts at 10:37Z: glb-original/ 1973 (was 1112); model/ 46785 until compaction writes.
+- Dispatcher: bounded wait (up to 3 h) on pid 3724208 in background task bytbf78eu. On exit, send index the continuation on d3697fdf with the compaction result, the 22 later retries, and the REPORT line.
