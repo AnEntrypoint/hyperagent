@@ -2004,3 +2004,8 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Compaction of the 861 new originals (docs/UNINDEXED_LINKS.md, compact-state/unindexed-compact-results.jsonl, lock compact-state/locks/unindexed-compact.lock) is running as pid 3724208 at 10:37Z, 22 of 861 done at 10:34Z.
 - Counts at 10:37Z: glb-original/ 1973 (was 1112); model/ 46785 until compaction writes.
 - Dispatcher: bounded wait (up to 3 h) on pid 3724208 in background task bytbf78eu. On exit, send index the continuation on d3697fdf with the compaction result, the 22 later retries, and the REPORT line.
+
+## 10:41Z unindexed compaction pid 3724208 exited (exit 0); continuation sent
+- Results: 852 rows, 843 ok, 9 failed. model/ 46785 → 47628 (+843). glb-original/ 1973.
+- The 852-row table did not cover the 9 spawnfile.io downloads, so those are compacted in this turn.
+- Sent on d3697fdf, turn 7e8fe8694e96, wait false: classify the 9 failures and fix any tooling cause; compact the 9 spawnfile GLBs add-only with a lock; retry the 22 unreachable non-spawn rows once; confirm the 404 rows, the 37 and the quarantine are unchanged; REPORT line.
