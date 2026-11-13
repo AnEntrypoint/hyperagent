@@ -1704,3 +1704,8 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Also in the 02:19Z continuation, still open: the exit-144 cause and the witnesses for af027a4 are not yet reported.
 - Index: compaction PID 2285827 live; the 02:58:48Z deadline is unchanged.
 - Pw: its full set on 82d098f (PID 2335908) is still under bounded wait b1a8592gc.
+
+## 02:30Z gm: bounded wait boyl2ngtd exited 0 at 02:30:00Z (cmake build PID 2340331 gone; the wait does not give the build's own status, so gm confirms it in Phase B). Gm had not resumed on its own.
+- Sent gm turn ce401c6508fc (instruct, wait false): confirm the build is current for af027a4; run the witnesses listed for the gate-tree stop and for check-browser-scope-tree (red leaves a gate alive and fails; green finds none); rerun failing rows alone; full set once; one push of af027a4 only if green; one hosted status call; the exit 144 cause; no Monitor, bounded waits on PIDs.
+- Queued for gm's next stretch, not this push: pw's report that a new gm run replaces another task's active run (b8bdb4). Gm checks that and fixes it in its own Phase A, after af027a4 is pushed.
+- Last handled gm ts 2026-11-13T02:27:42.816Z.
