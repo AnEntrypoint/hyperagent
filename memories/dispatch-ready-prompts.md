@@ -1738,3 +1738,8 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Gm left its docs edit uncommitted (Phase B defect entry and first_step_correction decision). A change is committed locally as it is made, so this is recorded as a process defect.
 - Sent gm turn d382c76ed6a0 (instruct, wait false): commit the docs edit; Phase A for first_step_correction (session flag at run creation, prefix test in next_context, witness), grep every writer of each field read before editing; no build in Phase A; Phase B once; one push; one hosted status call; install of the new build with the same validation. Last handled gm ts 2026-11-13T02:51:01.128Z.
 - Pw: final full set on 91141ef (PID 2378572) still running under bkqlsg03v.
+
+## 02:56Z pw: bounded wait bkqlsg03v exited 0 at 02:56:13Z (final full-set PID 2378572 gone). Final full set on 91141ef: 24 rows exit 0, 0 non-zero, runner wall 791025 ms, tree 91141ef (/tmp/pwb-final-fullset). Pw's last turn ended 02:43:13 and it had not resumed.
+- Sent pw turn 8bd72ddfd266 (instruct, wait false): one push of 6ea2696, dd2fdcd, 91141ef and the records (commit records first if uncommitted); one hosted status call for windows-scan; REPORT states PowerShell on the hosted runner (checked or unverified), the line 197 result if finished, longest step and its wall time; Monitor stays stopped. Last handled pw ts 2026-11-13T02:43:13.382Z.
+- Gm: turn d382c76ed6a0 (docs commit, first_step_correction Phase A, Phase B, one push) is running.
+- Index: compaction PID 2285827 is alive. Its 02:58:48Z deadline is about two minutes away; nothing sent or interrupted.
