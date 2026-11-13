@@ -1562,3 +1562,9 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 ## 00:53Z pw: turn eee81540a60b ended 00:52:56 (15.6 s) with no REPORT: its full set was running in the background. Job: /tmp/pwb-fullset-sampled.sh, PID 1982069 (log /tmp/pwb-fullset-fixed.log; inner runner /tmp/pwb-negative-fullset.sh, PID 1982099, timeout 3300 s). Bounded wait started as background b7p47q5ks, 1200 s; the continuation goes out with the job's result when it exits. No new prompt while it runs. Last handled pw ts 2026-11-13T00:52:56.567Z.
 - Pw checked my 560 s figure for gm's loops: its process tree shows timeout 560 on the outer script, and each loop inside it is bounded at 200 s. Both are correct; pw records the 200 s per-loop bound and the difference in its report.
 - Still open: gm turn 9bb9db927c81 (fix turn for ddc3739); fx turn 48c6579b82a5 (Phase B job PID 1591761); index turn past its four-hour deadline, busy, its compaction job alive.
+
+## 01:05Z pw: full-set job 1982069 exited (bounded wait b7p47q5ks, exit 0). Runner /tmp/tmp.jsSjyepgXQ/result.txt: 18 rows, every row exit 0, leftover 0, "runner worst exit 0". npm-test 305155 ms under load; start-refusal 6305 ms. The full set is green.
+- Pw's repo is 12 commits ahead of origin (019e683 through d06ca28): confirmedGone lifecycle change, the start-poll fix, and the docs entries. Its Phase B witnesses are all green.
+- Sent pw turn 90b473a555ae (instruct, alive peer, wait false): one push to origin main carrying the 12 commits; one hosted status call only; REPORT with the push line. Last handled pw ts 2026-11-13T00:52:56.567Z; the bounded wait is closed.
+- Monitor: b8lmpwrop expired after 30 minutes with five events, all handled; re-armed as b9ee3953k at 01:02.
+- Still open: gm turn 9bb9db927c81 (fix turn for ddc3739); fx turn 48c6579b82a5 (Phase B job PID 1591761); index turn past its four-hour deadline, busy, its compaction job alive.
