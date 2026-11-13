@@ -1783,3 +1783,9 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Index: zero-glb-keep12r5 (pid 2423377) alive, 535 s old at 03:08Z. Its turn is still open since 23:44; held for the owner.
 - Memory: 6.1 GB available, 1.3 GB swap used. No orphaned test process (ppid 1) other than index's gm-job wrapper.
 - Repo: origin/main equals HEAD (0 0).
+
+## 03:09Z pw: turn ca9de385b109 ended 03:09:24 (375.4 s), but its own full set was still running, so the turn is not finished work. The last text says the set runs on 88eee15 with 26 rows, and pw will push once and make one hosted call after the set's completion notice.
+- Pw's job: /tmp/pwb-stretch-fullset.sh under the sampled wrapper, pid 2436878 (timeout 3900 on phase-b.cjs). Dispatcher's bounded wait: background Bash bk9ausu9v on pid 2436878, timeout 3900 s. No new prompt to pw while the set runs.
+- Origin/main is d13cede. Local commits ahead of origin: 20ff80b (docs), ac603ae (close refusals), 88eee15 (platform-neutral process listing, no /proc on win32). Nothing pushed yet.
+- Gm: turn db518f3c58dd still running at 03:09Z. Fx: turn 9bd46f402dc6 running. Index: zero-glb-keep12r5 (pid 2423377) alive, turn open.
+- Monitor b2mqfyo5m delivered the pw turn-end event at 03:09:24Z.
