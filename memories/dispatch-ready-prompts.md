@@ -1789,3 +1789,12 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Origin/main is d13cede. Local commits ahead of origin: 20ff80b (docs), ac603ae (close refusals), 88eee15 (platform-neutral process listing, no /proc on win32). Nothing pushed yet.
 - Gm: turn db518f3c58dd still running at 03:09Z. Fx: turn 9bd46f402dc6 running. Index: zero-glb-keep12r5 (pid 2423377) alive, turn open.
 - Monitor b2mqfyo5m delivered the pw turn-end event at 03:09:24Z.
+
+## 03:10Z gm: turn db518f3c58dd ended 03:10:16 (603.3 s). Phase B at 84a9724 is pushed (origin contains 84a9724; local docs commit d75cca5 is unpushed and goes with the next Phase B). Install 84a9724-1: current links to versions/84a9724-1; check-skill-serve ok; a live call returned install-84a9724-live. Restart events "ab9b391-1 -> 84a9724-1" at 03:08:17Z-03:08:18Z in hyperagent, gm and index. Pw/fx/index journals since 03:08Z: no gm error.
+- Hosted, one status call by gm and not polled: release 43356846891 and arm-diagnose 43356846884 pending; pages 43356846248 without a conclusion.
+- Exit 144 is still open. Gm says the SIGTERM sender was an operator kill of the foreign gate, from Bash. Its record names pid 2308613; the ledger's earlier note said 2308659. Reconciliation sent to gm.
+- Sent gm turn 59734658a030 (instruct, wait false): exit 144 cause or recorded ruled-out causes; reconcile the pid and the sender from evidence; docs commit d75cca5 stays local for the next Phase B; hosted runs not polled; say whether the playwriter trees 2326286 (about 53 min) and 2435627 (about 2 min) under /workspace/gm are its browser lease; ranked remaining work in REPORT.
+- Pw: bounded wait bk9ausu9v on the full-set wrapper pid 2436878 is still running (started 03:09Z, 3900 s limit). No new prompt to pw until the set exits.
+- Index: zero-glb-keep12r5 (pid 2423377) alive; turn open; nothing sent.
+- Fx: turn 9bd46f402dc6 running.
+- Origin/main equals HEAD (hyperagent repo).
