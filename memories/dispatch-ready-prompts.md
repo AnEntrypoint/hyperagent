@@ -1661,3 +1661,6 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Sent gm turn 4362d3e26649 (instruct, wait false): Phase A for a per-job lifetime (or progress-extended deadline) for the job cap that killed index's compaction; Phase B for c65eb4a and the job-cap change together; one push only when green; one hosted status call; the cross-project stop recorded as a correction, and no stop of a process whose owner file names another live worker. Last handled gm ts 2026-11-13T02:05:33.751Z.
 - READY PROMPT for pw, add to its continuation: gm stopped gate pid 1180507 at about 02:02, and its owner file names pw's live worker 308262:521766. Check whether your full set or any gate was affected. The gate restarts on its next call.
 - Still running: pw bounded wait bmalki05s on PID 2297557 (full set on ee4d3d7).
+
+## 02:14Z gm: turn 4362d3e26649 ended 02:14:01 (474.7 s) with its Phase B running. Job: gm-tool phase-b build/release, PID 2312996 (started about 02:14:08 on HEAD 1a9017a, origin 8834329). Bounded wait started as background bnw2xozgy, 2700 s; the continuation goes out with the job's result when it exits. No new prompt while it runs. Last handled gm ts 2026-11-13T02:14:01.102Z.
+- Pw's full set on ee4d3d7 (PID 2297557) is still running under bmalki05s. Its continuation is queued as in the 02:05Z entry.
