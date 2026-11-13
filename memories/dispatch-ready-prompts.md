@@ -1594,3 +1594,8 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Sent pw turn 0ed51fca27ff (instruct, alive peer, wait false): push once now, carrying the six commits c535dd6 to df54652 and nothing else, one hosted status call; then the next stretch as one Phase A and one Phase B: (a) the gate drops sockets and forgets Chrome only when the browser pid is dead, (b) ensureConnection checks isConnected in both modes, (c) the gate keeps its log on a failing run. Red control first; lifecycle and leases under 12 loops 3 times each; the executor check in both modes; full set once; one push only when green. The ready prompt above is now sent.
 - Last handled pw ts 2026-11-13T01:15:22.582Z; the bounded wait is closed.
 - Still open: gm turn b11222c3e864 (loaded row witness and its gate log paths); fx turn 48c6579b82a5 (four rows rerunning, PID 2077218).
+
+## 01:31Z pw: origin/main is at df54652 (the six three-miss commits c535dd6 to df54652 are on origin, the push inside turn 0ed51fca27ff). Pw's local HEAD is 11e1517, a Phase B record docs commit for df54652, not pushed; it goes with the gate stretch's one push. Turn 0ed51fca27ff is still running; no turn end yet.
+- Fx rerun: e2e-gateway-stream-lifecycle failed again when rerun alone (exit 1 at 01:20Z), so it is a real defect for fx to fix or record before its push.
+- Monitor b9ee3953k expired with four events, all handled (gm 01:24:36, pw 01:15:22, pw 01:08:48, pw 01:06:14). Re-armed as bcjvgtkn4 at 01:31, expires in 30 minutes.
+- Still open: gm turn b11222c3e864 (loaded row and gate log paths); fx turn 48c6579b82a5 (rerunning four rows, PID 2077218); index turn past its four-hour deadline, busy.
