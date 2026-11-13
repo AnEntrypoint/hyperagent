@@ -2018,3 +2018,9 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Counts: model/ 46785 → 47637; glb-original/ 1112 → 1973.
 - Verify-failure class now: 37 held, 9 unindexed, 18 discovery, plus the earlier 30 step-4 failures classed as verify 19, excluded 10, meshopt 1. Owner decision needed on the class as a whole.
 - gm MCP still disconnected; index ran under Bash.
+
+## 10:49Z index gm reconnect (decision, dispatcher)
+- Index had no gm since the 10:03Z stop of its gm serve parents. Index was idle with nothing reachable in its queue, so I stopped the peer and resumed the same session d3697fdf (output_session matched).
+- Turn with wait true: gm answered. mcp__gm__run_code ran gm.verbs({ names: true }) and returned 49 verbs; index then ran next_context (run 2026-11-13-10-48-05-f8f5bd) and finished the run. Nothing else was started.
+- Not touched: a render_models.py --retry-failed job (pid 3769294) that belongs to the owner's own claude session 3633113 (launched with -r from the terminal). The owner's db render 3638593 has exited.
+- Held for the owner: the 9 unindexed verify failures; the 37 held; the 18 discovery verify; the 2802 404 rows; the 22 unreachable rows; the name-hash gate change; whether to restart index's gm (now done, so this item is closed).
