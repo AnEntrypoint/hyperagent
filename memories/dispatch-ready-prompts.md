@@ -2009,3 +2009,12 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Results: 852 rows, 843 ok, 9 failed. model/ 46785 → 47628 (+843). glb-original/ 1973.
 - The 852-row table did not cover the 9 spawnfile.io downloads, so those are compacted in this turn.
 - Sent on d3697fdf, turn 7e8fe8694e96, wait false: classify the 9 failures and fix any tooling cause; compact the 9 spawnfile GLBs add-only with a lock; retry the 22 unreachable non-spawn rows once; confirm the 404 rows, the 37 and the quarantine are unchanged; REPORT line.
+
+## 10:43Z index turn 7e8fe8694e96 ended (turn_end, 79 s); removed from the ledger
+- The 9 failed unindexed rows: all verify failures of the same class as the 37 held files (mesh, primitive, texture or image counts change in compaction). No verifier change; left for the owner.
+- Spawnfile: 9 of 9 compacted. The first attempt read 0 rows because the parser only accepted the play.spawn.co prefix; index added a --url-prefix option, default unchanged.
+- Jayzee retry: 12 www.jayzee.co rows get=404; 10 jayzeefile.io rows get=ENOTFOUND. Nothing downloaded.
+- Invariants: the 37 still have originals and none are in model/; the 2802 404 rows still 404, none in model/; quarantine holds 4.
+- Counts: model/ 46785 → 47637; glb-original/ 1112 → 1973.
+- Verify-failure class now: 37 held, 9 unindexed, 18 discovery, plus the earlier 30 step-4 failures classed as verify 19, excluded 10, meshopt 1. Owner decision needed on the class as a whole.
+- gm MCP still disconnected; index ran under Bash.
