@@ -1798,3 +1798,11 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Index: zero-glb-keep12r5 (pid 2423377) alive; turn open; nothing sent.
 - Fx: turn 9bd46f402dc6 running.
 - Origin/main equals HEAD (hyperagent repo).
+
+## 03:18Z gm: turn 59734658a030 ended 03:18:14 (439.2 s). Exit 144 is explained: gm's own command ran a process scan whose output matched the command text, so the Bash tool shell listed itself as "chromium 2311749" and the loop sent it SIGTERM. Reproduced on scratch gate 2453054 (exit 144). SIGTERM reads as 144 in this harness; my earlier "143" was wrong.
+- Correction to the ledger: the SIGTERM at 02:13:20.705Z targeted gate 2308613, which gm's gate log confirms. Chromium 2308659 got no signal; the gate closed it over CDP. My earlier "2308659" was wrong (lines 1759 and 1795 are superseded by this entry).
+- The sender is gm's own Bash tool shell, not an operator. Gm's record is corrected in docs (d75cca5 and acfcfeb, local).
+- Gm's live gates 2326286 (about 61 min, listening on 127.0.0.1:9767) and 2435627 (about 10 min, a wrapper) are its browser lease under releaseAtRunEnd false. Not stopped.
+- Origin/main is 84a9724; gm HEAD is ahead by 2 (d75cca5, acfcfeb), local only.
+- Sent gm turn 59ec91520c18 (instruct, wait false): one queue of the six ranked items (two serves on one workspace; job adoption on a reused pid; the extendOnProgress wait clamp; a dead executor's pages; fetch witnesses; the reply printing for check-relay-reexec). Phase A committed locally; Phase B once; one push that also carries d75cca5 and acfcfeb; one hosted status call; install with the same validation. Item 6 settles only on the hosted run.
+- Pw: full set pid 2436878 still running at 03:17Z (bounded wait bk9ausu9v). Fx: turn 9bd46f402dc6 running its full set pid 2445093. Index: zero-glb-keep12r5 (pid 2423377) alive.
