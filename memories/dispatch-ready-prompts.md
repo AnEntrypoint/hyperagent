@@ -1827,3 +1827,9 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Sent pw turn 31c2a3bf7a4e (instruct, wait false): Phase A for the EBUSY at test/lifecycle.cjs:235 (name the holder from the code, close it or wait for its pid, add a teardown check); Phase B locally with no push (build, the two new witnesses with red controls, the full set once on the final tree); no hosted run; hold on git push until the owner's approval of a third push.
 - Held for the owner: a third push for the Windows EBUSY repair. Dispatcher recommends approval.
 - Gm: turn 59ec91520c18 in Phase A (origin 84a9724, five local commits ahead). Fx: turn 9bd46f402dc6 running its full set, pid 2445093. Index: zero-glb-keep12r5 (pid 2423377) alive.
+
+## 03:36Z gm: turn 59ec91520c18 ended 03:35:53 (1034.1 s). Gm's own text: Phase A complete (six changes plus the docs record); its Phase B witnesses run in the background one at a time, and gm will continue when the runner reports. The turn ended while that job ran, so it is not finished work.
+- Dispatcher's bounded wait on the gm witness runner: background blj12zrrw on pid 2575537 (/tmp/pb-b-witnesses.sh, 1800 s). No new prompt to gm until it exits; then send the continuation with its result (the build, the witness output, the one push, the one hosted status call, the install check).
+- Gm origin/main is 84a9724; gm HEAD is nine commits ahead, none pushed.
+- Pw: turn 31c2a3bf7a4e running Phase B locally (EBUSY fix, two new witnesses, full set), push held. Fx: turn 9bd46f402dc6 running its full set, pid 2445093. Index: zero-glb-keep12r5 (pid 2423377) alive.
+- Held for the owner: the third push for the Windows EBUSY repair.
