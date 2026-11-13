@@ -1989,3 +1989,10 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Curl spot check on 4 of the 404 rows: 404 with application/json, while a known-good file returns 200. The 404s are server answers, not a client block.
 - Re-probe of all 2,834 missing with HEAD and ranged GET from a separate client was still running at 10:30Z (output /tmp/glb_reprobe.tsv). Not yet read.
 - Dispatched on d3697fdf, turn 7c00692d16cf, wait false: download the 852 unindexed live rows and probe the 31 non-spawn rows; add-only, verify magic and sha256, log to docs/CHANGES.md, then compact the new originals. Held items untouched.
+
+## 10:31Z re-probe of the 2834 missing URLs (separate client, HEAD and ranged GET, 252 s)
+- play.spawn.co, 2803 rows (2802 plus the zero-set row): all 404 on both HEAD and GET. Consistent with server answers, not an intermittent failure; the spot check and the re-probe agree, roughly four minutes apart.
+- www.jayzee.co, 12 rows: all 404 on both.
+- jayzeefile.io, 10 rows: DNS does not resolve from this host (curl error 6). Unreachable here, not a 404.
+- spawnfile.io, 9 rows: reachable (200 HEAD, 206 ranged GET, content-type model/gltf-binary). Missing from disk. They are not the 9 index downloaded at 09:58Z; those were value.<hash> play.spawn.co names, and the re-probe shows that set now 404.
+- Index's turn 7c00692d16cf is covering the 852 unindexed rows and the 31 non-spawn rows, which includes these 9 spawnfile rows.
