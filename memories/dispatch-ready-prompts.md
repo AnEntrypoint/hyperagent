@@ -1833,3 +1833,8 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Gm origin/main is 84a9724; gm HEAD is nine commits ahead, none pushed.
 - Pw: turn 31c2a3bf7a4e running Phase B locally (EBUSY fix, two new witnesses, full set), push held. Fx: turn 9bd46f402dc6 running its full set, pid 2445093. Index: zero-glb-keep12r5 (pid 2423377) alive.
 - Held for the owner: the third push for the Windows EBUSY repair.
+
+## 03:37Z gm: the witness runner (pid 2575537, /tmp/pb-b-runner.out) finished with RUNNER DONE; the bounded wait blj12zrrw exited 0. Every check exited 0 on version 7261294-1 (e2076309ed14): check-job-extended-wait 5.1 s, check-fetch 6.7 s, check-fetch-transport 0.5 s, check-browser-dead-executor 11.1 s, check-relay-reexec 9.9 s (item 6, the printed reply answered the wait at 1624 ms), check-row-peer 0.04 s. Every other listed row in /tmp/pb-b-*.log also exits 0.
+- Sent gm turn 87d419d2d9a9 (instruct, wait false): phase-b build/release once; gm-tool ship --push once (it carries the nine local commits); one hosted status call; install with the 84a9724 validation; item 6 read from that one call. Gm's two gates 2326286 and 2435627 are its browser lease and are kept.
+- Pw: turn 31c2a3bf7a4e running Phase B locally; push held. Fx: turn 9bd46f402dc6 running its full set, pid 2445093. Index: zero-glb-keep12r5 (pid 2423377) alive.
+- Held for the owner: the third push for the Windows EBUSY repair.
