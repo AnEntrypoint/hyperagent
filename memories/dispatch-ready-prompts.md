@@ -1547,3 +1547,7 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Witnesses so far: red control, pre-fix launcher 019e683: "2 starts, 2 readiness requests"; green, fixed launcher: "browser ready" with "1 browser start(s); 1 readiness request(s)". start-refusal alone passed 3 of 3 at 9002, 8536 and 7561 ms.
 - Host: pw found 28 busy-loop processes from another session it did not start. They were gone by the end of its three runs. The source is not verified, so this is recorded, not attributed.
 - Still open: gm turn 9bb9db927c81 (fix turn for ddc3739); fx turn 48c6579b82a5 (Phase B job PID 1591761); index turn past its four-hour deadline, busy, 56 gm calls.
+
+## 00:48Z pw: loaded start-refusal job 1957061 exited 00:48 (bounded wait buf9zbx4u, exit 0). /tmp/pwb-sr-loaded-1..3.out: each "start: all checks passed" and "start returns in 1285 to 1679 ms; the browser is started once", so start-refusal passed 3 of 3 under twelve busy loops. Busy loops left: 0.
+- Sent pw turn caa8061a24f1 (instruct, alive peer, wait false): npm test alone once, then the full set once, then one push only when every row is green; a red row means no git push, fix, rerun that row alone, full set again. Last handled pw ts 2026-11-13T00:47:26.472Z.
+- Still open: gm turn 9bb9db927c81 (fix turn for ddc3739); fx turn 48c6579b82a5 (Phase B job PID 1591761); index turn past its four-hour deadline, busy, 56 gm calls.
