@@ -1758,3 +1758,11 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Gm's stale docs line (says 4dfe6f3 unpushed) is a defect to correct in gm's next stretch, not with a second push now.
 - Sent gm turn db518f3c58dd (instruct, wait false): Phase A: correct the stale docs line; fix the unused-parameter warning at witness_windows_cmd.cpp:15 (named cause); find the sender of the 02:13:20Z SIGTERM to pid 2308659 (change code only if a gm path sent it); Phase B once, one push, one hosted status call, install with the same validation; ranked remaining reachable work in REPORT; no Monitor. Last handled gm ts 2026-11-13T02:59:55.169Z.
 - Pw: turn 787c92603217 running (two answers, ranked remaining work, no new Phase A until the d13cede result is known).
+
+## 03:01Z pw: turn 787c92603217 ended 03:00:50 (61.3 s). Docs commit 20ff80b (the dispatcher's read of the 607018e log: pwsh 7 on the runner, the same debug-port symptom before the fix) is local, not pushed; origin is d13cede. No Monitor armed.
+- Ranked remaining work, from pw's REPORT: 1 decide the Windows fix (blocked on the d13cede line 197 result, read once by the dispatcher); 2 witness the other-lease refusal of closeFromCaller (not blocked); 3 witness the pid-mismatch refusal (not blocked); 4 the adopted refusal (not designed); 5 a Linux test of the Windows commandOf branch (needs a small code change); 6 the Windows close path beyond commandOf, only if item 1 fails.
+- Dispatcher decision: the earlier "no new Phase A until d13cede" is relaxed for items 2 and 3. Their witnesses can be written now and folded into the next push, so pw is not idle. No build and no push until the d13cede result is read and sent. Items 4 to 6 stay out. Reason recorded here.
+- Sent pw turn ce8b5598e6b0 (instruct, wait false): Phase A for items 2 and 3, committed locally, no build, no push; the d13cede result comes later, then one Phase B and one push and one hosted status call. Last handled pw ts 2026-11-13T03:00:50.797Z.
+- Gm: turn db518f3c58dd running (stale docs line, warning at witness_windows_cmd.cpp:15, SIGTERM sender).
+- Index: relaunched zero-glb-keep12r5 (pid 2423377), fixed 3600000 ms deadline until about 03:58Z. Held for the owner.
+- d13cede's windows-scan: NOT yet read. Read it once when it completes, then send pw the line-197 result.
