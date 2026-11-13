@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: bc092253-97dd-4f77-9001-5a59318251ee
-  modified: 2026-11-13T09:53:46.431Z
+  modified: 2026-11-13T10:01:19.484Z
 ---
 
 The orchestrate skill's wall-clock rule: each busy peer's next dispatch is written before its turn ends. On the idle event, read the peer's REPORT, adjust only what the report changes, send the prompt, and delete its section here.
@@ -1927,3 +1927,9 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Resumed index on session d3697fdf-eacf-4f5e-9343-9250f17e3fa2 (the session behind the dispatcher's index entries; 3e96b0dd and 3d23f7a4 are other sessions and were not used). Turn a6104c9fcc1a, wait false.
 - Prompt: download only what is missing, by the download.md method; no deletes or overwrites in model/, glb-original/ or compact-state/; the 37 strict-verify files left as they are; log every write in docs/CHANGES.md; keep 12 workers; no lance or CLIP restart; rank the remaining work and end with a REPORT line.
 - Open until the turn ends: check its journal for the instruct record and the next tool record. Then read the turn result at its end.
+
+## 10:01Z index turn a6104c9fcc1a ended (turn_end, 442 s)
+- Removed from the ledger. Index ranked the remaining work: 9 reachable GLBs (HEAD 200) downloaded into glb-original/ (1073 → 1082), logged in docs/CHANGES.md; fetch job exited done at 10:00:33Z (count 9).
+- Probe result: 2802 rows return HTTP 404 and are not retried; 0 no-copy rows missing; model/ unchanged at 45710 files; no deletes or overwrites.
+- Held for the owner: (1) the 2802 404 rows; (2) compaction of the 9 new originals into model/, which index will not run without a go-ahead; (3) the 37 strict-verify failures.
+- Index's queue is empty. Two gm-core workers from index runs (pids 3633004, 3633187) are still alive; left running pending the owner.
