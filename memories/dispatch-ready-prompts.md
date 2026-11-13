@@ -1775,3 +1775,11 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Index: zero-glb-keep12r5 (pid 2423377) alive, 203 s old at 03:02Z; fixed deadline about 03:58Z. Held for owner.
 - Monitor bfmy6q0tv expired at about 03:01Z; re-armed as b2mqfyo5m.
 - Repo: origin/main equals HEAD (0 0). The earlier push attempt (bgd4m7727) timed out with exit 143 on a GitHub connection timeout, but the sync check shows origin matches HEAD.
+
+## 03:08Z fx: process gone (empty pane; no tmux session; no process with cwd /workspace/fx). Journal's last record is turn_end 23:14:18Z for 48c6579b82a5, whose reds were still open. Recorded as a process exit with reachable work, so the saved session was resumed.
+- Sent fx turn 9bd46f402dc6 via resume_project (project fx, session 255b1fc0-52f2-4fa7-b86b-55fae17602e6, harness claude, fork false, model haiku kept). peer_status confirms output_session 255b1fc0 and launch args --resume 255b1fc0. Work: rerun the three red rows alone (gateway-stream-lifecycle, tui-auth-source-selection, tui-command-permissions), name and fix or record each cause; the local commits 87d1f22c and 2ffb084a go out with the one validated Phase B push; one push; one hosted status check.
+- Pw: turn ca9de385b109 running; last text 03:07:34Z: the /proc fix is almost done, dropping the fs import in test/support.cjs.
+- Gm: turn db518f3c58dd running; at 03:07:36Z it is pushing once, the marker matching HEAD 84a9724.
+- Index: zero-glb-keep12r5 (pid 2423377) alive, 535 s old at 03:08Z. Its turn is still open since 23:44; held for the owner.
+- Memory: 6.1 GB available, 1.3 GB swap used. No orphaned test process (ppid 1) other than index's gm-job wrapper.
+- Repo: origin/main equals HEAD (0 0).
