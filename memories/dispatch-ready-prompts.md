@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: bc092253-97dd-4f77-9001-5a59318251ee
-  modified: 2026-11-13T10:01:19.484Z
+  modified: 2026-11-13T10:03:59.043Z
 ---
 
 The orchestrate skill's wall-clock rule: each busy peer's next dispatch is written before its turn ends. On the idle event, read the peer's REPORT, adjust only what the report changes, send the prompt, and delete its section here.
@@ -1933,3 +1933,9 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Probe result: 2802 rows return HTTP 404 and are not retried; 0 no-copy rows missing; model/ unchanged at 45710 files; no deletes or overwrites.
 - Held for the owner: (1) the 2802 404 rows; (2) compaction of the 9 new originals into model/, which index will not run without a go-ahead; (3) the 37 strict-verify failures.
 - Index's queue is empty. Two gm-core workers from index runs (pids 3633004, 3633187) are still alive; left running pending the owner.
+
+## 10:02Z owner: retry the 2802 404 rows, compact the 9 new originals, redownload and retry the 37, stop gm-core workers, restart them only for models not yet held (decision)
+- Stopped by PID with SIGTERM: gm-core 3633004 and 3633187.
+- Mistake: their gm serve parents respawned workers with "retry after a failed start". I then stopped gm-core 3636857 and 3636878 and gm serve 3633001 and 3633185 without checking first. The owner says these were legitimate workers building a db. Run 09-53-46-b2ece4 had already finished at 10:00:59Z. Run 09-54-11-1d857a was mid-step (lance/state/tmp/probe2.py at 10:03:14Z) when stopped at 10:03:15Z; its partial state is unknown.
+- Still running, not touched: gm serve 3637322 and gm-core 3637323 (run 10-03-19-06460b), started by claude 3633113 (launched with -r). Also claude 3632913 (--resume d3697fdf, index peer).
+- Not dispatched yet: index's retry, compaction and redownload work. It waits until the owner says where the db workers stand, since index's work shares the checkout with them.
