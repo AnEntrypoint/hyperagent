@@ -1766,3 +1766,12 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Gm: turn db518f3c58dd running (stale docs line, warning at witness_windows_cmd.cpp:15, SIGTERM sender).
 - Index: relaunched zero-glb-keep12r5 (pid 2423377), fixed 3600000 ms deadline until about 03:58Z. Held for the owner.
 - d13cede's windows-scan: NOT yet read. Read it once when it completes, then send pw the line-197 result.
+
+## 03:02Z pw: turn ce8b5598e6b0 ended 03:02:14 (70.5 s). Phase A for items 2 and 3 is committed locally as ac603ae (test/close-refusals.cjs, package.json entry, docs/PENDING_VALIDATION.md); nothing built, pushed or run hosted.
+- d13cede's windows-scan (run 43355843391) finished failure, read once. Lifecycle: 12 checks passed, then test/lifecycle.cjs:234 threw ENOENT scandir 'D:\proc' on the Windows runner. The debug-port witness at line 197 is not the failure point, so the 6ea2696 commandOf fix did not reach this path.
+- Decision: second push approved for the Windows /proc defect only. Reason: the first Phase B push (d13cede) broke a listed witness, which is the exception in Two-phase work. Stated in the owner report.
+- Sent pw turn ca9de385b109 (instruct, wait false): fold the /proc fix into the open pass on top of ac603ae; Phase A committed locally; Phase B once with every listed witness and the Linux full set; one push; one hosted status check; items 4 to 6 stay out. Last handled pw ts 2026-11-13T03:02:14.125Z.
+- Gm: turn db518f3c58dd still running (last text 03:02:18).
+- Index: zero-glb-keep12r5 (pid 2423377) alive, 203 s old at 03:02Z; fixed deadline about 03:58Z. Held for owner.
+- Monitor bfmy6q0tv expired at about 03:01Z; re-armed as b2mqfyo5m.
+- Repo: origin/main equals HEAD (0 0). The earlier push attempt (bgd4m7727) timed out with exit 143 on a GitHub connection timeout, but the sync check shows origin matches HEAD.
