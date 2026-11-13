@@ -1900,3 +1900,11 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - "its" read as index. Pw and gm were not resumed; the pw push and the latest re-point are still pending the full resume.
 - Still held for the owner: whether the model/ removal of 2026-11-12 13:01Z was approved.
 - Index has no git. Its changes are recorded in docs/CHANGES.md and not committed.
+
+## 05:58Z index turn cb67bab1500e ended (result 05:56:58Z)
+- Removed from the ledger: index's queue is empty. Its turn ended with open items for the owner.
+- Zero job: r7 (pid 2732774) was killed by index's own `finish` at 05:20:40Z (gm's run-ended kill). r6 (pid 2714669) has no kill record; its last event is an unanswered next_context at 04:01:51Z, so the owning session most likely ended without a finish (inferred). Supervisor now runs: `scripts/extract/zero-supervisor.sh`, pid 2743471, child pid 2743476, 12 workers, started with setsid. Rules: relaunch after 60 s on a non-zero exit, stop on exit 0, stop after 5 exits in an hour, each exit logged with its last line.
+- 47 no-copy rows are 37 distinct GLBs (10 names are in both lists). All 37 downloaded (glTF v2 magic ok); 36 originals placed in glb-original/, 11 already present with the same sha256. 0 of 37 pass strict verify (35 verify, 1 excluded, 1 ktx2). Nothing deleted. Longest step: a 244 s download. Longest compaction step: prep-skinned, 4 s.
+- Unattributed writes: 24 rows appended to compact-state/zero-results.jsonl and 23 model/ files rewritten between 05:22 and 05:24Z. No run log names the writer. Held for the owner: this is a possible data change in model/.
+- Not index's: a retry job, scripts/run-retry-chunks.sh (pid 2743730), chunk pids 2743733 and 2743734, running since about 05:55Z, writes model/ and compact-state/failed-retry-results.jsonl. Reported, not stopped; it may belong to another session.
+- Owner decisions held: the 37 strict-verify failures; whether the zero job keeps writing model/; the unattributed writes; who owns the retry job; 12 workers (dispatcher decision, kept).
