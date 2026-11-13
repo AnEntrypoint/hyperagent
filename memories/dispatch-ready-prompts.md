@@ -1892,3 +1892,11 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Uncommitted work left on disk, not committed: pw has edits in package.json, test/lifecycle.cjs, test/support.cjs and untracked test/relay-port-loader.mjs, test/relay-port.mjs, test/relay-stop.cjs (its relay-stop witness, mid-edit). Gm has edits in native/components/tool/checks/registry.cpp, restart_jobs.cpp, run_code_budget.cpp and native/include/gm/tool.hpp (its ranked items 1 and 2, mid-edit). Pw origin is 4 commits behind HEAD (ef87762, bab2c93, 4ccd13d, df77f9d), gm origin is at 023e534 with nothing unpushed.
 - Index's compaction state is in /workspace/index/compact-state/zero-results.jsonl; it resumes from there.
 - Resume path: resume_project with the saved sessions 57a3f21e (gm), 255b1fc0 (fx), d3697fdf (index), peer-pw (pw).
+
+## 05:37Z index (owner: "go ahead and resume all its work, download any missing ones")
+- Resumed index on session d3697fdf-eacf-4f5e-9343-9250f17e3fa2 with turn cb67bab1500e. The instruct record landed at 05:35:16Z, and the journal showed the turn still running at 05:37:28Z.
+- Sent: find the cause of the zero-job stops (keep12r6 ended 04:02:50Z; keep12r7, pid 2732774, gone by 05:21Z); download the 47 rows of docs/NO_COPY_GLBS.md into glb-original/, check the glTF magic, compact them; restart the zero job with 12 workers under a supervisor (60 s pause between launches, stop after 5 exits in an hour); no originals deleted in this pass; model/ left alone.
+- Dispatcher decisions (reversible): 12 workers as the standing setting; supervisor with an exit cap; no deletion of originals this pass.
+- "its" read as index. Pw and gm were not resumed; the pw push and the latest re-point are still pending the full resume.
+- Still held for the owner: whether the model/ removal of 2026-11-12 13:01Z was approved.
+- Index has no git. Its changes are recorded in docs/CHANGES.md and not committed.
