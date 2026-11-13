@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: bc092253-97dd-4f77-9001-5a59318251ee
-  modified: 2026-11-13T10:07:58.627Z
+  modified: 2026-11-13T10:16:56.777Z
 ---
 
 The orchestrate skill's wall-clock rule: each busy peer's next dispatch is written before its turn ends. On the idle event, read the peer's REPORT, adjust only what the report changes, send the prompt, and delete its section here.
@@ -1952,3 +1952,15 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Other index writers were running at 10:07Z: retry-404.mjs (3638258), compact.mjs on DISCOVERY_MISSING_LINKS.md (3641767), repair-nine.mjs (3646760), and the CLIP render job (render_models.py, pid 3638593, under lance/). The render job is the owner's db work and was not touched.
 - Dispatcher rule for the next index dispatch: one writer per output file at a time, with a lock file that names the PID and owner; no second compaction over the same rows; quarantine before any replacement, never overwrite in place.
 - Held for the owner: whether the four quarantined originals may be deleted once their replacements verify.
+
+## 10:16Z index turn ec26e6147f6f ended (turn_end, 706 s); removed from the ledger
+- Verified: model/ 46785 (was 45710); glb-original/ 1112 (was 1082); quarantine/2026-11-13-nine-clash/ holds 4 files; .download/redownload-37/kept/ holds 37 files. No index writers running at 10:16Z.
+- Step 1: 2802 rows still 404 on HEAD and GET; 0 downloaded. Held for the owner.
+- Step 2: 3 of 9 new originals compacted; 6 failed (4 excluded as non-GLB content with no embedded data, 2 JSON parse errors). Held for the owner: whether the 6 stay as kept originals.
+- Step 3: 37 re-fetched; each fetched copy's sha256 matches its recorded original, so the bytes were never damaged in transit. All 37 still fail strict verify. Staged, not placed. Held for the owner.
+- Step 4: 1102 discovery GLBs fetched; 1072 compacted; 30 failed (19 verify, 10 excluded, 1 meshopt); 1 zero-set row marked 404 was not fetched.
+- Index added a `--keep-dir` option to scripts/compact/compact.mjs (default unchanged). Index has no git, so no commit.
+- gm: index reported gm disconnected partway through its turn and ran with Bash. Likely cause: the dispatcher stopped gm serve 3633001 and 3633185 at 10:03Z; they served index's own gm runs 09-53-46-b2ece4 and 09-54-11-1d857a. Invariant 1 asks for gm; reconnect is the first step of the next dispatch.
+
+## 10:17Z index dispatch on d3697fdf, turn 67d159da1a1d, wait false
+- Asks: reconnect gm; find each step-2 and step-4 failure's cause and fix what is in our tooling, rerun each alone; fetch the zero-set 404 row if reachable; one writer per output with a lock file; no overwrite. Keeps the owner-held items: 2802 404 rows, 37 strict-verify files, quarantine contents.
