@@ -1722,3 +1722,7 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Sent pw turn ea9bed44af96 (instruct, wait false): write the no-op witness (Phase A), stop the Monitor it still has armed, run the witness alone, then the full set once on the final tree, rerun any failing row alone, push once (6ea2696, dd2fdcd, the witness commit and the records), one hosted status call for windows-scan, state whether PowerShell is on the hosted runner, longest step and its wall time. Last handled pw ts 2026-11-13T02:25:35.423Z.
 - Gm: install af027a4-1 is already in place; turn f50e1181bd31 still validating.
 - Index: compaction PID 2285827 alive; its 02:58:48Z deadline is unchanged.
+
+## 02:43Z pw: turn ea9bed44af96 ended 02:43:13 (307.7 s). No-op witness committed as 91141ef (a stop that leaves the browser answering is reported as not closed; its row and red control are in the docs). Origin still 607018e. Pw stopped its own Monitor.
+- Job: /tmp/pwb-stretch-fullset.sh (final tree 91141ef), PID 2378572 (timeout 3900). Bounded wait started as background bkqlsg03v, 2400 s; the next pw continuation goes out with the result when it exits: read the result, push once (6ea2696, dd2fdcd, 91141ef, the records), one hosted status call for windows-scan, PowerShell on the hosted runner, longest step and wall time. Last handled pw ts 2026-11-13T02:43:13.382Z.
+- Pw's earlier full set on 82d098f (23 of 23) is superseded by the final-tree run.
