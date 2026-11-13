@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: bc092253-97dd-4f77-9001-5a59318251ee
-  modified: 2026-11-11T06:48:08.869Z
+  modified: 2026-11-13T09:49:31.681Z
 ---
 
 The orchestrate skill's wall-clock rule: each busy peer's next dispatch is written before its turn ends. On the idle event, read the peer's REPORT, adjust only what the report changes, send the prompt, and delete its section here.
@@ -1908,3 +1908,11 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Unattributed writes: 24 rows appended to compact-state/zero-results.jsonl and 23 model/ files rewritten between 05:22 and 05:24Z. No run log names the writer. Held for the owner: this is a possible data change in model/.
 - Not index's: a retry job, scripts/run-retry-chunks.sh (pid 2743730), chunk pids 2743733 and 2743734, running since about 05:55Z, writes model/ and compact-state/failed-retry-results.jsonl. Reported, not stopped; it may belong to another session.
 - Owner decisions held: the 37 strict-verify failures; whether the zero job keeps writing model/; the unattributed writes; who owns the retry job; 12 workers (dispatcher decision, kept).
+
+## 09:49Z cycle (read-only; nothing sent, nothing stopped)
+- Zero job finished on its own: supervisor.log records exit code 0 at 09:41:51Z, "done 25933 of 25933", queue empty; state lines 46209. Removed from the held list; the "pause zero" question is closed.
+- Retry job (run-retry-chunks, pids 2743730, 2743733, 2743734) is gone. No process holds zero-results.jsonl or model/ open now.
+- New writer in /workspace/index, not dispatched by hyperagent: gm run 2026-11-13-09-06-08-92b200 (successor of 3d4627, owner gm serve pid 3018097, claude pid 3017883 in index since 07:22Z). Task from a session prompt: index all models under lance/ without modifying the existing project; it writes lance/, runs clip-test jobs, last event 09:48:38Z. Not stopped. Owner decision held: whether this run may keep writing in index.
+- Held for the owner, unchanged: the 37 strict-verify failures; the unattributed 05:22–05:24Z writes; the model/ removal of 2026-11-12 13:01Z; 12 workers (kept).
+- Index peer: idle, last journal record 05:56:58Z, queue empty. Not sent a prompt, because the owner has not decided and a gm run is writing in its checkout.
+- Spin-down stands: pw, gm and fx not started; the pw third push and the latest re-point stay pending a full resume.
