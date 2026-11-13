@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: bc092253-97dd-4f77-9001-5a59318251ee
-  modified: 2026-11-13T10:24:57.605Z
+  modified: 2026-11-13T10:30:00.030Z
 ---
 
 The orchestrate skill's wall-clock rule: each busy peer's next dispatch is written before its turn ends. On the idle event, read the peer's REPORT, adjust only what the report changes, send the prompt, and delete its section here.
@@ -1982,3 +1982,10 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Step 4: all 30 failures and the zero-set 404 row classified. Zero-set row value.c139bbfa… is unreachable (HEAD and ranged GET 404), so not fetched. One tooling fix: the keep step no longer overwrites.
 - Counts unchanged: model/ 46785, glb-original/ 1112, quarantine/2026-11-13-nine-clash/ 4.
 - Held for the owner: (a) 4 excluded GLBs in step 2 and 10 more excluded discovery files, whose external images all answer 200 but are not embedded; (b) 18 discovery verify failures, same texture-count class as the 37 held files; (c) d2a8879d, meshopt writer assertion on an already-compressed source; (d) d220c442, verify fails in the oscraft loader at /workspace/oscraft/js/client/glb.js:65, outside index; (e) d220c442 and d2a8879d were overwritten by the rerun's rename before the fix, and their pre-rerun sha256 was never recorded, so the owner decides whether to re-verify. Also still held: the 2802 404 rows and the 37 strict-verify files.
+
+## 10:30Z owner asks: is every reachable GLB downloaded? Audit says no (dispatcher audit, read-only)
+- Universe from core sources: 50,676 distinct basenames; 47,842 on disk; 2,834 missing. Of the missing, 2,802 are play.spawn.co rows (the HTTP 404 set) and 31 are on jayzee, spawnfile and jayzeefile hosts. None of those 31 appears in any state or discovery file, so they were never attempted.
+- Extra discovery sources add 928 basenames not in the core set. Of the 918 rows in discovery/unindexed-probe.jsonl, every row was verified live (206 with glTF magic), but only 66 are on disk, so 852 were never downloaded. Index's report did not cover them.
+- Curl spot check on 4 of the 404 rows: 404 with application/json, while a known-good file returns 200. The 404s are server answers, not a client block.
+- Re-probe of all 2,834 missing with HEAD and ranged GET from a separate client was still running at 10:30Z (output /tmp/glb_reprobe.tsv). Not yet read.
+- Dispatched on d3697fdf, turn 7c00692d16cf, wait false: download the 852 unindexed live rows and probe the 31 non-spawn rows; add-only, verify magic and sha256, log to docs/CHANGES.md, then compact the new originals. Held items untouched.
