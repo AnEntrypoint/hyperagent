@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: bc092253-97dd-4f77-9001-5a59318251ee
-  modified: 2026-11-13T10:21:07.574Z
+  modified: 2026-11-13T10:24:57.605Z
 ---
 
 The orchestrate skill's wall-clock rule: each busy peer's next dispatch is written before its turn ends. On the idle event, read the peer's REPORT, adjust only what the report changes, send the prompt, and delete its section here.
@@ -1975,3 +1975,10 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Instruct record at 10:20:52Z; index's first text at 10:21:00Z: continuing under Bash, since the gm MCP server reports failed on the deferred-tool lookup. Gm is still not reconnected. Likely cause: the dispatcher stopped the gm serve processes that served index's session (3633001, 3633185) at 10:03Z.
 - Same asks as turn 67d159da1a1d, with the step-2 JSON files recorded as clash-caused and the 4 excluded GLBs recorded against the policy. The owner-held items are unchanged.
 - Open until the turn ends: read the REPORT and the witness. If gm is still failed, the owner decides whether to restart index's gm.
+
+## 10:30Z index turn c977bb62af06 ended (turn_end, 240 s); removed from the ledger
+- gm still unavailable (mcp__gm__run_code missing); the pass ran under Bash.
+- Step 2: 64cc3f8b and 5886e684 are not failures (parse, sha256 MATCH; the JSON errors came from the clash). The 4 excluded GLBs are classified by cause against the policy; no fix applied.
+- Step 4: all 30 failures and the zero-set 404 row classified. Zero-set row value.c139bbfa… is unreachable (HEAD and ranged GET 404), so not fetched. One tooling fix: the keep step no longer overwrites.
+- Counts unchanged: model/ 46785, glb-original/ 1112, quarantine/2026-11-13-nine-clash/ 4.
+- Held for the owner: (a) 4 excluded GLBs in step 2 and 10 more excluded discovery files, whose external images all answer 200 but are not embedded; (b) 18 discovery verify failures, same texture-count class as the 37 held files; (c) d2a8879d, meshopt writer assertion on an already-compressed source; (d) d220c442, verify fails in the oscraft loader at /workspace/oscraft/js/client/glb.js:65, outside index; (e) d220c442 and d2a8879d were overwritten by the rerun's rename before the fix, and their pre-rerun sha256 was never recorded, so the owner decides whether to re-verify. Also still held: the 2802 404 rows and the 37 strict-verify files.
