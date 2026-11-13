@@ -1698,3 +1698,9 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Pw's commits, local on top of origin 607018e: 6ea2696 (Windows commandOf via PowerShell), dd2fdcd (closeFromCaller reports closed only once the debug port stops answering), 9b565f3 and 82d098f (records). Linux lifecycle alone: node --check clean, lifecycle 12 checks passed. The no-op witness for closeFromCaller is NOT yet written (per 82d098f's own record).
 - Decision: the full set on 82d098f is not the final tree. The witness must be written and the tree changes, so when b1a8592gc exits, the continuation tells pw to write the no-op witness, run it alone, stop its own Monitor, run the full set once on the final tree, then push once and make one hosted status call. The job is not stopped now: it is pw's, and the dispatcher does not send while it runs.
 - Last handled pw ts 2026-11-13T02:25:35.423Z.
+
+## 02:28Z gm: turn e1d8f135d8ff ended 02:27:42 (537.6 s). Phase A committed locally as af027a4 (check-browser-scope: stop the run's gate and browser tree by pid and start time; add check-browser-scope-tree); the job-cap commits 1a9017a and earlier are already on origin. Origin is 1a9017a. Gm's REPORT says its build is running and that a Monitor will wake it, which the standing rules forbid for a peer.
+- Job: cmake --build build/release, PID 2340331 (under gm's shell 2340330). Bounded wait started as background boyl2ngtd, 2400 s; the continuation goes out with the build's result when it exits, and only if gm is idle. Last handled gm ts 2026-11-13T02:27:42.816Z.
+- Also in the 02:19Z continuation, still open: the exit-144 cause and the witnesses for af027a4 are not yet reported.
+- Index: compaction PID 2285827 live; the 02:58:48Z deadline is unchanged.
+- Pw: its full set on 82d098f (PID 2335908) is still under bounded wait b1a8592gc.
