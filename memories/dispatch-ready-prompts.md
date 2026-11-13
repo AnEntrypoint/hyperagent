@@ -1751,3 +1751,10 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - READ d13cede's windows-scan result once when it completes (not before), then send pw the result.
 - Gm: ab9b391 pushed (origin matches local). Its turn d382c76ed6a0 is still running; the install of ab9b391 is pending in that turn.
 - Index: compaction relaunched by index as zero-glb-keep12r5 (pid 2423377, gm-job 2423382 for the node process, timeoutMs 3600000, no extendOnProgress). The 4 o'clock lifetime kill of r4 was "lifetime" at about 02:58:48Z. The store is at 18611 rows. Index's turn has been open since its 23:44 timeout, so no send, no interrupt; held for the owner.
+
+## 03:00Z gm: turn d382c76ed6a0 ended 02:59:55 (522.5 s). Pushed ab9b391 once (origin matches local): the first-step correction rule, witness check-first-step-correction (red on 05ddb4d-1: 2 failures; green on ab9b391-1: ok); docs commit 4dfe6f3 carried in the push. Full set 61 of 61, 142.4 s, longest check-job-wait 65.1 s. Hosted at one call: arm-diagnose pending; pages in progress; not polled.
+- Installed ab9b391-1 on all five serves; skill ok; live call 52 verbs; restarts "05ddb4d-1 -> ab9b391-1" in pw (02:59:11.831Z) and index (02:59:11.943Z), no error since; fx silent since 02:17:22Z.
+- Index's job zero-glb-keep12r4 was killed by lifetime at 02:58:49Z; index relaunched r5 at 02:58:55Z (pid 2423377), state running, carried.
+- Gm's stale docs line (says 4dfe6f3 unpushed) is a defect to correct in gm's next stretch, not with a second push now.
+- Sent gm turn db518f3c58dd (instruct, wait false): Phase A: correct the stale docs line; fix the unused-parameter warning at witness_windows_cmd.cpp:15 (named cause); find the sender of the 02:13:20Z SIGTERM to pid 2308659 (change code only if a gm path sent it); Phase B once, one push, one hosted status call, install with the same validation; ranked remaining reachable work in REPORT; no Monitor. Last handled gm ts 2026-11-13T02:59:55.169Z.
+- Pw: turn 787c92603217 running (two answers, ranked remaining work, no new Phase A until the d13cede result is known).
