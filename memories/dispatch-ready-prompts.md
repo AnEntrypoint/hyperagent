@@ -1743,3 +1743,11 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Sent pw turn 8bd72ddfd266 (instruct, wait false): one push of 6ea2696, dd2fdcd, 91141ef and the records (commit records first if uncommitted); one hosted status call for windows-scan; REPORT states PowerShell on the hosted runner (checked or unverified), the line 197 result if finished, longest step and its wall time; Monitor stays stopped. Last handled pw ts 2026-11-13T02:43:13.382Z.
 - Gm: turn d382c76ed6a0 (docs commit, first_step_correction Phase A, Phase B, one push) is running.
 - Index: compaction PID 2285827 is alive. Its 02:58:48Z deadline is about two minutes away; nothing sent or interrupted.
+
+## 02:59Z pw: turn 8bd72ddfd266 ended 02:59:21 (178.3 s). Pushed 607018e..d13cede (one fast-forward): 6ea2696, 9b565f3, dd2fdcd, 82d098f, 91141ef (no-op witness), d13cede (records). Full set on 91141ef: 24 of 24 exit 0, leftover 0, npm-test 310272 ms, runner wall 791025 ms.
+- Hosted, one status call by pw: 43351541230 (607018e) completed failure; d13cede's run not listed yet.
+- Dispatcher read the 607018e failure log once: the Lifecycle step runs under C:\Program Files\PowerShell\7\pwsh.EXE (PowerShell 7 is on the runner). The failure is the same as before the fix: "the debug port stops answering after the close", debug-port /json/version last "ok", ok x52, with gate pid 6660 and debug port 10359. 6ea2696 is the candidate fix; the d13cede run decides it.
+- Sent pw turn 787c92603217 (instruct, wait false): record the two answers; do not poll d13cede; list ranked remaining reachable work with its witnesses; no new Phase A until the d13cede result is known, so no second push is in flight; Monitor stays stopped. Last handled pw ts 2026-11-13T02:59:21.246Z.
+- READ d13cede's windows-scan result once when it completes (not before), then send pw the result.
+- Gm: ab9b391 pushed (origin matches local). Its turn d382c76ed6a0 is still running; the install of ab9b391 is pending in that turn.
+- Index: compaction relaunched by index as zero-glb-keep12r5 (pid 2423377, gm-job 2423382 for the node process, timeoutMs 3600000, no extendOnProgress). The 4 o'clock lifetime kill of r4 was "lifetime" at about 02:58:48Z. The store is at 18611 rows. Index's turn has been open since its 23:44 timeout, so no send, no interrupt; held for the owner.
