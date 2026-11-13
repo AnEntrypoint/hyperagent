@@ -1847,3 +1847,11 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Sent gm turn 5d49947e5585 (instruct, wait false): ranked remaining reachable work with reasons and witnesses; Phase A allowed now, local commits only; no push or hosted call until the dispatcher sends the bf1ebfc release result; fix the runner pipe habit in the gm skill or the runner.
 - Pw: turn 31c2a3bf7a4e running Phase B locally, push held. Fx: turn 9bd46f402dc6 running its full set, pid 2445093. Index: zero-glb-keep12r5 (pid 2423377) alive.
 - Held for the owner: the third push for the Windows EBUSY repair.
+
+## 03:47Z gm: release run 43360544010 for bf1ebfc concluded failure (read once; bounded wait bj8r82ixl exited).
+- Failed: build macOS arm64 and macOS x64 (install.cpp:162:61 "call to 'to_string' is ambiguous"); build-windows x64 and arm64 (gm-tool.exe LNK2019/LNK1120: unresolved kill_processes and alive_of, used by run_child_reap.cpp and reap_identity.cpp, so the Windows build lacks them); build x64 Linux (phase-b check-job-bounds FAILED 5.1 s, 1 failure, not reproduced locally).
+- Passed: build arm64 Linux; publish reports success, although five builds failed. Gm must report what publish published; the dispatcher does not re-publish.
+- Push rule: bf1ebfc is gm's first Phase B push of this stretch, and it broke listed witnesses. The dispatcher approves ONE second push for the fix only, for this reason (stated in the owner report).
+- Gm turn 5d49947e5585 is running (ranked remaining work, Phase A), so the fix prompt is queued as a ready prompt for gm's next turn end, with the pending fold into any Phase A it has open: fix the three hosted failures in Phase A; reproduce and fix check-job-bounds on Linux locally (a load-dependent verdict gets a load-independent budget); Phase B on Linux; one push; one hosted status call; then the install with the same validation; no hand git push.
+- Pw: turn 31c2a3bf7a4e running Phase B locally, push held. Fx: turn 9bd46f402dc6 running its full set, pid 2445093. Index: zero-glb-keep12r5 (pid 2423377) alive.
+- Held for the owner: the third push for the Windows EBUSY repair; the publish job's result (it succeeded with five failed builds).
