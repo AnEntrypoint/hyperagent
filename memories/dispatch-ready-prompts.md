@@ -1716,3 +1716,9 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Not done by gm: af027a4 not installed; docs/PENDING_VALIDATION.md still says the gate-tree work is unbuilt. The owner-approved follow-up is an extra commit and push, so it waits for the next stretch.
 - Sent gm turn f50e1181bd31 (instruct, wait false): install af027a4 and validate; Phase A that corrects the docs entry, keeps exit 144 open, and checks the run-replacement question pw raised (b8bdb4), fixing it if a new run replaces another task's active run; Phase B once, one push, one hosted status call. Last handled gm ts 2026-11-13T02:34:17.040Z.
 - Pw: full set 82d098f (PID 2335908) still running under b1a8592gc.
+
+## 02:38Z pw: bounded wait b1a8592gc exited 0 at 02:37:52Z (full-set PID 2335908 gone). Full set on 82d098f: 23 rows exit 0, no non-zero rows, wall 761.5 s (/tmp/pwb-phaseb-fullset). Pw had not resumed on its own; its turn had ended 02:25:35.
+- The no-op witness for closeFromCaller is not written yet, so 82d098f is not the final tree.
+- Sent pw turn ea9bed44af96 (instruct, wait false): write the no-op witness (Phase A), stop the Monitor it still has armed, run the witness alone, then the full set once on the final tree, rerun any failing row alone, push once (6ea2696, dd2fdcd, the witness commit and the records), one hosted status call for windows-scan, state whether PowerShell is on the hosted runner, longest step and its wall time. Last handled pw ts 2026-11-13T02:25:35.423Z.
+- Gm: install af027a4-1 is already in place; turn f50e1181bd31 still validating.
+- Index: compaction PID 2285827 alive; its 02:58:48Z deadline is unchanged.
