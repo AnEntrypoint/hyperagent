@@ -1838,3 +1838,12 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Sent gm turn 87d419d2d9a9 (instruct, wait false): phase-b build/release once; gm-tool ship --push once (it carries the nine local commits); one hosted status call; install with the 84a9724 validation; item 6 read from that one call. Gm's two gates 2326286 and 2435627 are its browser lease and are kept.
 - Pw: turn 31c2a3bf7a4e running Phase B locally; push held. Fx: turn 9bd46f402dc6 running its full set, pid 2445093. Index: zero-glb-keep12r5 (pid 2423377) alive.
 - Held for the owner: the third push for the Windows EBUSY repair.
+
+## 03:43Z gm: turn 87d419d2d9a9 ended 03:43:11 (389.7 s). Phase B pushed: origin/main is bf1ebfc (ten commits: the nine named plus the cleanup fix). Install bf1ebfc-1: /config/.gmnew/current points at versions/bf1ebfc-1; gm --version bf1ebfc-1 (d3c75e76104c); check-skill-serve ok; a live call returned install-bf1ebfc-live. The live serves run versions/bf1ebfc-1/gm. Refusals or errors in the run log are all before the install (03:40:53Z); the latest is 02:58Z.
+- Defect found and fixed in Phase B: check-job-identity left its sleep 120 children alive after its wrapper was killed. Gm killed the eight leftover processes by PID; the commit bf1ebfc kills the whole job tree. The witness now passes and leaves nothing behind.
+- Defect in gm's runner: the first runner's output was piped through head -5, which killed it after two witnesses. Gm reran the other five without the pipe.
+- Hosted: the one status call showed release 43360544010 queued, arm-diagnose 43360544044 pending, pages in progress. Item 6 (check-relay-reexec) is not settled. Dispatcher's one bounded read: background wait bj8r82ixl on release 43360544010 (gh run watch --exit-status, 1500 s). Read its result once when it exits.
+- Gate: 2326286 alive (5144 s). A new npm exec wrapper 2632938 exists after the install re-exec; gm did not start it and has not stopped 2435627, which it reports as gone.
+- Sent gm turn 5d49947e5585 (instruct, wait false): ranked remaining reachable work with reasons and witnesses; Phase A allowed now, local commits only; no push or hosted call until the dispatcher sends the bf1ebfc release result; fix the runner pipe habit in the gm skill or the runner.
+- Pw: turn 31c2a3bf7a4e running Phase B locally, push held. Fx: turn 9bd46f402dc6 running its full set, pid 2445093. Index: zero-glb-keep12r5 (pid 2423377) alive.
+- Held for the owner: the third push for the Windows EBUSY repair.
