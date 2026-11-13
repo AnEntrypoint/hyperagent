@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: bc092253-97dd-4f77-9001-5a59318251ee
-  modified: 2026-11-13T10:04:40.399Z
+  modified: 2026-11-13T10:07:58.627Z
 ---
 
 The orchestrate skill's wall-clock rule: each busy peer's next dispatch is written before its turn ends. On the idle event, read the peer's REPORT, adjust only what the report changes, send the prompt, and delete its section here.
@@ -1945,3 +1945,10 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Sent on d3697fdf, turn ec26e6147f6f, wait false: (1) retry all 2802 404 rows with HEAD and GET, record times in compact-state; (2) compact the 9 new originals into model/, add only; (3) redownload the 37 strict-verify files to temp, verify, quarantine the old file (no delete), place the new one only after it passes; (4) fetch any model in download.md's sources that is missing, then compact it.
 - Quarantine instead of delete is the dispatcher's choice, so the old originals stay recoverable. Index is told not to stop or write into lance/ or the db run.
 - Open: check the journal for the instruct record and the next tool record; read the turn result when it ends.
+
+## 10:08Z index turn ec26e6147f6f running; defect: duplicate compaction clash
+- Index's own text: the nine-GLB compaction ran twice. A wrong PID lookup left the first run (pid 3639087) alive, and a second run wrote the same files. Two originals (4bfeb607, 5bc20d7c) were overwritten by truncated downloads; 59190a97 and 64cc3f8b were also damaged by the clash and keep-rename. Four originals fail their recorded sha256.
+- Index is quarantining the four damaged files, re-fetching each URL, and placing only a copy whose sha256 matches. The duplicate run was stopped by PID.
+- Other index writers were running at 10:07Z: retry-404.mjs (3638258), compact.mjs on DISCOVERY_MISSING_LINKS.md (3641767), repair-nine.mjs (3646760), and the CLIP render job (render_models.py, pid 3638593, under lance/). The render job is the owner's db work and was not touched.
+- Dispatcher rule for the next index dispatch: one writer per output file at a time, with a lock file that names the PID and owner; no second compaction over the same rows; quarantine before any replacement, never overwrite in place.
+- Held for the owner: whether the four quarantined originals may be deleted once their replacements verify.
