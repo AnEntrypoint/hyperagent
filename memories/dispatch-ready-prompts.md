@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: bc092253-97dd-4f77-9001-5a59318251ee
-  modified: 2026-11-13T10:17:37.970Z
+  modified: 2026-11-13T10:21:07.574Z
 ---
 
 The orchestrate skill's wall-clock rule: each busy peer's next dispatch is written before its turn ends. On the idle event, read the peer's REPORT, adjust only what the report changes, send the prompt, and delete its section here.
@@ -1970,3 +1970,8 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Done before the block: step-2 JSON failures do not reproduce; both files parse and match their recorded sha256, and their failure came from the clash (ENOENT). The 4 excluded GLBs reference external images that answer HTTP 200; their exclusion is a deliberate policy, recorded rather than changed.
 - Not done: gm reconnect; step-4 failure causes; the zero-set 404 row. No index writers running at 10:17:30Z.
 - Next: after the owner runs /login for index, resume d3697fdf with the same asks as turn 67d159da1a1d.
+
+## 10:20Z owner ran /login; index resumed on d3697fdf, turn c977bb62af06, wait false
+- Instruct record at 10:20:52Z; index's first text at 10:21:00Z: continuing under Bash, since the gm MCP server reports failed on the deferred-tool lookup. Gm is still not reconnected. Likely cause: the dispatcher stopped the gm serve processes that served index's session (3633001, 3633185) at 10:03Z.
+- Same asks as turn 67d159da1a1d, with the step-2 JSON files recorded as clash-caused and the 4 excluded GLBs recorded against the policy. The owner-held items are unchanged.
+- Open until the turn ends: read the REPORT and the witness. If gm is still failed, the owner decides whether to restart index's gm.
