@@ -129,6 +129,12 @@ in general terms, not another rule for one incident.
 - The gm project's pushes and installs go out whenever they are ready, whether or not
   peers are busy. Peers keep working through the update: the dispatcher validates the
   install and watches the peers' journals for gm errors across the update window.
+- A gm-friction fix is committed locally by the subagent that found it and handed to the
+  gm peer as a SHA; the gm peer lands it in its one gated push. A subagent never pushes
+  gm `main` directly: a direct push moves the base under the candidate, forces another
+  rebase, and can leave `main` red. Measured: six direct pushes from gm-friction
+  subagents moved `main` under a 16-commit chain in one afternoon, so no candidate
+  landed and `main` stayed red.
 - Waste is measured, not guessed: the gap between a peer's `result` and its next
   `instruct` in the journal, and the long calls, repeats and token use in its transcript.
 - The dispatch ledger is the one place that says what is sent and what is queued. Every
