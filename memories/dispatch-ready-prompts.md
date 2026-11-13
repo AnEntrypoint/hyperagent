@@ -1883,3 +1883,12 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Pw: turn 146dff9f352a is active (the relay-stop witness; namespaces blocked, last text 04:00:56Z). The third-push go is a READY PROMPT for pw's next turn end: push once the relay-stop commit is in, which carries ef87762, bab2c93, 4ccd13d, df77f9d and the relay witness, as one push; one hosted status call; no polling; report the REPORT line.
 - Index: zero-glb-keep12r5 (pid 2423377) reached its 3600000 ms deadline around 03:58Z; its turn is still open; nothing sent.
 - Fx: turn 9bd46f402dc6 full set pid 2445093, still running.
+
+## 04:03Z spin-down (owner: "lets spin down all the work")
+- Stopped the dispatcher's wakeups (none pending), monitor b58y3x6ab and the gm release wait bet7ag6vi.
+- Stopped peers with stop_peer: pw, gm, fx, index. Extra and thebird had no live peer. Jayzee stays stopped.
+- Stopped the processes the peers had started, each by its own PID with SIGTERM: pw's relay-stop witness (2723775, 2723778, 2723779, 2723780), pw's relay server playwriter-ws-server 2723791 and lifecycle 2723820; index's compaction wrappers 2714669, 2714673 and node compact.mjs 2714674; fx's phase_b.py 2445093 and bun test 2712572; gm's browser lease gate 2326286. All were gone within 6 s. Pid 88264 (playwriter-ws-server, extra's cwd) is held by the owner and was left running.
+- Nothing pushed. Pw's push is still held, and the owner's approval (the third push) is not executed, so it waits for a resume. Gm's `latest` re-point is not executed either.
+- Uncommitted work left on disk, not committed: pw has edits in package.json, test/lifecycle.cjs, test/support.cjs and untracked test/relay-port-loader.mjs, test/relay-port.mjs, test/relay-stop.cjs (its relay-stop witness, mid-edit). Gm has edits in native/components/tool/checks/registry.cpp, restart_jobs.cpp, run_code_budget.cpp and native/include/gm/tool.hpp (its ranked items 1 and 2, mid-edit). Pw origin is 4 commits behind HEAD (ef87762, bab2c93, 4ccd13d, df77f9d), gm origin is at 023e534 with nothing unpushed.
+- Index's compaction state is in /workspace/index/compact-state/zero-results.jsonl; it resumes from there.
+- Resume path: resume_project with the saved sessions 57a3f21e (gm), 255b1fc0 (fx), d3697fdf (index), peer-pw (pw).
