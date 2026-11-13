@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: bc092253-97dd-4f77-9001-5a59318251ee
-  modified: 2026-11-13T09:49:31.681Z
+  modified: 2026-11-13T09:53:05.087Z
 ---
 
 The orchestrate skill's wall-clock rule: each busy peer's next dispatch is written before its turn ends. On the idle event, read the peer's REPORT, adjust only what the report changes, send the prompt, and delete its section here.
@@ -1916,3 +1916,9 @@ REVISED READY PROMPTS (replace the 16:43Z ones; send on the target's next idle):
 - Held for the owner, unchanged: the 37 strict-verify failures; the unattributed 05:22–05:24Z writes; the model/ removal of 2026-11-12 13:01Z; 12 workers (kept).
 - Index peer: idle, last journal record 05:56:58Z, queue empty. Not sent a prompt, because the owner has not decided and a gm run is writing in its checkout.
 - Spin-down stands: pw, gm and fx not started; the pw third push and the latest re-point stay pending a full resume.
+
+## 09:53Z owner: "stop all agents" (decision)
+- No live peers on the hyperagent channel (peer_status empty).
+- Stopped by PID with SIGTERM, all exited without KILL: index claude 3017883, index gm serve 3018097, index gm-core 3018103 (run 3d4627; successor run 92b200 went with its owner), sa fx 840236, sa gm serve 840247, sa gm-core 2732294, sa hyperagent mcp 840252. The index gm-job clip test had already exited.
+- Left running on purpose: this session (claude 1276), its gm serve 1365, gm-core 2732283, hyperagent mcp 1366, and the airc server ccbridge 1484. The node dev watcher 3429690 (cwd /workspace/hy4-relay) is not an agent and was left alone.
+- Held decisions unchanged. Nothing was resumed or pushed to the peers' repos.
