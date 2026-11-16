@@ -216,6 +216,13 @@ in general terms, not another rule for one incident.
   is stopped by its PID; a process that may belong to the owner's own sessions is reported, not
   stopped. An instruction that asks a peer for a new check also asks that the check stops every
   process it starts, as a tree.
+- Host contention is measured with the memory read: when swap-in runs at tens of MB/s, builds and
+  browsers are competing for RAM, and that is fixed before adding any parallel work. Browsers a
+  peer starts for a witness are stopped by their PID when the witness ends. A browser that outlives
+  its turn is reported to its project with its profile directory and age in the same cycle.
+- Cargo runs on this host go through the shared slot shim at `/config/.local/bin/cargo`, which
+  allows two cargo invocations at a time and queues the rest. A nested cargo call inside a running
+  one passes through, marked by `CARGO_SLOT_HELD`. A peer does not work around the shim.
 
 ## Iteration-time housekeeping
 
