@@ -310,8 +310,11 @@ Include these in every assignment prompt:
 - Verify by running the thing in Phase B. Quote the witness output. Fix any issues that arise.
 - Stop dev servers by their own PID; never use `pkill` or `killall`.
 - Work the whole queue without waiting for the dispatcher. No sleep-and-poll loops:
-  block once on the job's PID with a timeout, or do the next item while it runs. Batch
-  gm verbs into one `run_code` body. Record each witness's wall time in the ledger.
+  block once on the job's PID with a timeout, or do the next item while it runs. Read
+  `skill://gm/SKILL.md` once per session, the first call on the connection; that read clears
+  the gate for the whole connection, so later `run_code` bodies do not repeat it. Batch gm
+  verbs into one `run_code` body. Wait on a gm job once with `job_status` and a `waitMs`,
+  and do not poll it in a loop. Record each witness's wall time in the ledger.
 - A finished stretch is not the end of the turn; carry on until no reachable item is left.
 - Never end a turn to ask about scope, size or a reversible choice. Decide, state the reason
   in the `REPORT:` line, and carry on. A turn ends only when no reachable item is left or the
