@@ -308,6 +308,11 @@ Include these in every assignment prompt:
   commit locally, and push nothing. Then run Phase B: build, witness, fix, push once.
   A hold on a push says so in the words "do not run git push", because a hold that only
   says "do not push" in the prose can be missed by a peer's last step. Do not watch or poll CI between fixes; at most one status check after the push.
+- Browser work goes through playwriter: gm's playwriter, or the playwriter CLI from the same
+  package while gm's playwriter MCP server is down. Do not start headless Chromium, a raw DevTools
+  script or any other browser tool, not even as a fallback. If playwriter fails, report the failure
+  with its output and stop that check; do not switch tools. A check that needs a browser and
+  cannot use playwriter is recorded as open with its cause.
 - Maximum effort and yield. Choose the solution that gets the best result, work around
   the platform's limits, and rearchitect where needed.
 - Treat any issue as a defect: fix it, or record it with its cause. Do not call it expected.
