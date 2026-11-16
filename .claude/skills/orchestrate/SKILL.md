@@ -129,6 +129,10 @@ in general terms, not another rule for one incident.
 - The gm project's pushes and installs go out whenever they are ready, whether or not
   peers are busy. Peers keep working through the update: the dispatcher validates the
   install and watches the peers' journals for gm errors across the update window.
+- Every gm inefficiency the dispatcher or a peer notices is sent to the gm peer, with its
+  evidence, in gm's next dispatch. That covers repeated reads, repeated or polled calls, waits
+  that return early, blocked calls, broken launchers and gate rules that misfire. The list is
+  kept in the dispatch ledger until gm acknowledges each item in its `REPORT:`.
 - A gm-friction fix is committed locally by the subagent that found it and handed to the
   gm peer as a SHA; the gm peer lands it in its one gated push. A subagent never pushes
   gm `main` directly: a direct push moves the base under the candidate, forces another
