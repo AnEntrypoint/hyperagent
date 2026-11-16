@@ -69,7 +69,7 @@ struct StartRequest {
     long concurrency = 8;
 };
 
-Value list_projects(bool include_all);
+Value list_projects();
 Value project_target(const ProjectSelector& selector);
 Value list_sessions(const ProjectSelector& selector);
 Value list_all_sessions();

@@ -24,14 +24,6 @@ namespace hyperagent::orch::projects {
 
 namespace {
 
-constexpr std::string_view project_markers[] = {
-    "AGENTS.md", "CLAUDE.md", "package.json", "pyproject.toml", "setup.py",
-    "Cargo.toml", "go.mod", "CMakeLists.txt", "Makefile", "requirements.txt",
-    "Gemfile", "composer.json", "pom.xml", "build.gradle", "meson.build", "deno.json",
-};
-
-constexpr std::string_view project_suffixes[] = {".sln", ".csproj", ".fsproj", ".xcodeproj", ".uproject", ".cabal"};
-
 bool present(const std::optional<std::string>& value)
 {
     return value && !value->empty();
@@ -50,15 +42,6 @@ std::string lowered(std::string text)
     return text;
 }
 
-std::string path_suffix(const std::string& name)
-{
-    const auto dot = name.rfind('.');
-    if (dot == std::string::npos || dot == 0 || dot == name.size() - 1) {
-        return "";
-    }
-    return name.substr(dot);
-}
-
 std::string base_name(const std::string& cwd)
 {
     std::string trimmed = cwd;
@@ -67,35 +50,6 @@ std::string base_name(const std::string& cwd)
     }
     const auto slash = trimmed.rfind('/');
     return slash == std::string::npos ? trimmed : trimmed.substr(slash + 1);
-}
-
-bool is_project(const std::filesystem::path& path)
-{
-    std::error_code ignored;
-    if (std::filesystem::exists(path / ".git", ignored)) {
-        return true;
-    }
-    for (const auto marker : project_markers) {
-        if (std::filesystem::exists(path / marker, ignored)) {
-            return true;
-        }
-    }
-    if (std::filesystem::is_directory(path / "src", ignored)) {
-        return true;
-    }
-    std::filesystem::directory_iterator entries(path, ignored);
-    if (ignored) {
-        return false;
-    }
-    for (const auto& entry : entries) {
-        const auto suffix = path_suffix(entry.path().filename().string());
-        for (const auto known : project_suffixes) {
-            if (suffix == known) {
-                return true;
-            }
-        }
-    }
-    return false;
 }
 
 Value project_record(const std::string& name, const std::string& cwd, const std::string& harness)
@@ -134,7 +88,7 @@ std::string errno_message(int code, const std::string& path)
 
 }
 
-Value discover(bool include_all)
+Value discover()
 {
     const auto parent = config::parent_dir();
     if (!core::files::is_directory(parent)) {
@@ -157,9 +111,6 @@ Value discover(bool include_all)
             continue;
         }
         if (core::paths::resolve(path) == root) {
-            continue;
-        }
-        if (!include_all && !is_project(path)) {
             continue;
         }
         const std::string name = config::safe_name(leaf);
@@ -188,7 +139,7 @@ Value newest_project()
 {
     Value best(nullptr);
     double best_mtime = 0.0;
-    for (const auto& project : discover(true)) {
+    for (const auto& project : discover()) {
         const std::string cwd = text_of(core::json::member(&project, "cwd"));
         for (const auto& harness_name : harness::names()) {
             const Value session = latest_session(harness_name, cwd);
@@ -217,7 +168,7 @@ Value project_target(const ProjectSelector& selector)
     }
     if (present(selector.project)) {
         const std::string name = config::check_name(*selector.project);
-        const auto listing = discover(true);
+        const auto listing = discover();
         const auto state = state::read();
         const Value* entry = state::project_entry(state, name);
         const auto location = known_cwd(listing, name);
@@ -325,7 +276,7 @@ Value resume_target(const ProjectSelector& selector, const std::optional<std::st
 
 void fill_cwds(std::vector<Value>& jobs)
 {
-    const auto listing = discover(true);
+    const auto listing = discover();
     const auto state = state::read();
     const Value* projects_state = core::json::member(&state, "projects");
 
