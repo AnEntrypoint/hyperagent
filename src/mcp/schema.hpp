@@ -5,15 +5,10 @@ namespace hyperagent::mcp::schema {
 inline constexpr const char* tools_json = R"schema([
   {
     "name": "list_projects",
-    "description": "List the projects in the parent directory that can become peer agents. Launches nothing.",
+    "description": "List the directories in the parent directory that can become peer agents. Launches nothing.",
     "inputSchema": {
       "type": "object",
-      "properties": {
-        "all": {
-          "type": "boolean",
-          "description": "include directories without a project marker"
-        }
-      },
+      "properties": {},
       "additionalProperties": false
     }
   },

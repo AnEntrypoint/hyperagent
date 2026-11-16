@@ -267,7 +267,7 @@ std::optional<std::vector<Arg>> spec_for(const std::string& name)
         return std::vector<Arg>{flag("--json"), flag("--panes")};
     }
     if (name == "projects") {
-        return std::vector<Arg>{flag("--all", "include directories without a project marker"), flag("--json")};
+        return std::vector<Arg>{flag("--json")};
     }
     if (name == "start") {
         return std::vector<Arg>{

@@ -96,9 +96,9 @@ std::string join(const std::vector<std::string>& items, std::string_view separat
 
 }
 
-Value list_projects(bool include_all)
+Value list_projects()
 {
-    return projects::discover(include_all);
+    return projects::discover();
 }
 
 Value project_target(const ProjectSelector& selector)
@@ -122,7 +122,7 @@ Value list_sessions(const ProjectSelector& selector)
 Value list_all_sessions()
 {
     Value rows = Value::array();
-    for (const auto& project : projects::discover(true)) {
+    for (const auto& project : projects::discover()) {
         const std::string cwd = text_of(core::json::member(&project, "cwd"));
         for (const auto& harness_name : harness::names()) {
             for (const auto& item : harness::sessions(harness_name, cwd)) {

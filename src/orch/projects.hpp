@@ -11,7 +11,7 @@ namespace hyperagent::orch::projects {
 
 using Value = core::json::Value;
 
-Value discover(bool include_all);
+Value discover();
 Value latest_session(const std::string& harness, const std::string& cwd);
 Value project_target(const ProjectSelector& selector);
 Value resume_target(const ProjectSelector& selector, const std::optional<std::string>& session_id);

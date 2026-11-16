@@ -162,9 +162,9 @@ std::string page_of_lines(const std::vector<std::string>& lines, long long count
 
 }
 
-std::string list_projects(const Value& args)
+std::string list_projects(const Value&)
 {
-    return dumps_indented(orch::list_projects(flag_arg(args, "all", false)));
+    return dumps_indented(orch::list_projects());
 }
 
 std::string start_projects(const Value& args)
@@ -496,7 +496,7 @@ std::string list_project_sessions(const Value& args)
 {
     Value rows = Value::array();
     if (flag_arg(args, "all", false)) {
-        for (const auto& project : orch::list_projects(true)) {
+        for (const auto& project : orch::list_projects()) {
             for (const auto& harness_name : orch::harness::names()) {
                 for (const auto& session : orch::harness::sessions(harness_name, text_of(core::json::member(&project, "cwd")))) {
                     Value base = Value::object();

@@ -153,9 +153,9 @@ int cmd_status(bool as_json, bool panes)
     return 0;
 }
 
-int cmd_projects(bool include_all, bool as_json)
+int cmd_projects(bool as_json)
 {
-    const Value jobs = list_projects(include_all);
+    const Value jobs = list_projects();
     if (as_json) {
         print_line(json_text(jobs));
     } else {
@@ -396,12 +396,11 @@ void add_command(CLI::App& app)
         });
     }
     {
-        auto flags = std::make_shared<std::pair<bool, bool>>(false, false);
+        auto json = std::make_shared<bool>(false);
         auto* command = orch->add_subcommand("projects", "list projects in the parent path except this one");
-        command->add_flag("--all", flags->first);
-        command->add_flag("--json", flags->second);
-        command->callback([flags]() {
-            exit_with(guarded([flags]() { return cmd_projects(flags->first, flags->second); }));
+        command->add_flag("--json", *json);
+        command->callback([json]() {
+            exit_with(guarded([json]() { return cmd_projects(*json); }));
         });
     }
     {
