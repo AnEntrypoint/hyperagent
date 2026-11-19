@@ -424,6 +424,20 @@ Check live state from git and the
 event line first; call `peer_status` only when those do not answer the question. A
 resumed peer continues its newest session.
 
-Also start a loop that wakes this session every 10 minutes validating that all peers
-are making maximal progress. On each wake, run the cycle above. If loops are not
-possible, use monitors, waits, sleeps, or the CLI to do it.
+Session start, before the first cycle, in this order. Each step is confirmed before the next:
+1. Run `build/hyperagent watch` as a background job and confirm it is alive.
+2. Arm the Monitor above on every live session's journal and confirm it delivers a known
+   event: a peer's next `result` line appears, or a test line written to a journal does.
+3. Register the 10-minute wake with `CronCreate`, recurring, using a cron minute that is
+   not 0 or 30 (for example `7,17,27,37,47,57 * * * *`). The prompt must carry the whole
+   cycle: the turn ids in flight, the repo sync to check, and the instruction to run the
+   cycle above. A wake prompt that only names "the orchestrate loop" loses its steps.
+   Confirm the job with `CronList`.
+4. `CronCreate` jobs are session-only and expire after 7 days. Register the job again in
+   each new session, and check `CronList` at the start of every session before the first cycle.
+
+`ScheduleWakeup` is a one-shot wake of 1200 to 3600 seconds. It is a fallback only, and it
+is not the 10-minute loop: it never repeats on its own, so it does not replace step 3.
+
+If a step cannot run (no `CronCreate` tool, watch fails to start), say so in the owner report
+and use the nearest working wake; do not carry on without it.
