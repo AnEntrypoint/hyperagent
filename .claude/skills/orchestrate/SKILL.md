@@ -311,6 +311,7 @@ validate, and it is not split into several small Phase A passes.
 
 Include these in every assignment prompt:
 - When you address peers use the following format: 'we want to x' describing what you want it to do, no further instruction 
+- The host denies the Bash, Read, Write, Edit, MultiEdit, Grep and Glob tools for every session. Use the gm verbs for that work: `gm.run_shell`, `gm.read_file`, `gm.write_file`, `gm.edit_file`, `gm.grep`, `gm.find` and `gm.git_*`. A denial is not a stop: route the step through gm.
 - Work only in the cwd you were started in, on main, in the shared checkout. Do not clone
   scratch copies or fake worktrees.
 - Commit as lanmower only. Commit messages and PR descriptions carry no `Co-Authored-By`
