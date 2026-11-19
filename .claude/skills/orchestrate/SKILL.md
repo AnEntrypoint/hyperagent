@@ -108,6 +108,10 @@ This section is the standing rule; the other sections apply it.
   that cannot be recovered; licence or legal confirmations the owner has deferred; and
   facts only the owner holds, such as the intended product scope. Everything else is decided.
 - Ignore effort and labour budgets when judging what to do next.
+- Every question from the owner is answered at maximum effort: read the evidence, check the
+  source or the journal, and give the reason and the next action. A short answer is given
+  only when the owner asks for one. A question that was answered from memory is re-checked
+  against the current state before it is repeated.
 
 ## Wall-clock habits
 
@@ -152,9 +156,10 @@ in general terms, not another rule for one incident.
   keeps its turn open and waits on its job, as stated under Standing instructions. When
   a peer ends early, the dispatcher sends the continuation with the job's result, not
   a restart.
-- One watcher feeds one monitor. Peers do not arm monitors on the shared watch log, so
-  events are not repeated. The dispatcher's monitor is armed with the longest timeout
-  the tool allows and re-armed only at its expiry, not on every cycle.
+- The dispatcher does not arm a Monitor; its cycle is a `CronCreate` job. Peers may arm
+  Monitors for their own work. A peer that waits on a condition, such as swap falling
+  below a limit, may poll it with bounded reads in its own turn, and the
+  dispatcher's wake is the `ScheduleWakeup` or `CronCreate` job.
 - A turn that ends while its job still runs is not finished work. The dispatcher starts
   a bounded wait on that job's process in the same step, and sends the continuation with
   the job's result when it exits. It does not send a new prompt while the job runs.
@@ -246,10 +251,10 @@ each project all do this continually, as part of the work and not as a separate 
 - A peer is not parked behind another peer's push. It takes the upstream's local commits
   from the shared path, or other reachable work, and an idle peer with an empty queue is
   asked for its ranked work in the same cycle.
-- The dispatcher's own tools are checked the same way. A monitor is confirmed to deliver
-  a known event after it is armed, and a resume uses the full session id from
-  `list_project_sessions`, so a silent monitor or a peer left at a picker is found at
-  once and not at the next poll.
+- The dispatcher's own tools are checked the same way. The wake job is confirmed with
+  `CronList` at session start, and a resume uses the full session id from
+  `list_project_sessions`, so a missing wake or a peer left at a picker is found at once
+  and not at the next poll.
 
 ## Two-phase work
 
@@ -336,8 +341,9 @@ Include these in every assignment prompt:
   in the `REPORT:` line, and carry on. A turn ends only when no reachable item is left or the
   peer is waiting on a job it started.
 - A job the peer waits on is waited on in the same turn, with a bounded `timeout` on the
-  job's PID. A peer does not arm a Monitor to wake itself, because a turn that ends to wait
-  for one costs the dispatcher a turn and the peer its progress.
+  job's PID. A peer may arm a Monitor to wake itself on a condition it cannot poll cheaply.
+  A turn that ends only to wait costs the dispatcher a turn and the peer its progress, so
+  short waits stay in the turn.
 - Keep the iteration loop short. Prove each change with the narrowest check, rerun a
   failing row alone, run the full set once before the push, never sleep to wait, and
   shorten the step that takes longest. Name that step and its wall time in the report.
@@ -414,20 +420,17 @@ A client that speaks MCP events can skip `build/hyperagent watch`: subscribe wit
 the same idle and gone payloads as `notifications/resources/updated` and
 `notifications/message`; `hyperagent://events` holds the recent stream.
 
-Arm a Monitor on the journals of the sessions that hold work, so each finished turn wakes
-this session at once, and re-arm it when it expires or when a peer moves to a new session:
-`cd .orch/projects && tail -q -n 0 -F <each live session's .jsonl> | grep --line-buffered -a '"kind":"result"' | grep --line-buffered -a -o -E '^.{1,340}'`.
-The journal's `result` record is the turn end, so the monitor reads it directly; the watch
-file can repeat old turns and miss a live one. Every stage must flush per line: `awk`
-(mawk) and `paste` hold piped input and deliver nothing.
-Check live state from git and the
-event line first; call `peer_status` only when those do not answer the question. A
-resumed peer continues its newest session.
+The dispatcher does not arm a Monitor. Its cycle is the `CronCreate` job below, and each
+cycle reads the turn ends from the journals: `result` records in each live session's
+`.jsonl` under `.orch/projects` mark a turn's end. The watch file is a convenience that can
+repeat old turns, so the journal decides.
+Check live state from git and the event line first; call `peer_status` only when those do
+not answer the question. A resumed peer continues its newest session.
 
 Session start, before the first cycle, in this order. Each step is confirmed before the next:
 1. Run `build/hyperagent watch` as a background job and confirm it is alive.
-2. Arm the Monitor above on every live session's journal and confirm it delivers a known
-   event: a peer's next `result` line appears, or a test line written to a journal does.
+2. Confirm the journals are read at each cycle: list each live session's newest `result`
+   record with `read_output`, at each cycle.
 3. Register the 10-minute wake with `CronCreate`, recurring, using a cron minute that is
    not 0 or 30 (for example `7,17,27,37,47,57 * * * *`). The prompt must carry the whole
    cycle: the turn ids in flight, the repo sync to check, and the instruction to run the
