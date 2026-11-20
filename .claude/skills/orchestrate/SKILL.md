@@ -58,6 +58,15 @@ server selects "Yes, I trust this folder" and waits for it to clear. Pass
 `trust: false` on `start_projects`, `instruct` or `instruct_many` to leave that
 decision to a person.
 
+## How the prompts read
+
+Write every prompt to a peer the way the owner would ask a colleague: plain sentences,
+direct, no greeting, no sign-off, no template headers. Say what to do, what must not
+change, and what to send back, in a sentence or two each. The standing commitments
+(work in your own directory on main, commit as lanmower, Phase A then Phase B, one
+push) go in as normal sentences in every prompt. The one fixed element is the last
+line, which starts `REPORT:` so the dispatcher can read it.
+
 ## Cycle (repeat until no work remains)
 
 1. `list_projects`.
