@@ -55,4 +55,9 @@ add_test(NAME idle_reap
         bash ${CMAKE_CURRENT_SOURCE_DIR}/tests/idle_reap.sh)
 set_tests_properties(idle_reap PROPERTIES TIMEOUT 180)
 
+add_test(NAME follow_transcript
+    COMMAND ${CMAKE_COMMAND} -E env HYPERAGENT_BUILD=${CMAKE_BINARY_DIR}
+        bash ${CMAKE_CURRENT_SOURCE_DIR}/tests/follow_transcript.sh)
+set_tests_properties(follow_transcript PROPERTIES TIMEOUT 180)
+
 install(TARGETS hyperagent RUNTIME DESTINATION bin)
