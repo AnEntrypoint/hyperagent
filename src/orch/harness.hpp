@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "core/json.hpp"
@@ -12,6 +13,7 @@ using Value = core::json::Value;
 
 std::vector<std::string> names();
 bool known(const std::string& name);
+bool is_claude_family(std::string_view name);
 Value sessions(const std::string& harness, const std::string& cwd);
 std::optional<Value> find(const std::string& harness, const std::string& session_id);
 std::string selector_kind(const std::string& harness, const std::string& selector);

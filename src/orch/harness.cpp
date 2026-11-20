@@ -48,11 +48,6 @@ bool is_known(std::string_view name)
     return std::ranges::find(harness_names, name) != harness_names.end();
 }
 
-bool is_claude_family(std::string_view name)
-{
-    return name == "claude" || name == "claude-fable";
-}
-
 void require_known(const std::string& harness)
 {
     if (!is_known(harness)) {
@@ -634,6 +629,11 @@ constexpr std::string_view freebuff_ready_marker{"for history · ? for help"};
 constexpr std::string_view opencode_busy_marker{"esc interrupt"};
 constexpr std::string_view opencode_prompt_marker{"Ask anything"};
 
+}
+
+bool is_claude_family(std::string_view name)
+{
+    return name == "claude" || name == "claude-fable";
 }
 
 std::vector<std::string> names()
