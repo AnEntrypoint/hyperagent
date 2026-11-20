@@ -116,6 +116,14 @@ This section is the standing rule; the other sections apply it.
 - The only things that wait for the owner are: credentials; deleting or rewriting data
   that cannot be recovered; licence or legal confirmations the owner has deferred; and
   facts only the owner holds, such as the intended product scope. Everything else is decided.
+- A list of owner decisions in a wake prompt or a run's instructions is checked item by item
+  against the rule above, in the cycle that reads it. An item outside those four kinds is
+  decided in process by the policy in this skill, acted on, and reported as decided with its
+  reason. It is not carried forward as held.
+- An approval the owner has given stands until the owner withdraws it. It is recorded in the
+  dispatch ledger once, and later cycles act on it rather than asking or listing it again.
+  Measured: an approved `gm install --local` and approved live requests were re-listed as
+  held in every report for a day.
 - Ignore effort and labour budgets when judging what to do next.
 - Every question from the owner is answered at maximum effort: read the evidence, check the
   source or the journal, and give the reason and the next action. A short answer is given
@@ -393,8 +401,9 @@ saved one already knew.
 
 `idle_exit_s` returns early when the transcript is silent and the pane is not busy:
 the peer is waiting for a person, usually a permission question. Call `read_pane` and
-decide. Answer reversible questions yourself by re-prompting the peer; collect
-irreversible or credential questions for the owner report.
+decide. Answer every question yourself by re-prompting the peer, except one of the four
+kinds that wait for the owner (see Maximum effort and yield); collect only those for the
+owner report.
 
 A timeout or blocked return does not cancel the peer's turn; the harness keeps working.
 Call `peer_status` before prompting that peer again, and never send a second prompt
@@ -403,11 +412,17 @@ while it is busy.
 ## Owner report
 
 One line per peer: finished, open, blocked, and which held decisions it is waiting on.
+Decisions the dispatcher made this cycle are listed once, each with its reason; they are not
+repeated in later reports.
 
 ## Held for the owner
 
-The dispatcher never acts on these. It collects them into the owner report. Each run
-supplies its own list.
+Held items are only the four kinds named under Maximum effort and yield: credentials,
+unrecoverable deletion or rewrite, deferred licence or legal confirmation, and facts only the
+owner holds. The dispatcher never acts on a held item and collects it into the owner report.
+A run's own list of held items is filtered through that rule first: an item outside the four
+kinds is decided in process and leaves the list, and an item the owner has already approved
+is acted on.
 
 ## Wake-up loop
 
