@@ -3,11 +3,15 @@
 #include <algorithm>
 #include <cctype>
 #include <chrono>
+#include <cstdint>
 #include <cstdio>
 #include <ctime>
+#include <fstream>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <thread>
 #include <vector>
@@ -635,6 +639,174 @@ Value start_one(const Value& job, double settle, bool trust, double lock_wait)
     result["restarted"] = restarted;
     record_latest(result, job);
     return result;
+}
+
+namespace {
+
+struct PeerFollow {
+    std::string transcript;
+    std::uintmax_t offset = 0;
+    std::string pending;
+    bool was_locked = false;
+    std::unique_ptr<journal::Journal> writer;
+};
+
+std::map<std::string, PeerFollow> followed_peers;
+
+bool job_holds(const std::string& name)
+{
+    try {
+        SessionLock probe(name, 0.0);
+        return false;
+    } catch (const Error&) {
+        return true;
+    }
+}
+
+std::string transcript_of(const std::string& harness_name, const std::string& cwd, const std::string& session_id)
+{
+    for (const auto& session : harness::sessions(harness_name, cwd)) {
+        if (text_of(core::json::member(&session, "session_id")) == session_id) {
+            return text_of(core::json::member(&session, "path"));
+        }
+    }
+    return "";
+}
+
+void skip_to(PeerFollow& follow, std::uintmax_t size)
+{
+    follow.offset = size;
+    follow.pending.clear();
+}
+
+void map_assistant(journal::Journal& writer, const Value* content)
+{
+    if (content == nullptr || !content->is_array()) {
+        return;
+    }
+    for (const auto& block : *content) {
+        const std::string block_type = text_of(core::json::member(&block, "type"));
+        if (block_type == "text") {
+            writer.append("text", text_of(core::json::member(&block, "text")));
+        } else if (block_type == "tool_use") {
+            writer.append("tool", text_of(core::json::member(&block, "name")));
+        }
+    }
+}
+
+void map_record(journal::Journal& writer, const Value& record)
+{
+    const std::string type = text_of(core::json::member(&record, "type"));
+    const Value* message = core::json::member(&record, "message");
+    if (type == "assistant") {
+        map_assistant(writer, core::json::member(message, "content"));
+    } else if (type == "user") {
+        const Value* content = core::json::member(message, "content");
+        if (content != nullptr && content->is_string()) {
+            writer.append("you", text_of(content));
+        }
+    } else if (type == "system" && text_of(core::json::member(&record, "subtype")) == "turn_duration") {
+        const Value* duration = core::json::member(&record, "durationMs");
+        const double seconds = duration != nullptr && duration->is_number() ? duration->get<double>() / 1000.0 : 0.0;
+        Value fields = Value::object();
+        fields["status"] = "turn_end";
+        fields["duration_s"] = core::clock::round_to(seconds, 1);
+        fields["acked"] = false;
+        fields["pane_tail"] = Value::array();
+        writer.append("result", "", std::nullopt, fields);
+    }
+}
+
+void map_line(journal::Journal& writer, const std::string& line)
+{
+    const auto record = core::json::parse(line);
+    if (record && record->is_object()) {
+        map_record(writer, *record);
+    }
+}
+
+void read_new_records(PeerFollow& follow, std::uintmax_t size)
+{
+    if (size < follow.offset) {
+        skip_to(follow, size);
+        return;
+    }
+    if (size == follow.offset) {
+        return;
+    }
+    std::ifstream stream(follow.transcript, std::ios::binary);
+    stream.seekg(static_cast<std::streamoff>(follow.offset));
+    std::string chunk(size - follow.offset, '\0');
+    stream.read(chunk.data(), static_cast<std::streamsize>(chunk.size()));
+    chunk.resize(static_cast<std::size_t>(stream.gcount()));
+    follow.offset += chunk.size();
+
+    const std::string buffer = follow.pending + chunk;
+    std::size_t start = 0;
+    for (std::size_t end = buffer.find('\n'); end != std::string::npos; end = buffer.find('\n', start)) {
+        map_line(*follow.writer, buffer.substr(start, end - start));
+        start = end + 1;
+    }
+    follow.pending = buffer.substr(start);
+    follow.writer->flush();
+}
+
+bool follow_one(const std::string& name, const Value& info)
+{
+    const std::string harness_name = text_of(core::json::member(&info, "harness"));
+    const std::string cwd = text_of(core::json::member(&info, "cwd"));
+    if (!core::json::truthy(core::json::member(&info, "alive")) || !harness::is_claude_family(harness_name)
+        || cwd.empty()) {
+        return false;
+    }
+    bool found = false;
+    const Value* launch_args = core::json::member(&info, "launch_args");
+    const std::string session_id =
+        session_from_launch_args(launch_args != nullptr ? *launch_args : Value::array(), found);
+    if (!found) {
+        return false;
+    }
+    const std::string transcript = transcript_of(harness_name, cwd, session_id);
+    if (transcript.empty()) {
+        return false;
+    }
+    const auto file = core::files::stat(transcript);
+    if (!file) {
+        return false;
+    }
+
+    PeerFollow& follow = followed_peers[name];
+    if (follow.transcript != transcript) {
+        follow = PeerFollow{transcript, file->size, "", false,
+                            std::make_unique<journal::Journal>(name, cwd, harness_name, session_id)};
+    }
+    if (job_holds(name)) {
+        skip_to(follow, file->size);
+        follow.was_locked = true;
+    } else if (follow.was_locked) {
+        skip_to(follow, file->size);
+        follow.was_locked = false;
+    } else {
+        read_new_records(follow, file->size);
+    }
+    return true;
+}
+
+}
+
+void follow_peers()
+{
+    try {
+        const Value peers = ccbridge::fetch_sessions();
+        std::set<std::string> tracked;
+        for (const auto& [name, info] : peers.items()) {
+            if (follow_one(name, info)) {
+                tracked.insert(name);
+            }
+        }
+        std::erase_if(followed_peers, [&tracked](const auto& entry) { return !tracked.contains(entry.first); });
+    } catch (const std::exception&) {
+    }
 }
 
 }

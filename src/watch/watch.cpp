@@ -9,6 +9,7 @@
 #include "core/clock.hpp"
 #include "core/http.hpp"
 #include "core/json.hpp"
+#include "orch/turn.hpp"
 
 namespace hyperagent::watch {
 
@@ -79,6 +80,7 @@ int run(const monitor::CommandOptions& options)
 
     const auto interval = std::chrono::duration<double>(watcher.poll_interval());
     while (true) {
+        orch::turn::follow_peers();
         for (const auto& event : watcher.poll()) {
             monitor::print_event(event, options.text);
         }
