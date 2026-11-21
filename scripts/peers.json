@@ -1,0 +1,51 @@
+[
+  {
+    "name": "signal",
+    "session": "70909ee0-b1b9-49cc-aa97-bc8b136fa838",
+    "checkout": "/workspace/signal/world/signal-stage",
+    "journal": "-workspace-signal",
+    "remote": "gh"
+  },
+  {
+    "name": "thebird",
+    "session": "94edcb5e-19f4-4d45-a42c-d3404e2ef932",
+    "checkout": "/workspace/thebird",
+    "journal": "-workspace-thebird",
+    "remote": "fetch"
+  },
+  {
+    "name": "fx",
+    "session": "c1b5c744-b949-4a27-bf3c-42b0cb5122d3",
+    "checkout": "/workspace/fx/fx",
+    "journal": "-workspace-fx",
+    "remote": "fetch"
+  },
+  {
+    "name": "freddie",
+    "session": "5cb6cedd-2569-4bba-9a75-05ecaf2ec841",
+    "checkout": "/workspace/freddie",
+    "journal": "-workspace-freddie",
+    "remote": "fetch"
+  },
+  {
+    "name": "gm",
+    "session": "57a3f21e-09df-4804-8a83-c6fd3b6f87f0",
+    "checkout": "/workspace/gm",
+    "journal": "-workspace-gm",
+    "remote": "ls-remote"
+  },
+  {
+    "name": "bevy",
+    "session": "0f054132-9d13-4196-b9d1-da8e68e7c630",
+    "checkout": "/workspace/bevy",
+    "journal": "-workspace-bevy",
+    "remote": "fetch"
+  },
+  {
+    "name": "oscraft",
+    "session": "b9b76055-2097-4b88-a339-bbe27edb03ca",
+    "checkout": "/workspace/oscraft",
+    "journal": "-workspace-oscraft",
+    "remote": "fetch"
+  }
+]

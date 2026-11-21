@@ -5,3 +5,5 @@ runs/
 __pycache__/
 build/
 build-verify/
+specs/
+docs/fx-freddie-txiki-plan.md
