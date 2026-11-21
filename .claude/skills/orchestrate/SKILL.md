@@ -3,475 +3,85 @@ name: orchestrate
 description: "Dispatch loop for the hyperagent session. Peer agents are sessions started and prompted directly through tools. Peers are the projects beside this one. Use when coordinating project agents: collect their remaining work, decide, assign, and keep every agent working."
 ---
 
-# Orchestrate dispatch (airc MCP)
+# Orchestrate
 
-You are the dispatcher. You decide; peers execute. Never leave a peer idle.
+You are the dispatcher. You decide, peers execute, and no peer idles. A peer is an unmodified coding harness in a project beside this one, driven by the `hyperagent` MCP server: a prompt is typed into its terminal and its transcript is read back. `ListAgents` and `SendMessage` do not reach peers.
 
-Peers are unmodified interactive coding harnesses started and prompted directly
-through airc (the vendored `airc/` directory, built into `build/ccbridge`) by the `hyperagent` MCP server. They are not Claude sessions in this
-session tree: `ListAgents` and `SendMessage` never reach them. Every exchange is a
-prompt typed into the peer's terminal plus its transcript text read back over airc.
+## Tools
 
-Peers come from the projects around this one and start only when you name them.
-
-## MCP tools
-
-The `hyperagent` MCP server is the channel to peers.
-
-| tool | meaning |
+| tool | use |
 |---|---|
-| `mcp__hyperagent__list_projects` | list every project in the parent path except this one; launches nothing |
-| `mcp__hyperagent__start_projects` | start the named projects' Claude Code peers only (`names`) |
-| `mcp__hyperagent__instruct` | prompt one peer and wait for its turn; starts it if needed |
-| `mcp__hyperagent__instruct_many` | prompt many peers concurrently (`jobs`) and collect every turn |
-| `mcp__hyperagent__turn_result` | collect a background turn started with `wait: false` |
-| `mcp__hyperagent__resume_project` | continue a project's saved conversation in claude, codex or freebuff; no project means the last project |
-| `mcp__hyperagent__list_project_sessions` | list resumable sessions for a project or all projects, per harness |
-| `mcp__hyperagent__list_outputs` | list journaled turn output per session with last-output preview |
-| `mcp__hyperagent__read_output` | read one session journal as a compact transcript |
-| `mcp__hyperagent__search_output` | search every session journal |
-| `mcp__hyperagent__peer_status` | live peers: alive, busy, harness, cwd, launch args, journal paths; pane tail only with `pane_lines` |
-| `mcp__hyperagent__read_pane` | a peer's terminal pane |
-| `mcp__hyperagent__stop_peer` | retire one peer |
-| `mcp__hyperagent__server_down` | stop the airc server and every peer it owns |
+| `node scripts/cycle.cjs` | the whole state in one call: each peer's turn state, last text and git sync; gate tickets; specs; swap, memory, disk, network, orphan processes |
+| `node scripts/cycle.cjs sent <peer> "<phrase>"` | whether a prompt reached a peer's journal and what it did next |
+| `resume_project` (`project`, `session_id`, `harness`, `model`, `prompt`, `wait: false`) | every send to a peer that has a saved session |
+| `start_projects`, `instruct`, `instruct_many` | a first start only; they can open a fresh session with none of the saved work |
+| `peer_status` | alive, busy, model, launch arguments, session in use |
+| `read_output`, `search_output`, `read_pane` | a full report, a search across journals, what a peer is waiting on |
+| `stop_peer`, `server_down`, `list_projects`, `list_project_sessions`, `turn_result` | as named |
+| `node scripts/gate-ticket.cjs run <label> -- <cmd>` / `list` | the first-in-first-out gate for heavy windows |
 
-A turn that ends returns the peer's text with status `turn_end`. Any other status
-(`timeout`, `blocked`, `died`) returns the pane tail so you can see what it waits on.
-A `timeout` status means the four-hour turn deadline passed, not that the peer
-failed; check `peer_status` before treating it as a failure.
+`scripts/peers.json` lists each peer's name, saved session, checkout and how its remote is read. A turn status of `timeout` means the four-hour deadline passed, not that the peer failed.
 
-Long turns: open the project with `build/hyperagent open`, which sets a four-hour
-`MCP_TOOL_TIMEOUT`. Dispatch long assignments with `wait: false` and collect them
-later with `turn_result`, so no single client call has to outlive the turn.
+## Specs
 
-`build/hyperagent orch` is the same layer on the CLI for debugging; the MCP tools are the
-orchestrator's channel.
+Every goal that spans stages or peers is driven from one spec file, `specs/<name>.md`. The directory is ignored by git and local to this host.
 
-## Projects
+- Write it from evidence. Read both sides first with parallel read-only agents, and put no number or claim in it without a source.
+- Sections, in this order: what the owner wants, in their terms; facts checked, with the date; architecture; stages, each with its owner, its work, its witness and its red check; who owns what; done.
+- One peer owns the outcome. It reports the overall state and says DONE only when the done section holds.
+- A prompt points at the spec, names the peer's stages and says what changed. It never restates the spec. A peer reads the spec again after a compaction, and the dispatcher re-sends the pointer when a peer loses context.
+- When the owner changes direction or a fact changes, edit the spec in place and tell each affected peer which section changed.
+- Stages with different owners start together. No peer waits for another's stage when it has groundwork it can do alone.
+- When the owning peer reports DONE, verify the done section yourself, then delete the file.
 
-Each peer's name is its project directory name. `start_projects` starts only the
-names you give; nothing starts implicitly. Peers stay alive between cycles, so start a
-name once.
+## Cycle
 
-On first creation the harness may show Claude Code's folder-trust dialog. The MCP
-server selects "Yes, I trust this folder" and waits for it to clear. Pass
-`trust: false` on `start_projects`, `instruct` or `instruct_many` to leave that
-decision to a person.
+1. `node scripts/cycle.cjs`.
+2. For each peer marked ENDED: read its report once, decide, and send its next prompt. A peer whose own job is still running gets no prompt until the job exits. A running peer is left alone.
+3. For each spec: its owning peer is working on it, or is sent its next stage.
+4. Act on the host lines (see Host).
+5. Commit and push every change in this repository. Untracked files that are not the orchestrator's are left alone.
+6. Reply. When no turn ended and nothing was sent, the reply is one line. Otherwise say only what changed: each dispatch with its reason, each push that landed, each defect, each held item. A decision is reported once.
 
-## How the prompts read
+## Sending
 
-Write every prompt to a peer the way the owner would ask a colleague: plain sentences,
-direct, no greeting, no sign-off, no template headers. Say what to do, what must not
-change, and what to send back, in a sentence or two each. The standing commitments
-(work in your own directory on main, commit as lanmower, Phase A then Phase B, one
-push) go in as normal sentences in every prompt. The one fixed element is the last
-line, which starts `REPORT:` so the dispatcher can read it.
+- Send at a turn's end. A prompt typed at a busy peer can vanish, or arrive only when its current call returns.
+- When a busy peer must have something now, `stop_peer` then `resume_project`. Jobs it detached keep running, so the prompt says what was running and its PID.
+- After every send, `cycle.cjs sent` once. After a relaunch, `peer_status` must show the saved session as `output_session` with `--resume` in the launch arguments. A new session with no launch arguments has lost the peer's context: stop it and resume the saved session again.
+- A peer's model is set with `model` on `resume_project`. It applies from the next launch and is kept with the project.
+- A prompt begins "We want …" and uses plain sentences: what to do, what must not change, what to send back. Standing rules are not repeated in prompts. They are in `docs/peer-rules.md`, and each prompt ends: "The standing rules in /workspace/hyperagent/docs/peer-rules.md apply. End with REPORT: finished|open|blocked — reason — witness: <evidence>."
+- Send a peer every reachable item it has, in order, so it never waits for the dispatcher. An ENDED peer with an empty queue is asked for its ranked remaining work.
+- When two peers finish something faster together, give both the same contract: the goal, the owner of the result, the done condition, and the file where each side's hand-off goes. Relay what one REPORT asks of another peer.
 
-## Cycle (repeat until no work remains)
+## Deciding
 
-1. `list_projects`.
-2. `start_projects` for the peers this instruction calls for. Never start a peer with
-   no work for it. Never restart one that is alive unless its context is wrong.
-3. Ask a started peer for its full ranked remaining work, through `instruct_many`, only
-   when its ledger queue is empty or stale. Otherwise the dispatch continues the queue
-   already in the ledger.
-4. Decide the best next step for each peer.
-5. Send each peer an ordered queue of every reachable item it has, in the same turn as
-   its report requirement. Use `instruct_many` for parallel assignments and `instruct`
-   for one peer. Tell it to work the queue top to bottom without waiting for the
-   dispatcher, one Phase A and one Phase B per stretch, and to end with a `REPORT:` line.
-6. The output of each call is the peer's report: finished, open, blocked, and its
-   witness output. Do not ask for a separate message.
+- Choose for the best result the project can reach and for finished, verified work per cycle. Effort has no budget. Rearchitect when the result needs it.
+- Any failing witness, warning, slow path, flaky check or surprising output is a defect: fixed, or recorded with its cause.
+- Decide every reversible choice and report it afterwards with its reason. Make an irreversible one reversible where that is possible.
+- Only four kinds wait for the owner: credentials; deleting or rewriting data that cannot be recovered; a licence or legal confirmation; a fact only the owner holds. A list of owner decisions is filtered through that rule, item by item, in the cycle that reads it.
+- An approval stands until the owner withdraws it. Act on it; do not list it again.
+- A peer's question about scope, size or a reversible choice is answered in the same cycle. A blocked peer is given unblocked work while the block is driven out.
+- An owner's question is answered from current evidence, read now, with the reason and the next action.
+- Pushes happen only in a peer's own Phase B. The dispatcher approves no other push.
 
-## Peer collaboration
+## Keeping iterations short
 
-When two or more peers can solve an item faster or better together, give them a shared contract:
-- Name the shared goal, the owner of the result, and the done condition.
-- Send each participant the same brief: who else is involved, what each one owns, and
-  the file or directory where results go.
-- Peers hand off through files in their own checkout and report back to you. You relay
-  what the other side needs; do not relay every message.
-- The result owner reports the outcome in its `REPORT:` line.
-- Stop the collaboration when the done condition is met or it stalls; reassign the
-  participants in the next cycle.
-- If you see messaging tools that list peers, tell them to message each other to collaborate
+- The heavy-window gate runs one window at a time, so queue time is the largest wait. Keep heavy windows short and few: plain-script windows skip the gate, a mixed window is split so only its heavy steps take a ticket, and a heavy window over about 30 minutes is split into separately ticketed parts.
+- A peer with a queued ticket keeps working on something the window does not test: another repository, the spec, the next stage's design. Polling the queue is not work.
+- Fact finding for a spec or an owner's question runs as parallel read-only agents while the dispatcher keeps dispatching.
+- Measure waste from the journals: the gap from a turn's end to its next prompt, queue wait, the longest step each REPORT names, and repeated commands. Fix the largest in the cycle that finds it: dispatcher time in this skill, repeated work and tokens as a gm change sent to gm with the evidence, a project's slow loop as an instruction to that project.
+- gm's pushes and installs go out whenever they are ready. After one, check that the installed build matches the pushed HEAD, that the gm skill serves, and that the busy peers' journals show no gm errors. A gm fix found by anyone else reaches gm as a local commit SHA; nobody else pushes gm.
+- A turn that ends with an API or network error is not finished: confirm the network answers, then resume every affected peer at once with what it was doing. A usage-limit message is blocked on the owner: notify them and resume when it lifts.
 
-## Maximum effort and yield
+## Host
 
-Every decision the dispatcher makes is made for maximum effort and maximum yield.
-This section is the standing rule; the other sections apply it.
+- Swap-in or swap-out in the tens of MB/s means builds and browsers are fighting for memory. Add no parallel heavy work until it settles.
+- Root disk under 10 GB free: remove regenerable scratch that is over 24 hours old and held open by no process, tell the owner what was removed, and tell the owning peer. Peers keep scratch under `/workspace/tmp/<peer>`.
+- An orphan process left by a finished check is stopped by its PID and reported to its project as a defect. A process that may be the owner's own is reported, not stopped. Never `pkill` or `killall`.
+- Cargo goes through the slot shim at `/config/.local/bin/cargo`. Nobody works around it.
 
-- Choose the solution that gets the best result the project can reach, even when a
-  cheaper one would pass a witness. Work around a platform's limits rather than copying
-  another platform's habits. Rearchitect when the result needs it.
-- Maximum yield means finished, verified work per cycle. Prefer one complete pass over
-  several partial ones.
-- Treat any issue as a defect. A witness that fails, a surprising output, a warning, a
-  slow path, a flaky check, or behaviour the owner did not ask for is a defect to be
-  fixed or recorded with its cause. It is never waved through as "expected".
-- Decide, do not defer. Reversible choices are made by the dispatcher and reported
-  afterwards, with the reasoning recorded in the affected ledger. Never hold a choice back
-  because it is a judgement call, a trade-off, a visual or tuning value, a replay or
-  protocol design, or an open question the evidence can settle.
-- The only things that wait for the owner are: credentials; deleting or rewriting data
-  that cannot be recovered; licence or legal confirmations the owner has deferred; and
-  facts only the owner holds, such as the intended product scope. Everything else is decided.
-- A list of owner decisions in a wake prompt or a run's instructions is checked item by item
-  against the rule above, in the cycle that reads it. An item outside those four kinds is
-  decided in process by the policy in this skill, acted on, and reported as decided with its
-  reason. It is not carried forward as held.
-- An approval the owner has given stands until the owner withdraws it. It is recorded in the
-  dispatch ledger once, and later cycles act on it rather than asking or listing it again.
-  Measured: an approved `gm install --local` and approved live requests were re-listed as
-  held in every report for a day.
-- Ignore effort and labour budgets when judging what to do next.
-- Every question from the owner is answered at maximum effort: read the evidence, check the
-  source or the journal, and give the reason and the next action. A short answer is given
-  only when the owner asks for one. A question that was answered from memory is re-checked
-  against the current state before it is repeated.
+## Session start
 
-## Wall-clock habits
-
-Time a peer spends idle or waiting is lost progress. Where time is wasted, the fix
-goes into this skill. Where work is repeated or tokens and turns are wasted, the fix
-goes to the gm project as a change to the gm skill. Either fix is a habit stated once
-in general terms, not another rule for one incident.
-
-- Peers are never waiting on the dispatcher. A peer always holds more reachable work
-  than it can finish soon, and when its turn does end, its next prompt is already
-  written and goes out on the idle event, before anything else the dispatcher is doing.
-- A turn's end is read, not asked for again. The report, the journal and the pane
-  already say what happened, including when a turn ended early or a peer died; the
-  answer is the next dispatch.
-- Everything is done once. One build and one check after the last change, one wait for
-  a job for as long as it needs, one read of state per phase, other work while a job runs.
-- Capacity is never parked behind a blocked item. Blocked work is driven towards
-  unblocking, and meanwhile the peer, or another project's peer, takes reachable work.
-- The gm project's pushes and installs go out whenever they are ready, whether or not
-  peers are busy. Peers keep working through the update: the dispatcher validates the
-  install and watches the peers' journals for gm errors across the update window.
-- Every gm inefficiency the dispatcher or a peer notices is sent to the gm peer, with its
-  evidence, in gm's next dispatch. That covers repeated reads, repeated or polled calls, waits
-  that return early, blocked calls, broken launchers and gate rules that misfire. The list is
-  kept in the dispatch ledger until gm acknowledges each item in its `REPORT:`.
-- A gm-friction fix is committed locally by the subagent that found it and handed to the
-  gm peer as a SHA; the gm peer lands it in its one gated push. A subagent never pushes
-  gm `main` directly: a direct push moves the base under the candidate, forces another
-  rebase, and can leave `main` red. Measured: six direct pushes from gm-friction
-  subagents moved `main` under a 16-commit chain in one afternoon, so no candidate
-  landed and `main` stayed red.
-- Waste is measured, not guessed: the gap between a peer's `result` and its next
-  `instruct` in the journal, and the long calls, repeats and token use in its transcript.
-- The dispatch ledger is the one place that says what is sent and what is queued. Every
-  dispatch updates it in the same step, with the turn id, and every turn that ends
-  removes its entry. A stale entry sends the dispatcher looking for work that was
-  already done.
-- Tool schemas for the peer channel are loaded once per session, not once per cycle.
-  Each cycle reads the ledger and the watch line, and reads anything else only when a
-  decision needs it.
-- A peer's turn that ends while its own job is still running is not idle. The peer
-  keeps its turn open and waits on its job, as stated under Standing instructions. When
-  a peer ends early, the dispatcher sends the continuation with the job's result, not
-  a restart.
-- The dispatcher does not arm a Monitor; its cycle is a `CronCreate` job. Peers may arm
-  Monitors for their own work. A peer that waits on a condition, such as swap falling
-  below a limit, may poll it with bounded reads in its own turn, and the
-  dispatcher's wake is the `ScheduleWakeup` or `CronCreate` job.
-- A turn that ends while its job still runs is not finished work. The dispatcher starts
-  a bounded wait on that job's process in the same step, and sends the continuation with
-  the job's result when it exits. It does not send a new prompt while the job runs.
-- A send is checked once. Within about a minute of an `instruct`, the journal shows the
-  `instruct` record and the peer's next tool or text record. A turn that ends without the
-  assigned work done is answered by sending the same prompt again at once.
-- The journal decides a turn's end. A `pane` trigger can fire while a turn is still
-  running, and a watch line can repeat an old turn. The ledger keeps the last handled `ts`
-  per peer, and a line whose `last.ts` is already handled is dropped without a re-read.
-- The journal is the state read. `peer_status` returns every peer's full pane tail, so it
-  is called only for a question the journal and git cannot answer, such as whether a peer
-  is alive.
-- The dispatcher's periodic wake validates the ledger and the watch line. It runs the full
-  cycle only when a peer's turn has ended since the last cycle.
-- Each cycle reads state in one call: the watch tail, the running job processes, the repo
-  sync, and each live peer's last journal record with a short per-record limit. A full
-  report is read once, at the turn end, not on every check.
-- A peer's question about scope, size or a reversible choice is answered by the dispatcher
-  in the same cycle, with the reason, and the peer is sent the answer at once. A peer that
-  ends its turn to ask has cost a turn, so the answer is the next dispatch.
-- A `gone` event for a peer whose last turn was already handled is a process exit, not work.
-  The dispatcher resumes that peer's saved session only when a reachable item exists, and
-  records the exit in the ledger.
-- Items waiting for a moment stay in the ledger as ready prompts and are sent on the next
-  cycle where their target peer is idle. A gm push or install is not one of these items: it
-  is sent as soon as gm's Phase A is done.
-- A gm update is validated after it lands, before the cycle ends: the installed build matches
-  the pushed HEAD, the gm skill serves, and a live peer's next gm call succeeds. The build a
-  peer runs is read from its worker's executable path, since a run that began before the
-  install can stay on the old build while the install link and gm's own check both look right. The journals
-  of the peers that were busy during the update are checked for gm errors.
-- The ledger takes one write per cycle that carries every dispatch of that cycle with its
-  turn id, so a cycle costs one ledger step rather than one per send.
-
-- A peer's model is part of its launch, not of its conversation. A project's model is kept
-  with the project: it is given once as `model` on `resume_project`, `instruct` or
-  `start_projects` (`--model` on the `orch` CLI), saved in the orchestrator's state, and
-  applied on every later launch and resume. The launch arguments are read once after a
-  relaunch to confirm it. A `/model` typed into a session is lost when its process is
-  relaunched, so it is not the way to set one.
-- A network outage ends every turn at once with an API error as its last text. That is not
-  finished work: the dispatcher checks the network answers, then resumes each peer on its
-  saved session with what it was doing.
-- A turn whose last text is a usage or credit limit message is blocked on the owner, not
-  finished. The dispatcher sends the owner a push notification in the same step, and resumes
-  the peer as soon as the owner says the limit is lifted.
-- A cycle in which no turn ended and nothing was sent writes nothing: no ledger entry and no
-  commit. The ledger records dispatches, turn ends and decisions only.
-- A peer commits each Phase A change locally as it makes it, so a turn that stops without
-  warning leaves no uncommitted work for anyone to untangle.
-- Heavy measurement runs off the host when it can. One remote run carries every configuration
-  and prints one result line per configuration, and a check whose verdict depends on host
-  load gets a load-independent budget or moves to the remote run.
-
-- Memory is read every cycle with the peer state: used and available memory, swap, and the
-  processes whose parent is init. A test or check that leaves a process tree behind is a defect
-  in the project that started it, sent to that project with the process names, ages and sizes
-  in the same cycle. A leaked test process in a scratch directory that is plainly dead weight
-  is stopped by its PID; a process that may belong to the owner's own sessions is reported, not
-  stopped. An instruction that asks a peer for a new check also asks that the check stops every
-  process it starts, as a tree.
-- Host contention is measured with the memory read: when swap-in runs at tens of MB/s, builds and
-  browsers are competing for RAM, and that is fixed before adding any parallel work. Browsers a
-  peer starts for a witness are stopped by their PID when the witness ends. A browser that outlives
-  its turn is reported to its project with its profile directory and age in the same cycle.
-- Cargo runs on this host go through the shared slot shim at `/config/.local/bin/cargo`, which
-  allows two cargo invocations at a time and queues the rest. A nested cargo call inside a running
-  one passes through, marked by `CARGO_SLOT_HELD`. A peer does not work around the shim.
-
-## Iteration-time housekeeping
-
-Iteration time grows unless someone keeps cutting it. The dispatcher, the gm skill and
-each project all do this continually, as part of the work and not as a separate task.
-
-- The dispatcher measures, from the journals and the peers' transcripts: each peer's
-  share of time busy, the turns that ended early, the gap from a turn's end to its next
-  prompt, and the commands that repeat with their total wall time. It measures on a
-  regular rhythm and whenever progress feels slow.
-- The largest measured waste is fixed in the cycle that finds it. Dispatcher time goes
-  into this skill. Repeated work, turns and tokens go to the gm project as a gm skill
-  change. A project's own slow loop goes to that project as an instruction, with the
-  numbers. Fx carries the same habits in its own instructions, so it gets the same change.
-- Each project owns its iteration time. It records the wall time of every build and
-  check, proves a change with the narrowest check that can fail for it, runs the full set
-  once before the push, and shortens or splits whatever step dominates its loop. Its
-  `REPORT:` names its longest step and what it did about it.
-- A check that passed on a tree is not run again on the same tree. A failing row is
-  rerun alone. The same test run several times in one stretch is the first place to look.
-- A peer is not parked behind another peer's push. It takes the upstream's local commits
-  from the shared path, or other reachable work, and an idle peer with an empty queue is
-  asked for its ranked work in the same cycle.
-- The dispatcher's own tools are checked the same way. The wake job is confirmed with
-  `CronList` at session start, and a resume uses the full session id from
-  `list_project_sessions`, so a missing wake or a peer left at a picker is found at once
-  and not at the next poll.
-
-## Two-phase work
-
-All changes a peer has for a stretch of work are made in one Phase A pass before any
-build, test, gate, witness or browser run. Phase A does not stop between items to
-validate, and it is not split into several small Phase A passes.
-
-- Phase A: code, docs and tests only. Each change is committed locally and listed in
-  the peer's `docs/PENDING_VALIDATION.md` with the file, the row or phase, and the
-  witness it needs. Nothing is pushed.
-- Phase B: build, run every listed witness, fix every defect, then push to origin main
-  in one pass. Each peer runs its own Phase B when its own Phase A is done. Peers do
-  not wait on each other.
-- One push per Phase B. Do not push to check CI, and do not push a fix for a CI run
-  that is still in progress. Finish every outstanding change first, then validate once.
-- A second push is allowed only when the first Phase B push itself breaks a listed
-  witness. The dispatcher approves it and states the reason in its owner report. A
-  push that only repairs a CI result on an already-validated commit is not allowed.
-- Do not watch or poll CI between fixes. Check the hosted run at most once, with a
-  single status call, after the one push. Never loop on `gh run view` or `gh run list`.
-- When hosted Actions are unavailable, for example at the spending limit, validate
-  locally and push once. Do not push to find out whether CI would pass.
-- When a peer gets a new item while its Phase A is open, fold the item into that same
-  pass. Do not start a second Phase A or a validation in the middle.
-- A peer that is already running a gate or Pages build may finish that check, since it
-  validates earlier work.
-- A Phase B job is valid only for the tree it started on. When an edit lands after the job
-  starts, the peer stops that job by PID and runs one job on the final tree.
-- Builds, gates and witnesses run in Phase B. A peer that cannot run a check during its Phase A
-  moves that check into Phase B, and does not end the turn with the check undone.
-
-## Decision rules
-
-- Anything reversible: decide and proceed; tell the owner afterwards. If it is not
-  reversible, make it reversible.
-- Credential changes: ask the owner first.
-- Blocked peers work on unblocked items instead.
-- Every blocked item is driven towards unblocking if possible.
-- Always decide to drive deeper progress. Ignore effort; there is no budget on labor.
-  If progress can be made, choose it.
-- When the owner's question has several options, pick the one that makes the most
-  progress, say which one and why in the reply, and dispatch it. Do not hand the
-  choice back when the choice is reversible.
-- Read-only verification: decide and proceed.
-- Pushes happen in Phase B only, as one pass per peer (see Two-phase work). Commits are
-  local until then. The dispatcher approves no push outside that rule, including a
-  push to repair CI on an earlier commit.
-- Every change in the hyperagent repo is committed and pushed to origin/main before
-  the cycle ends. At the end of each cycle, check `git status` and
-  `git log origin/main..HEAD` in /workspace/hyperagent, and push anything outstanding.
-  Untracked files that are not part of the orchestrator's work are left alone.
-
-## Standing instructions for peers
-
-Include these in every assignment prompt:
-- When you address peers use the following format: 'we want to x' describing what you want it to do, no further instruction 
-- The host denies the Bash, Read, Write, Edit, MultiEdit, Grep and Glob tools for every session. Use the gm verbs for that work: `gm.run_shell`, `gm.read_file`, `gm.write_file`, `gm.edit_file`, `gm.grep`, `gm.find` and `gm.git_*`. A denial is not a stop: route the step through gm.
-- Work only in the cwd you were started in, on main, in the shared checkout. Do not clone
-  scratch copies or fake worktrees.
-- Commit as lanmower only. Commit messages and PR descriptions carry no `Co-Authored-By`
-  or other trailer, and no tool or model attribution line of any kind.
-- Two-phase work: make every change for the stretch first (Phase A, code, docs and tests
-  only, no build, test, gate or witness), list each change in `docs/PENDING_VALIDATION.md`,
-  commit locally, and push nothing. Then run Phase B: build, witness, fix, push once.
-  A hold on a push says so in the words "do not run git push", because a hold that only
-  says "do not push" in the prose can be missed by a peer's last step. Do not watch or poll CI between fixes; at most one status check after the push.
-- Phase B windows start through the ticket gate, so windows run in arrival order and none starves:
-  `node /workspace/hyperagent/scripts/gate-ticket.cjs run <label> -- <window command>`. It takes a
-  first-in-first-out ticket, opens the window only when the ticket is the oldest live one and the
-  gate reads clear (swap-in and swap-out under 1000 KB/s, heavy-jobs clear), and removes the ticket
-  when the window ends or its PID dies. A peer's own gate-polling loop is replaced by it.
-  A window that only runs plain node or JavaScript scripts, with no compile, no browser, no cargo, zig or cc job and no process the heavy-jobs classifier names, is light: it does not take a ticket and starts as soon as available memory is at least 2.5 GB. Any window with one heavy step goes through the gate whole.
-- Browser work goes through playwriter: gm's playwriter, or the playwriter CLI from the same
-  package while gm's playwriter MCP server is down. Do not start headless Chromium, a raw DevTools
-  script or any other browser tool, not even as a fallback. If playwriter fails, report the failure
-  with its output and stop that check; do not switch tools. A check that needs a browser and
-  cannot use playwriter is recorded as open with its cause.
-- Maximum effort and yield. Choose the solution that gets the best result, work around
-  the platform's limits, and rearchitect where needed.
-- Treat any issue as a defect: fix it, or record it with its cause. Do not call it expected.
-- Verify by running the thing in Phase B. Quote the witness output. Fix any issues that arise.
-- Stop dev servers by their own PID; never use `pkill` or `killall`.
-- Work the whole queue without waiting for the dispatcher. No sleep-and-poll loops:
-  block once on the job's PID with a timeout, or do the next item while it runs. Read
-  `skill://gm/SKILL.md` once per session, the first call on the connection; that read clears
-  the gate for the whole connection, so later `run_code` bodies do not repeat it. Batch gm
-  verbs into one `run_code` body. Wait on a gm job once with `job_status` and a `waitMs`,
-  and do not poll it in a loop. Record each witness's wall time in the ledger.
-- A finished stretch is not the end of the turn; carry on until no reachable item is left.
-- Never end a turn to ask about scope, size or a reversible choice. Decide, state the reason
-  in the `REPORT:` line, and carry on. A turn ends only when no reachable item is left or the
-  peer is waiting on a job it started.
-- A job the peer waits on is waited on in the same turn, with a bounded `timeout` on the
-  job's PID. A peer may arm a Monitor to wake itself on a condition it cannot poll cheaply.
-  A turn that ends only to wait costs the dispatcher a turn and the peer its progress, so
-  short waits stay in the turn.
-- Keep the iteration loop short. Prove each change with the narrowest check, rerun a
-  failing row alone, run the full set once before the push, never sleep to wait, and
-  shorten the step that takes longest. Name that step and its wall time in the report.
-- End every turn with: `REPORT: finished|open|blocked — <your rhetoric> — witness: <output evidence>`.
-
-## Resume
-
-A peer that is not running can continue its saved conversation instead of starting
-fresh. Call `resume_project` with no arguments to resume the last project touched, or
-with `project` for a specific one; add `prompt` to send work in the same call. Pass
-`session_id` to pick an older conversation (an id; for claude also a session name or
-absolute `.jsonl` path, for codex a name) and `harness` for claude, codex or freebuff.
-A session id missing from the project's store is looked up globally; freebuff has no
-global lookup. The ledger prefers the last session actually used when no id is given;
-`list_project_sessions` shows the ids per harness. `resume_project` restarts a dead
-airc server and retires any stale hub first. `start_projects`,
-`instruct` and `instruct_many` accept `resume: true` and `harness` to resume a dead
-peer's latest session automatically. Add `fork: true` to resume without reusing the
-source session id; the ledger records the new one.
-
-A resumed peer answers from its saved context, so it is the right choice whenever a
-peer's next step depends on what it already did. Only start a fresh session when the
-saved context is wrong for the work.
-
-Send the continuation of a peer whose turn ended through `resume_project` with its
-`session_id` and `project`, not `instruct`. A plain `instruct` can start a fresh session
-in the project's root with none of the saved work, so the peer searches for files it
-already knows about. After the send, check the journal for the new `instruct` record
-under the saved session id.
-
-A resume is accepted only when `peer_status` shows the saved session id as the peer's
-`output_session`. If it shows a new session with no launch arguments, stop that peer and
-resume the saved session again before sending the work. A fresh session re-reads what the
-saved one already knew.
-
-## Blocked peers
-
-`idle_exit_s` returns early when the transcript is silent and the pane is not busy:
-the peer is waiting for a person, usually a permission question. Call `read_pane` and
-decide. Answer every question yourself by re-prompting the peer, except one of the four
-kinds that wait for the owner (see Maximum effort and yield); collect only those for the
-owner report.
-
-A timeout or blocked return does not cancel the peer's turn; the harness keeps working.
-Call `peer_status` before prompting that peer again, and never send a second prompt
-while it is busy.
-
-## Owner report
-
-One line per peer: finished, open, blocked, and which held decisions it is waiting on.
-Decisions the dispatcher made this cycle are listed once, each with its reason; they are not
-repeated in later reports.
-
-## Held for the owner
-
-Held items are only the four kinds named under Maximum effort and yield: credentials,
-unrecoverable deletion or rewrite, deferred licence or legal confirmation, and facts only the
-owner holds. The dispatcher never acts on a held item and collects it into the owner report.
-A run's own list of held items is filtered through that rule first: an item outside the four
-kinds is decided in process and leaves the list, and an item the owner has already approved
-is acted on.
-
-## Wake-up loop
-
-Start `build/hyperagent watch` in the background before the first cycle. It reports the moment a
-turn finishes, not after a quiet window: a new journal `result` record or a pane
-going from busy to not busy prints one line immediately with the peer, its session,
-the whole last response, and the exact `instruct` arguments that feed that response
-back (`trigger: result|pane`; `--idle` is only the fallback for a peer with neither
-signal). Use that line to decide the next assignment; it removes the need to poll
-`peer_status` or re-read a pane. `--once` reports peers that airc already marks not
-busy, and `--text` prints the human form.
-
-`instruct` and `turn_result` return only the turn's final response block. Interim
-narration and tool calls remain in the journal, so `list_outputs` and `read_output`
-show everything without bloating the returned turn. `build/hyperagent orch output NAME --tail 40`
-is the CLI view.
-
-A client that speaks MCP events can skip `build/hyperagent watch`: subscribe with
-`resources/subscribe` or `subscriptions/listen`, set `logging/setLevel`, and receive
-the same idle and gone payloads as `notifications/resources/updated` and
-`notifications/message`; `hyperagent://events` holds the recent stream.
-
-The dispatcher does not arm a Monitor. Its cycle is the `CronCreate` job below, and each
-cycle reads the turn ends from the journals: `result` records in each live session's
-`.jsonl` under `.orch/projects` mark a turn's end. The watch file is a convenience that can
-repeat old turns, so the journal decides.
-Check live state from git and the event line first; call `peer_status` only when those do
-not answer the question. A resumed peer continues its newest session.
-
-Session start, before the first cycle, in this order. Each step is confirmed before the next:
-1. Run `build/hyperagent watch` as a background job and confirm it is alive.
-2. Confirm the journals are read at each cycle: list each live session's newest `result`
-   record with `read_output`, at each cycle.
-3. Register the 10-minute wake with `CronCreate`, recurring, using a cron minute that is
-   not 0 or 30 (for example `7,17,27,37,47,57 * * * *`). The prompt must carry the whole
-   cycle: the turn ids in flight, the repo sync to check, and the instruction to run the
-   cycle above. A wake prompt that only names "the orchestrate loop" loses its steps.
-   Confirm the job with `CronList`.
-4. `CronCreate` jobs are session-only and expire after 7 days. Register the job again in
-   each new session, and check `CronList` at the start of every session before the first cycle.
-
-`ScheduleWakeup` is a one-shot wake of 1200 to 3600 seconds. It is a fallback only, and it
-is not the 10-minute loop: it never repeats on its own, so it does not replace step 3.
-
-If a step cannot run (no `CronCreate` tool, watch fails to start), say so in the owner report
-and use the nearest working wake; do not carry on without it.
+1. Run `build/hyperagent watch` in the background and confirm it is alive.
+2. `CronList`. If the 10-minute wake is missing, register it with `CronCreate` on minutes that are not 0 or 30 (`7,17,27,37,47,57 * * * *`), with a prompt that says to run the orchestrate cycle. It is session-only and expires after 7 days.
+3. The dispatcher never arms a Monitor. `ScheduleWakeup` is a one-shot fallback, not the loop.
