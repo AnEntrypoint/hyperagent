@@ -343,6 +343,7 @@ Include these in every assignment prompt:
   first-in-first-out ticket, opens the window only when the ticket is the oldest live one and the
   gate reads clear (swap-in and swap-out under 1000 KB/s, heavy-jobs clear), and removes the ticket
   when the window ends or its PID dies. A peer's own gate-polling loop is replaced by it.
+  A window that only runs plain node or JavaScript scripts, with no compile, no browser, no cargo, zig or cc job and no process the heavy-jobs classifier names, is light: it does not take a ticket and starts as soon as available memory is at least 2.5 GB. Any window with one heavy step goes through the gate whole.
 - Browser work goes through playwriter: gm's playwriter, or the playwriter CLI from the same
   package while gm's playwriter MCP server is down. Do not start headless Chromium, a raw DevTools
   script or any other browser tool, not even as a fallback. If playwriter fails, report the failure
