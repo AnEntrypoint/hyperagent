@@ -338,6 +338,11 @@ Include these in every assignment prompt:
   commit locally, and push nothing. Then run Phase B: build, witness, fix, push once.
   A hold on a push says so in the words "do not run git push", because a hold that only
   says "do not push" in the prose can be missed by a peer's last step. Do not watch or poll CI between fixes; at most one status check after the push.
+- Phase B windows start through the ticket gate, so windows run in arrival order and none starves:
+  `node /workspace/hyperagent/scripts/gate-ticket.cjs run <label> -- <window command>`. It takes a
+  first-in-first-out ticket, opens the window only when the ticket is the oldest live one and the
+  gate reads clear (swap-in and swap-out under 1000 KB/s, heavy-jobs clear), and removes the ticket
+  when the window ends or its PID dies. A peer's own gate-polling loop is replaced by it.
 - Browser work goes through playwriter: gm's playwriter, or the playwriter CLI from the same
   package while gm's playwriter MCP server is down. Do not start headless Chromium, a raw DevTools
   script or any other browser tool, not even as a fallback. If playwriter fails, report the failure
