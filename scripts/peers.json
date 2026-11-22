@@ -61,5 +61,19 @@
     "checkout": "/config/workspace/mc-420",
     "journal": "-config-workspace-mc-420",
     "remote": "fetch"
+  },
+  {
+    "name": "zellous",
+    "session": "fa91f434-14ed-4a1a-911e-913e400c6a42",
+    "checkout": "/config/workspace/zellous",
+    "journal": "-config-workspace-zellous",
+    "remote": "fetch"
+  },
+  {
+    "name": "thorns-cpp",
+    "session": "de38240d-2791-4502-8003-2b5c69575f71",
+    "checkout": "/config/workspace/thorns-cpp",
+    "journal": "-config-workspace-thorns-cpp",
+    "remote": "fetch"
   }
 ]
