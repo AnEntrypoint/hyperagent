@@ -318,3 +318,23 @@ Claude transcript channel binds to the newest session file in a project director
 - `hyperagent orch`, `hyperagent watch` and `hyperagent gui` keep the same argument surface, JSON shapes and `.orch/` state as the removed Python tools.
 - `hyperagent ccbridge` prints the binary hyperagent runs: `CCBRIDGE_BIN` when set, else the compiled-in `build/ccbridge`. There is no release download. At spawn, `CCBRIDGE_TEMPLATES` is set to `airc/templates` unless the caller already set it.
 - `hyperagent open` sets `MCP_TIMEOUT` and `MCP_TOOL_TIMEOUT` only when unset and changes to the repo root.
+
+## Shipped layout
+
+A release archive holds `bin/hyperagent`, `bin/ccbridge`, `share/ccbridge/{templates,web}` and
+`share/hyperagent/gui/public`; `cmake --install` produces it. `core::paths` treats the
+executable as shipped when `<exe dir>/../share/hyperagent/gui` exists, and then looks up files
+there first, before `HYPERAGENT_ROOT` and the development walk-up to the directory holding
+`CMakeLists.txt` and `AGENTS.md`. A shipped copy keeps `.orch` under the user data directory
+(`$XDG_DATA_HOME` or `~/.local/share` plus `hyperagent` on Linux, `~/Library/Application
+Support/hyperagent` on macOS) unless `ORCH_HOME` is set, and its peer projects directory is
+`HYPERAGENT_PROJECTS`, then `ORCH_PARENT`, then `<data dir>/projects`; the development layout
+keeps the parent of the repo root. `ccbridge` is found as `CCBRIDGE_BIN`, then beside the
+binary, then the build-path constant. `hyperagent setup` is idempotent: it creates the state
+directory and runs `claude mcp add --scope user hyperagent -- <this binary> mcp` unless claude
+already lists it; with no `claude` on PATH it says so and exits 0.
+
+`-DHYPERAGENT_VERSION=<tag or sha>` sets `--version`. `CMakePresets.json` has one preset per
+static vcpkg triplet (x64-linux, arm64-linux, arm64-osx, x64-osx); the Linux ones add
+`HYPERAGENT_STATIC_RUNTIME`. `tools/ship-witness.sh BUILD_DIR` installs a finished build into a
+temp prefix, copies it away from the source tree and checks `--version` and `setup` there.
