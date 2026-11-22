@@ -43,6 +43,11 @@ const remoteHead = {
   'ls-remote': (cwd) => sh('git ls-remote origin main', cwd).slice(0, 7),
 };
 
+const queueOf = (name) => {
+  const file = path.join(root, 'specs/queue', name + '.md');
+  return fs.existsSync(file) ? fs.readFileSync(file, 'utf8').split('\n').filter((line) => /^\d+\. /.test(line)) : [];
+};
+
 function peerLine(peer) {
   const records = tailRecords(journalOf(peer), 400000);
   const last = records.at(-1);
@@ -52,7 +57,7 @@ function peerLine(peer) {
   const origin = remoteHead[peer.remote](peer.checkout);
   const ahead = peer.remote === 'ls-remote' ? (head === origin ? '0' : '?') : sh('git rev-list --count origin/main..HEAD', peer.checkout);
   const dirty = sh('git status --short | wc -l', peer.checkout);
-  return [peer.name, state, 'last=' + ageOf(last), 'HEAD=' + head, 'origin=' + origin, 'ahead=' + ahead, 'dirty=' + dirty, '| ' + oneLine(lastText?.text, 260)].join(' ');
+  return [peer.name, state, 'last=' + ageOf(last), 'HEAD=' + head, 'origin=' + origin, 'ahead=' + ahead, 'dirty=' + dirty, 'queue=' + queueOf(peer.name).length, '| ' + oneLine(lastText?.text, 260)].join(' ');
 }
 
 function ticketLines() {
@@ -99,5 +104,5 @@ function sent(name, phrase) {
 }
 
 const [command, ...rest] = process.argv.slice(2);
-const lines = command === 'sent' ? sent(rest[0], rest.slice(1).join(' ')) : [...peers.map(peerLine), ...ticketLines(), ...specLines(), ...hostLines()];
+const lines = command === 'sent' ? sent(rest[0], rest.slice(1).join(' ')) : command === 'queue' ? queueOf(rest[0]) : [...peers.map(peerLine), ...ticketLines(), ...specLines(), ...hostLines()];
 process.stdout.write(lines.join('\n') + '\n');
