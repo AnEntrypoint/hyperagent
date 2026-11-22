@@ -1475,7 +1475,7 @@ void Server::handle_http(Request request, Responder respond) {
 void Server::serve_index(const RequestInfo& info, const Responder& respond) const {
     std::ifstream file;
     try {
-        file.open(web_root() / "web" / "index.html", std::ios::binary);
+        file.open(web_root() / "index.html", std::ios::binary);
     } catch (const std::exception&) {
     }
     if (!file) {

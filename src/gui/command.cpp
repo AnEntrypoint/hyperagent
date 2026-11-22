@@ -27,7 +27,7 @@ struct Options {
 int run(const Options& options)
 {
     std::signal(SIGPIPE, SIG_IGN);
-    const std::filesystem::path public_dir = core::paths::repo_root() / "gui" / "public";
+    const std::filesystem::path public_dir = core::paths::data_root() / "gui" / "public";
     JournalFeed feed(core::paths::journal_root(), core::paths::orch_home() / "server.log");
     ReloadWatcher reloads(public_dir);
     Server server(public_dir, feed, reloads);

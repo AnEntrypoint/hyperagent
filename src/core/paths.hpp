@@ -7,7 +7,11 @@
 
 namespace hyperagent::core::paths {
 
+std::filesystem::path executable_path();
+bool is_shipped();
+std::filesystem::path user_data_dir();
 std::filesystem::path repo_root();
+std::filesystem::path data_root();
 std::filesystem::path expand_user(std::string_view text);
 std::string absolute_path(std::string_view text);
 std::filesystem::path resolve(const std::filesystem::path& path);
