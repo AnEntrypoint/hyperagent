@@ -10,7 +10,8 @@ const GATE_READING = process.env.GATE_READING_CMD || '';
 const POLL_MS = Number(process.env.GATE_POLL_MS || 60000);
 const SLOTS = Number(process.env.GATE_SLOTS || 2);
 const FIRST_SLOT_MB = Number(process.env.GATE_FIRST_SLOT_MB || 2500);
-const SECOND_SLOT_MB = Number(process.env.GATE_SECOND_SLOT_MB || 5000);
+const SECOND_SLOT_MB = Number(process.env.GATE_SECOND_SLOT_MB || 6000);
+const QUICK_SLOT_MB = Number(process.env.GATE_QUICK_SLOT_MB || 4000);
 const SWAP_OUT_LIMIT_KBS = 1000;
 const QUICK_SLOTS = Number(process.env.GATE_QUICK_SLOTS || 1);
 const TICKET = /^(\d{15})-(\d+)\.json$/;
@@ -89,7 +90,7 @@ function hostHasRoom(floorMb) {
 function myTurn(name) {
     const tickets = inTurn(liveTickets());
     const mine = tickets.find((ticket) => ticket.name === name);
-    if (mine?.quick) return tickets.filter((ticket) => ticket.quick && ticket.granted).length < QUICK_SLOTS && hostHasRoom(FIRST_SLOT_MB);
+    if (mine?.quick) return tickets.filter((ticket) => ticket.quick && ticket.granted).length < QUICK_SLOTS && hostHasRoom(QUICK_SLOT_MB);
     if (!tickets.every((ticket) => ticket.v === TAKES_TURNS)) return tickets[0]?.name === name && hostHasRoom(FIRST_SLOT_MB);
     const running = tickets.filter((ticket) => ticket.granted && !ticket.quick);
     const next = tickets.find((ticket) => !ticket.granted && !ticket.quick);
