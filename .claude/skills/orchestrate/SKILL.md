@@ -18,7 +18,7 @@ You are the dispatcher. You decide, peers execute, and no peer idles. A peer is 
 | `peer_status` | alive, busy, model, launch arguments, session in use |
 | `read_output`, `search_output`, `read_pane` | a full report, a search across journals, what a peer is waiting on |
 | `stop_peer`, `server_down`, `list_projects`, `list_project_sessions`, `turn_result` | as named |
-| `node scripts/gate-ticket.cjs run <label> -- <cmd>` / `list` | the first-in-first-out gate for heavy windows |
+| `node scripts/gate-ticket.cjs run <project>-<part> -- <cmd>` / `list` / `history` | the gate for heavy windows: one at a time, taking turns between projects; `history` prints each project's windows, wait and run time |
 
 `scripts/peers.json` lists each peer's name, saved session, checkout and how its remote is read. A turn status of `timeout` means the four-hour deadline passed, not that the peer failed.
 
@@ -37,7 +37,7 @@ Every goal that spans stages or peers is driven from one spec file, `specs/<name
 ## Cycle
 
 1. `node scripts/cycle.cjs`.
-2. For each peer marked ENDED: read its report once, update its queue file, and send its whole remaining list. A peer whose own job is still running gets no prompt until the job exits. A running peer is left alone.
+2. For each peer marked ENDED: read its report once, update its queue file, and send its whole remaining list. A running peer is left alone. An ENDED peer that shows `tickets=N` above 0 is prompted only when its list holds an item its queued window does not test; otherwise it is resumed in the cycle its tickets reach 0, with the result file to read. Never send a peer to poll the queue.
 3. For each spec: its owning peer is working on it, or is sent its next stage.
 4. Act on the host lines (see Host).
 5. Commit and push every change in this repository. Untracked files that are not the orchestrator's are left alone.
@@ -67,7 +67,11 @@ Every goal that spans stages or peers is driven from one spec file, `specs/<name
 ## Keeping iterations short
 
 - The heavy-window gate runs one window at a time, so queue time is the largest wait. Keep heavy windows short and few: plain-script windows skip the gate, a mixed window is split so only its heavy steps take a ticket, and a heavy window over about 30 minutes is split into separately ticketed parts.
-- A peer with a queued ticket keeps working on something the window does not test: another repository, the spec, the next stage's design. Polling the queue is not work.
+- A peer with a queued ticket works through the rest of its list, then ends its turn; the dispatcher resumes it when `tickets=0`. Polling the queue is not work, for a peer or for the dispatcher.
+- Tickets are launched detached (`setsid nohup … &`) with a result file, so they outlive the turn, a relaunch and a subagent. A model or harness change relaunches the peer, so make it only at a turn end.
+- Once a cycle, when the gate is the longest wait, read `gate-ticket.cjs history`: a part over about 30 minutes, or a project that re-queues the same window, is that cycle's defect and goes to the top of that peer's list.
+- Work in a repository that has no peer runs as subagents under the same rules; the dispatcher follows their detached tickets and makes the push.
+- The dispatcher's own cycle is three calls: the cycle read, every send in one message, every delivery check in one body.
 - Fact finding for a spec or an owner's question runs as parallel read-only agents while the dispatcher keeps dispatching.
 - Measure waste from the journals: the gap from a turn's end to its next prompt, queue wait, the longest step each REPORT names, and repeated commands. Fix the largest in the cycle that finds it: dispatcher time in this skill, repeated work and tokens as a gm change sent to gm with the evidence, a project's slow loop as an instruction to that project.
 - gm's pushes and installs go out whenever they are ready. After one, check that the installed build matches the pushed HEAD, that the gm skill serves, and that the busy peers' journals show no gm errors. A gm fix found by anyone else reaches gm as a local commit SHA; nobody else pushes gm.
