@@ -7,10 +7,11 @@ const TICKET_DIR = process.env.GATE_TICKET_DIR || '/tmp/gate-tickets';
 const HISTORY = process.env.GATE_HISTORY || TICKET_DIR + '-history.jsonl';
 const LAST_TURNS = TICKET_DIR + '-turns.json';
 const GATE_READING = process.env.GATE_READING_CMD || '';
-const HEAVY_JOBS_CHECK = process.env.HEAVY_JOBS_CHECK || '/workspace/bevy/scripts/heavy-jobs.cjs';
 const POLL_MS = Number(process.env.GATE_POLL_MS || 60000);
 const SLOTS = Number(process.env.GATE_SLOTS || 2);
+const FIRST_SLOT_MB = Number(process.env.GATE_FIRST_SLOT_MB || 2500);
 const SECOND_SLOT_MB = Number(process.env.GATE_SECOND_SLOT_MB || 5000);
+const SWAP_OUT_LIMIT_KBS = 1000;
 const TICKET = /^(\d{15})-(\d+)\.json$/;
 const TAKES_TURNS = 2;
 
@@ -65,32 +66,33 @@ function takeTicket(ownerPid, label) {
     const latest = liveTickets().reduce((max, ticket) => Math.max(max, Number(ticket.name.slice(0, 15))), 0);
     const arrival = Math.max(Date.now(), latest + 1);
     const name = String(arrival).padStart(15, '0') + '-' + ownerPid + '.json';
-    const ticket = { pid: ownerPid, arrival, label, v: TAKES_TURNS };
+    const ticket = { pid: ownerPid, arrival, label, v: TAKES_TURNS, exclusive: process.env.GATE_EXCLUSIVE === '1' };
     fs.writeFileSync(path.join(TICKET_DIR, name), JSON.stringify(ticket) + '\n');
     return { name, ticket };
 }
 
 function availableMb() {
     if (process.env.GATE_MEMORY_MB) return Number(process.env.GATE_MEMORY_MB);
+    if (GATE_READING && !process.env.GATE_MEMORY_MB) return Infinity;
     const line = fs.readFileSync('/proc/meminfo', 'utf8').split('\n').find((row) => row.startsWith('MemAvailable:'));
     return Math.floor(Number(line.split(/\s+/)[1]) / 1024);
 }
 
-function hostQuiet() {
-    if (GATE_READING) return spawnSync('bash', ['-c', GATE_READING], { stdio: 'ignore' }).status === 0;
+function hostHasRoom(floorMb) {
+    if (GATE_READING) return spawnSync('bash', ['-c', GATE_READING], { stdio: 'ignore' }).status === 0 && availableMb() >= floorMb;
     const vm = spawnSync('vmstat', ['1', '2'], { encoding: 'utf8' }).stdout.trim().split('\n');
-    const sample = vm[vm.length - 1].trim().split(/\s+/);
-    const heavy = spawnSync('node', [HEAVY_JOBS_CHECK], { encoding: 'utf8', timeout: 60000 });
-    return Number(sample[6]) < 1000 && Number(sample[7]) < 1000 && heavy.status === 0;
+    const swapOut = Number(vm[vm.length - 1].trim().split(/\s+/)[7]);
+    return swapOut < SWAP_OUT_LIMIT_KBS && availableMb() >= floorMb;
 }
 
 function myTurn(name) {
     const tickets = inTurn(liveTickets());
-    if (!tickets.every((ticket) => ticket.v === TAKES_TURNS)) return tickets[0]?.name === name && hostQuiet();
-    const running = tickets.filter((ticket) => ticket.granted).length;
+    if (!tickets.every((ticket) => ticket.v === TAKES_TURNS)) return tickets[0]?.name === name && hostHasRoom(FIRST_SLOT_MB);
+    const running = tickets.filter((ticket) => ticket.granted);
     const next = tickets.find((ticket) => !ticket.granted);
-    if (next?.name !== name || running >= SLOTS) return false;
-    return running === 0 ? hostQuiet() : availableMb() >= SECOND_SLOT_MB && hostQuiet();
+    if (next?.name !== name || running.length >= SLOTS) return false;
+    if (running.length === 0) return hostHasRoom(FIRST_SLOT_MB);
+    return !next.exclusive && !running.some((ticket) => ticket.exclusive) && hostHasRoom(SECOND_SLOT_MB);
 }
 
 async function run(args) {

@@ -18,7 +18,7 @@ You are the dispatcher. You decide, peers execute, and no peer idles. A peer is 
 | `peer_status` | alive, busy, model, launch arguments, session in use |
 | `read_output`, `search_output`, `read_pane` | a full report, a search across journals, what a peer is waiting on |
 | `stop_peer`, `server_down`, `list_projects`, `list_project_sessions`, `turn_result` | as named |
-| `node scripts/gate-ticket.cjs run <project>-<part> -- <cmd>` / `list` / `history` | the gate for heavy windows: one window, a second when 5 GB is available and swap is quiet (GATE_SLOTS, GATE_SECOND_SLOT_MB), taking turns between projects; `history` prints each project's windows, wait and run time |
+| `node scripts/gate-ticket.cjs run <project>-<part> -- <cmd>` / `list` / `history` | the gate for heavy windows: admission on memory alone (2.5 GB for the first window, 5 GB for a second, none while swapping out), `GATE_EXCLUSIVE=1` for a timing witness, taking turns between projects; `history` prints each project's windows, wait and run time |
 
 `scripts/peers.json` lists each peer's name, saved session, checkout and how its remote is read. A turn status of `timeout` means the four-hour deadline passed, not that the peer failed.
 
@@ -37,7 +37,7 @@ Every goal that spans stages or peers is driven from one spec file, `specs/<name
 ## Cycle
 
 1. `node scripts/cycle.cjs`.
-2. For each peer marked ENDED: read its report once, update its queue file, and send its whole remaining list. A running peer is left alone. A peer seen polling the queue, or looping on one call, is stopped and resumed with its whole list in the cycle that sees it, but only when its tickets are detached (parent PID 1); an attached ticket dies with the stop, so that peer gets the rule at its turn end. An ENDED peer that shows `tickets=N` above 0 is prompted only when its list holds an item its queued window does not test; otherwise it is resumed in the cycle its tickets reach 0, with the result file to read. Never send a peer to poll the queue.
+2. For each peer marked ENDED: read its report once, update its queue file, and send its whole remaining list. A running peer is left alone. A peer seen polling the queue, or looping on one call, is stopped and resumed with its whole list in the cycle that sees it, after checking the ticket count before and after: tickets launched as gm jobs or with `setsid` survive a stop (seen 2026-11-22 for all seven peers' tickets); one launched from a subagent's shell does not. An ENDED peer that shows `tickets=N` above 0 is prompted only when its list holds an item its queued window does not test; otherwise it is resumed in the cycle its tickets reach 0, with the result file to read. Never send a peer to poll the queue.
 3. For each spec: its owning peer is working on it, or is sent its next stage.
 4. Act on the host lines (see Host).
 5. Commit and push every change in this repository. Untracked files that are not the orchestrator's are left alone.
@@ -71,6 +71,8 @@ Every goal that spans stages or peers is driven from one spec file, `specs/<name
 - Tickets are launched detached (`setsid nohup … &`) with a result file, so they outlive the turn, a relaunch and a subagent. A model or harness change relaunches the peer, so make it only at a turn end.
 - Once a cycle, when the gate is the longest wait, read `gate-ticket.cjs history`: a part over about 30 minutes, or a project that re-queues the same window, is that cycle's defect and goes to the top of that peer's list.
 - Work in a repository that has no peer runs as subagents under the same rules; the dispatcher follows their detached tickets and makes the push.
+- `cycle.cjs` marks a peer `DUE` when it is ENDED with tickets=0 and a non-empty list: every DUE peer is sent its list in that cycle. A peer ENDED on tickets only is not DUE.
+- A question that a published binary or another project's artifact can answer is not answered by a gated build. When one peer's build blocks others, find the artifact and hand it to all of them.
 - The dispatcher's own cycle is three calls: the cycle read, every send in one message, every delivery check in one body.
 - Fact finding for a spec or an owner's question runs as parallel read-only agents while the dispatcher keeps dispatching.
 - Measure waste from the journals: the gap from a turn's end to its next prompt, queue wait, the longest step each REPORT names, and repeated commands. Fix the largest in the cycle that finds it: dispatcher time in this skill, repeated work and tokens as a gm change sent to gm with the evidence, a project's slow loop as an instruction to that project.

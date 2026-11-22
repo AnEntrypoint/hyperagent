@@ -16,21 +16,23 @@ These apply to every assignment from the dispatcher. Read them again after a com
 ## Two phases
 
 - Phase A: every change for the stretch in one pass, code, docs and tests only. Commit each change locally as you make it and list it in `docs/PENDING_VALIDATION.md` with its witness and its red check. A new item that arrives joins the open pass. Push nothing.
-- Phase B: one window on the final tree. Run every listed witness and red check, fix what fails, and push origin main once, only if everything that ran passed. A skip is not a run. Quote the push output and `git ls-remote origin main`.
+- Phase B: one window on the final tree. Run every listed witness, and the red checks the Pace section says are due, fix what fails, and push origin main once, only if everything that ran passed. A skip is not a run. Quote the push output and `git ls-remote origin main`.
 - A second push is allowed only when a run shows a failure in the repository that the fix addresses. Never push to see what CI says, and check a hosted run at most once.
-- A window is valid only for the tree it started on. If an edit lands after it starts, stop it by PID and run one window on the final tree.
+- A window covers the commits it ran on. A later commit that changes nothing the window reads (a ledger line, a doc, another area) does not void it: push the covered commits, reordered first if needed, and leave the rest for the next window. Stop a window by PID and re-queue it only when an edit changed what it tests.
+- Every stretch ends pushed. Commits ahead of origin with no window queued or running are a defect: queue their window.
 
 ## The gate
 
 - A heavy window (a compile, a browser, a cargo, zig or cc job) starts through the ticket gate, detached, with its output in a file: `setsid nohup node /workspace/hyperagent/scripts/gate-ticket.cjs run <project>-<part> -- <window command> > <result file> 2>&1 < /dev/null &`. The label starts with your project name. The window prints `<PART>_DONE <exit code>` as its last line. A ticket started any other way dies with the shell or session that started it.
-- The gate runs one window, and a second when the host has at least 5 GB available and no swap traffic, and takes turns between projects: the project that ran longest ago goes next, and your own tickets keep their order. Do not write your own polling loop and do not cut the queue.
+- The gate admits a window on memory alone: the first with 2.5 GB available, a second with 5 GB, and neither while the host is swapping out. Another project's compile does not hold it. A witness that measures time (frame budgets, benchmarks) is queued with `GATE_EXCLUSIVE=1` in its environment and runs alone. The gate takes turns between projects: the project that ran longest ago goes next, and your own tickets keep their order. Do not write your own polling loop and do not cut the queue.
 - Queue a window only on a tree that is final for it. A window re-queued because an edit landed costs a full turn of the queue.
-- A window of plain scripts takes no ticket and starts when available memory is at least 2.5 GB. Split a mixed window so only its heavy steps take a ticket, and split a heavy window over about 30 minutes into separately ticketed parts.
+- A window of plain scripts takes no ticket and starts when available memory is at least 2.5 GB. Memory pressure means swap-out or less than 2.5 GB available; swap-in alone, or someone else's compile, is no reason to pause between steps. Split a mixed window so only its heavy steps take a ticket, and split a heavy window over about 30 minutes into separately ticketed parts.
 - While a ticket is queued, work through the rest of your list that the window does not test. When nothing else is reachable, end the turn with `REPORT: open`, naming each ticket label and its result file. The dispatcher resumes you when your tickets have left the queue. Never poll a queued ticket: a turn spent re-reading the queue is waste.
 - When you are resumed, or your ticket is granted while you are working, read the result file. Wait on a window that is running now with one bounded wait on its PID.
 
 ## Pace
 
+- Before queueing a build to answer a question, look for a published binary or an artifact another project already built, and use it.
 - Prove each change with the narrowest check that can fail for it, rerun a failing row alone, and run the full set once before the push. A check that passed on a tree is not run again on that tree.
 - A red check is rerun only when the code it guards or its witness changed since it last passed. The whole red set runs once per stage, in the stage's last window.
 - You are sent your whole remaining list, numbered, at every turn start. Work it in order, skip an item only when it is blocked, and say in the REPORT which numbers are finished, open and blocked.
