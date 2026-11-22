@@ -18,6 +18,7 @@
 #include "core/files.hpp"
 #include "core/http.hpp"
 #include "core/json.hpp"
+#include "core/paths.hpp"
 #include "core/process.hpp"
 #include "core/text.hpp"
 #include "orch/config.hpp"
@@ -72,8 +73,9 @@ pid_t spawn_detached(const std::string& binary)
     changes.emplace_back("AIRC_CLAUDE_SKIP_PERMISSIONS",
                          config::skip_permissions_setting() == "1" ? std::optional<std::string>("1") : std::nullopt);
     changes.emplace_back("AIRC_CLAUDE_MODEL", config::claude_model_setting());
-    if (std::getenv("CCBRIDGE_TEMPLATES") == nullptr) {
-        changes.emplace_back("CCBRIDGE_TEMPLATES", (config::root_dir() / "airc" / "templates").string());
+    const auto source_templates = config::root_dir() / "airc" / "templates";
+    if (std::getenv("CCBRIDGE_TEMPLATES") == nullptr && std::filesystem::is_directory(source_templates)) {
+        changes.emplace_back("CCBRIDGE_TEMPLATES", source_templates.string());
     }
 
     auto env_text = environment_with(changes);
@@ -250,6 +252,10 @@ std::string ccbridge_binary()
 {
     if (const char* override_binary = std::getenv("CCBRIDGE_BIN"); override_binary != nullptr && *override_binary != '\0') {
         return override_binary;
+    }
+    const auto beside = core::paths::executable_path().parent_path() / "ccbridge";
+    if (std::filesystem::is_regular_file(beside)) {
+        return beside.string();
     }
     return HYPERAGENT_CCBRIDGE;
 }

@@ -4,6 +4,11 @@
 #include <system_error>
 #include <vector>
 
+#if defined(__APPLE__)
+#include <cstdint>
+#include <mach-o/dyld.h>
+#endif
+
 #include "core/text.hpp"
 
 namespace hyperagent::core::paths {
@@ -26,16 +31,69 @@ bool is_repo_root(const std::filesystem::path& directory)
         && std::filesystem::exists(directory / "AGENTS.md", ignored);
 }
 
+std::optional<std::filesystem::path> shipped_prefix()
+{
+    const auto executable = executable_path();
+    if (executable.empty()) {
+        return std::nullopt;
+    }
+    const auto prefix = executable.parent_path().parent_path();
+    std::error_code ignored;
+    if (std::filesystem::is_directory(prefix / "share" / "hyperagent" / "gui", ignored)) {
+        return prefix;
+    }
+    return std::nullopt;
+}
+
+}
+
+std::filesystem::path executable_path()
+{
+    std::error_code ignored;
+#if defined(__APPLE__)
+    std::uint32_t size = 0;
+    _NSGetExecutablePath(nullptr, &size);
+    std::string buffer(size, '\0');
+    if (_NSGetExecutablePath(buffer.data(), &size) != 0) {
+        return {};
+    }
+    buffer.resize(std::char_traits<char>::length(buffer.c_str()));
+    const auto resolved = std::filesystem::weakly_canonical(buffer, ignored);
+    return ignored ? std::filesystem::path(buffer) : resolved;
+#else
+    const auto resolved = std::filesystem::read_symlink("/proc/self/exe", ignored);
+    return ignored ? std::filesystem::path() : resolved;
+#endif
+}
+
+bool is_shipped()
+{
+    return shipped_prefix().has_value();
+}
+
+std::filesystem::path user_data_dir()
+{
+    const auto home = environment("HOME").value_or("");
+#if defined(__APPLE__)
+    return std::filesystem::path(home) / "Library" / "Application Support" / "hyperagent";
+#else
+    if (const auto data_home = environment("XDG_DATA_HOME")) {
+        return std::filesystem::path(*data_home) / "hyperagent";
+    }
+    return std::filesystem::path(home) / ".local" / "share" / "hyperagent";
+#endif
 }
 
 std::filesystem::path repo_root()
 {
+    if (const auto prefix = shipped_prefix()) {
+        return *prefix;
+    }
     if (const auto override_root = environment("HYPERAGENT_ROOT")) {
         return resolve(*override_root);
     }
-    std::error_code ignored;
-    const auto executable = std::filesystem::read_symlink("/proc/self/exe", ignored);
-    if (!ignored) {
+    const auto executable = executable_path();
+    if (!executable.empty()) {
         for (auto directory = executable.parent_path();; directory = directory.parent_path()) {
             if (is_repo_root(directory)) {
                 return directory;
@@ -46,6 +104,14 @@ std::filesystem::path repo_root()
         }
     }
     return std::filesystem::current_path();
+}
+
+std::filesystem::path data_root()
+{
+    if (const auto prefix = shipped_prefix()) {
+        return *prefix / "share" / "hyperagent";
+    }
+    return repo_root();
 }
 
 std::filesystem::path expand_user(std::string_view text)
@@ -119,6 +185,9 @@ std::filesystem::path orch_home()
 {
     if (const auto raw = environment("ORCH_HOME")) {
         return resolve(*raw);
+    }
+    if (is_shipped()) {
+        return user_data_dir() / ".orch";
     }
     return repo_root() / ".orch";
 }

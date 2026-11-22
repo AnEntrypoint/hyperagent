@@ -66,6 +66,13 @@ std::filesystem::path parent_dir()
     if (raw != nullptr && *raw != '\0') {
         return core::paths::resolve(core::paths::expand_user(raw));
     }
+    const char* projects = std::getenv("HYPERAGENT_PROJECTS");
+    if (projects != nullptr && *projects != '\0') {
+        return core::paths::resolve(core::paths::expand_user(projects));
+    }
+    if (core::paths::is_shipped()) {
+        return core::paths::user_data_dir() / "projects";
+    }
     return core::paths::resolve(core::paths::repo_root().parent_path());
 }
 
