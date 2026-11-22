@@ -11,6 +11,10 @@
 #include <thread>
 #include <unistd.h>
 
+#if defined(__APPLE__)
+#include <crt_externs.h>
+#endif
+
 #include <filesystem>
 #include <mutex>
 #include <stdexcept>
@@ -37,7 +41,12 @@ std::string stripped_file_text(const std::filesystem::path& path)
 std::vector<std::string> environment_with(const std::vector<std::pair<std::string, std::optional<std::string>>>& changes)
 {
     std::vector<std::string> out;
-    for (char** entry = environ; *entry != nullptr; ++entry) {
+#if defined(__APPLE__)
+    char** const process_environment = *_NSGetEnviron();
+#else
+    char** const process_environment = environ;
+#endif
+    for (char** entry = process_environment; *entry != nullptr; ++entry) {
         const std::string text(*entry);
         const auto equals = text.find('=');
         const std::string key = text.substr(0, equals);
