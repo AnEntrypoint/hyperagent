@@ -57,15 +57,18 @@ function peerLine(peer) {
   const origin = remoteHead[peer.remote](peer.checkout);
   const ahead = peer.remote === 'ls-remote' ? (head === origin ? '0' : '?') : sh('git rev-list --count origin/main..HEAD', peer.checkout);
   const dirty = sh('git status --short | wc -l', peer.checkout);
-  return [peer.name, state, 'last=' + ageOf(last), 'HEAD=' + head, 'origin=' + origin, 'ahead=' + ahead, 'dirty=' + dirty, 'queue=' + queueOf(peer.name).length, '| ' + oneLine(lastText?.text, 260)].join(' ');
+  return [peer.name, state, 'last=' + ageOf(last), 'HEAD=' + head, 'origin=' + origin, 'ahead=' + ahead, 'dirty=' + dirty, 'queue=' + queueOf(peer.name).length, 'tickets=' + ticketRows().filter((row) => row.owner === peer.name).length, '| ' + oneLine(lastText?.text, 260)].join(' ');
 }
 
+let ticketCache;
+const ticketRows = () => ticketCache ??= sh('node ' + path.join(__dirname, 'gate-ticket.cjs') + ' list').split('\n').filter(Boolean).map((file) => {
+  const pid = file.replace(/.*-(\d+)\.json$/, '$1');
+  const args = oneLine(sh('ps -o etimes=,args= -p ' + pid), 110);
+  return { pid, args, child: sh('pgrep -P ' + pid).split('\n')[0], owner: (/ run ([^\s-]+)/.exec(args) || [])[1] || '' };
+});
+
 function ticketLines() {
-  return sh('node ' + path.join(__dirname, 'gate-ticket.cjs') + ' list').split('\n').filter(Boolean).map((file) => {
-    const pid = file.replace(/.*-(\d+)\.json$/, '$1');
-    const child = sh('pgrep -P ' + pid).split('\n')[0];
-    return 'ticket ' + pid + ' ' + (child ? 'RUNNING child=' + child : 'queued') + ' ' + oneLine(sh('ps -o etimes=,args= -p ' + pid), 110);
-  });
+  return ticketRows().map((row) => 'ticket ' + row.pid + ' ' + (row.child ? 'RUNNING child=' + row.child : 'queued') + ' ' + row.args);
 }
 
 function hostLines() {
