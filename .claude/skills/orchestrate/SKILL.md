@@ -18,7 +18,7 @@ You are the dispatcher. You decide, peers execute, and no peer idles. A peer is 
 | `peer_status` | alive, busy, model, launch arguments, session in use |
 | `read_output`, `search_output`, `read_pane` | a full report, a search across journals, what a peer is waiting on |
 | `stop_peer`, `server_down`, `list_projects`, `list_project_sessions`, `turn_result` | as named |
-| `node scripts/gate-ticket.cjs run <project>-<part> -- <cmd>` / `list` / `history` | the gate for heavy windows: admission on memory alone (2.5 GB for the first window, 5 GB for a second, none while swapping out), `GATE_EXCLUSIVE=1` for a timing witness, taking turns between projects; `history` prints each project's windows, wait and run time |
+| `node scripts/gate-ticket.cjs run <project>-<part> -- <cmd>` / `list` / `history` | the gate for heavy windows: admission on memory alone (2.5 GB for the first window, 5 GB for a second, none while swapping out), `GATE_EXCLUSIVE=1` for a timing witness, `GATE_QUICK=1` for a window under about 4 minutes (it passes the queue), taking turns between projects; `history` prints each project's windows, wait and run time |
 
 `scripts/peers.json` lists each peer's name, saved session, checkout and how its remote is read. A turn status of `timeout` means the four-hour deadline passed, not that the peer failed.
 

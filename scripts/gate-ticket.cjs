@@ -12,6 +12,7 @@ const SLOTS = Number(process.env.GATE_SLOTS || 2);
 const FIRST_SLOT_MB = Number(process.env.GATE_FIRST_SLOT_MB || 2500);
 const SECOND_SLOT_MB = Number(process.env.GATE_SECOND_SLOT_MB || 5000);
 const SWAP_OUT_LIMIT_KBS = 1000;
+const QUICK_SLOTS = Number(process.env.GATE_QUICK_SLOTS || 1);
 const TICKET = /^(\d{15})-(\d+)\.json$/;
 const TAKES_TURNS = 2;
 
@@ -66,7 +67,7 @@ function takeTicket(ownerPid, label) {
     const latest = liveTickets().reduce((max, ticket) => Math.max(max, Number(ticket.name.slice(0, 15))), 0);
     const arrival = Math.max(Date.now(), latest + 1);
     const name = String(arrival).padStart(15, '0') + '-' + ownerPid + '.json';
-    const ticket = { pid: ownerPid, arrival, label, v: TAKES_TURNS, exclusive: process.env.GATE_EXCLUSIVE === '1' };
+    const ticket = { pid: ownerPid, arrival, label, v: TAKES_TURNS, exclusive: process.env.GATE_EXCLUSIVE === '1', quick: process.env.GATE_QUICK === '1' };
     fs.writeFileSync(path.join(TICKET_DIR, name), JSON.stringify(ticket) + '\n');
     return { name, ticket };
 }
@@ -87,9 +88,11 @@ function hostHasRoom(floorMb) {
 
 function myTurn(name) {
     const tickets = inTurn(liveTickets());
+    const mine = tickets.find((ticket) => ticket.name === name);
+    if (mine?.quick) return tickets.filter((ticket) => ticket.quick && ticket.granted).length < QUICK_SLOTS && hostHasRoom(FIRST_SLOT_MB);
     if (!tickets.every((ticket) => ticket.v === TAKES_TURNS)) return tickets[0]?.name === name && hostHasRoom(FIRST_SLOT_MB);
-    const running = tickets.filter((ticket) => ticket.granted);
-    const next = tickets.find((ticket) => !ticket.granted);
+    const running = tickets.filter((ticket) => ticket.granted && !ticket.quick);
+    const next = tickets.find((ticket) => !ticket.granted && !ticket.quick);
     if (next?.name !== name || running.length >= SLOTS) return false;
     if (running.length === 0) return hostHasRoom(FIRST_SLOT_MB);
     return !next.exclusive && !running.some((ticket) => ticket.exclusive) && hostHasRoom(SECOND_SLOT_MB);
