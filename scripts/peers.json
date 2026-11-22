@@ -47,5 +47,12 @@
     "checkout": "/workspace/oscraft",
     "journal": "-workspace-oscraft",
     "remote": "fetch"
+  },
+  {
+    "name": "mc-420",
+    "session": "6d7ab162-ac91-4735-a1c5-3ba0d365aab9",
+    "checkout": "/config/workspace/mc-420",
+    "journal": "-config-workspace-mc-420",
+    "remote": "fetch"
   }
 ]
