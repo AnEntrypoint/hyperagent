@@ -4,7 +4,9 @@
 #include <system_error>
 #include <vector>
 
-#if defined(__APPLE__)
+#if defined(_WIN32)
+#include <windows.h>
+#elif defined(__APPLE__)
 #include <cstdint>
 #include <mach-o/dyld.h>
 #endif
@@ -14,6 +16,12 @@
 namespace hyperagent::core::paths {
 
 namespace {
+
+#if defined(_WIN32)
+constexpr const char* home_variable = "USERPROFILE";
+#else
+constexpr const char* home_variable = "HOME";
+#endif
 
 std::optional<std::string> environment(const char* name)
 {
@@ -50,7 +58,15 @@ std::optional<std::filesystem::path> shipped_prefix()
 std::filesystem::path executable_path()
 {
     std::error_code ignored;
-#if defined(__APPLE__)
+#if defined(_WIN32)
+    std::wstring buffer(32768, L'\0');
+    const DWORD length = ::GetModuleFileNameW(nullptr, buffer.data(), static_cast<DWORD>(buffer.size()));
+    if (length == 0 || length >= buffer.size()) {
+        return {};
+    }
+    buffer.resize(length);
+    return std::filesystem::path(buffer);
+#elif defined(__APPLE__)
     std::uint32_t size = 0;
     _NSGetExecutablePath(nullptr, &size);
     std::string buffer(size, '\0');
@@ -73,7 +89,13 @@ bool is_shipped()
 
 std::filesystem::path user_data_dir()
 {
-    const auto home = environment("HOME").value_or("");
+#if defined(_WIN32)
+    if (const auto local = environment("LOCALAPPDATA")) {
+        return std::filesystem::path(*local) / "hyperagent";
+    }
+    return std::filesystem::path(environment(home_variable).value_or("")) / "AppData" / "Local" / "hyperagent";
+#else
+    const auto home = environment(home_variable).value_or("");
 #if defined(__APPLE__)
     return std::filesystem::path(home) / "Library" / "Application Support" / "hyperagent";
 #else
@@ -81,6 +103,7 @@ std::filesystem::path user_data_dir()
         return std::filesystem::path(*data_home) / "hyperagent";
     }
     return std::filesystem::path(home) / ".local" / "share" / "hyperagent";
+#endif
 #endif
 }
 
@@ -117,7 +140,7 @@ std::filesystem::path data_root()
 std::filesystem::path expand_user(std::string_view text)
 {
     if (text == "~" || text.starts_with("~/")) {
-        if (const auto home = environment("HOME")) {
+        if (const auto home = environment(home_variable)) {
             return std::filesystem::path(*home) / std::string(text.substr(1));
         }
     }
@@ -131,6 +154,9 @@ std::string absolute_path(std::string_view text)
         expanded = std::filesystem::current_path() / expanded;
     }
 
+#if defined(_WIN32)
+    return expanded.lexically_normal().string();
+#else
     std::vector<std::string> parts;
     const std::string joined = expanded.string();
     std::size_t start = 0;
@@ -155,6 +181,7 @@ std::string absolute_path(std::string_view text)
         out += "/" + part;
     }
     return out.empty() ? "/" : out;
+#endif
 }
 
 std::filesystem::path resolve(const std::filesystem::path& path)

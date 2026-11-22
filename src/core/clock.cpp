@@ -5,6 +5,8 @@
 #include <cstdio>
 #include <ctime>
 
+#include "core/platform.hpp"
+
 namespace hyperagent::core::clock {
 
 double now_epoch()
@@ -34,8 +36,7 @@ std::string iso_stamp(double epoch)
     }
 
     const std::time_t moment = static_cast<std::time_t>(seconds);
-    std::tm utc{};
-    gmtime_r(&moment, &utc);
+    const std::tm utc = platform::utc_time(moment);
 
     char buffer[64];
     std::snprintf(buffer, sizeof buffer, "%04d-%02d-%02dT%02d:%02d:%02d.%03lldZ",
@@ -47,8 +48,7 @@ std::string iso_stamp(double epoch)
 std::string http_date()
 {
     const std::time_t moment = std::time(nullptr);
-    std::tm utc{};
-    gmtime_r(&moment, &utc);
+    const std::tm utc = platform::utc_time(moment);
     static constexpr const char* days[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
     static constexpr const char* months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
                                              "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};

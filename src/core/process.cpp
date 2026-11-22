@@ -1,5 +1,101 @@
 #include "core/process.hpp"
 
+#if defined(_WIN32)
+
+#include <windows.h>
+
+#include <array>
+#include <stdexcept>
+#include <thread>
+
+#include "core/platform.hpp"
+
+namespace hyperagent::core::process {
+
+namespace {
+
+std::string drain(HANDLE pipe)
+{
+    std::string captured;
+    std::array<char, 4096> chunk;
+    DWORD received = 0;
+    while (::ReadFile(pipe, chunk.data(), static_cast<DWORD>(chunk.size()), &received, nullptr) && received > 0) {
+        captured.append(chunk.data(), received);
+    }
+    return captured;
+}
+
+struct Pipe {
+    HANDLE read_end = nullptr;
+    HANDLE write_end = nullptr;
+
+    Pipe()
+    {
+        SECURITY_ATTRIBUTES inheritable{sizeof inheritable, nullptr, TRUE};
+        if (!::CreatePipe(&read_end, &write_end, &inheritable, 0)) {
+            throw std::runtime_error("pipe failed");
+        }
+        ::SetHandleInformation(read_end, HANDLE_FLAG_INHERIT, 0);
+    }
+    ~Pipe()
+    {
+        close_write();
+        ::CloseHandle(read_end);
+    }
+    void close_write()
+    {
+        if (write_end != nullptr) {
+            ::CloseHandle(write_end);
+            write_end = nullptr;
+        }
+    }
+    Pipe(const Pipe&) = delete;
+    Pipe& operator=(const Pipe&) = delete;
+};
+
+}
+
+Result run_capture(const std::vector<std::string>& argv)
+{
+    if (argv.empty()) {
+        throw std::invalid_argument("run_capture needs a program");
+    }
+
+    Pipe standard_output;
+    Pipe standard_error;
+
+    std::wstring line = platform::command_line(argv);
+    STARTUPINFOW startup{};
+    startup.cb = sizeof startup;
+    startup.dwFlags = STARTF_USESTDHANDLES;
+    startup.hStdInput = ::GetStdHandle(STD_INPUT_HANDLE);
+    startup.hStdOutput = standard_output.write_end;
+    startup.hStdError = standard_error.write_end;
+    PROCESS_INFORMATION child{};
+    if (!::CreateProcessW(nullptr, line.data(), nullptr, nullptr, TRUE, CREATE_NO_WINDOW, nullptr, nullptr, &startup,
+                          &child)) {
+        return Result{127, {}, {}};
+    }
+    standard_output.close_write();
+    standard_error.close_write();
+
+    std::string error_text;
+    std::thread error_reader([&]() { error_text = drain(standard_error.read_end); });
+    std::string output_text = drain(standard_output.read_end);
+    error_reader.join();
+
+    ::WaitForSingleObject(child.hProcess, INFINITE);
+    DWORD code = 0;
+    ::GetExitCodeProcess(child.hProcess, &code);
+    ::CloseHandle(child.hThread);
+    ::CloseHandle(child.hProcess);
+    return Result{static_cast<int>(code), std::move(output_text), std::move(error_text)};
+}
+
+}
+
+#else
+
 #include <fcntl.h>
 #include <poll.h>
 #include <sys/wait.h>
@@ -113,3 +209,5 @@ Result run_capture(const std::vector<std::string>& argv)
 }
 
 }
+
+#endif

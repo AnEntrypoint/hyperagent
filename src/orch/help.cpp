@@ -1,8 +1,5 @@
 #include "orch/help.hpp"
 
-#include <sys/ioctl.h>
-#include <unistd.h>
-
 #include <algorithm>
 #include <cstddef>
 #include <cstdlib>
@@ -13,6 +10,8 @@
 #include <vector>
 
 #include <CLI/CLI.hpp>
+
+#include "core/platform.hpp"
 
 namespace hyperagent::orch::help {
 
@@ -81,9 +80,8 @@ std::size_t terminal_columns()
             return static_cast<std::size_t>(value);
         }
     }
-    winsize size{};
-    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &size) == 0 && size.ws_col > 0) {
-        return size.ws_col;
+    if (const std::size_t columns = core::platform::terminal_columns(); columns > 0) {
+        return columns;
     }
     return fallback_columns;
 }

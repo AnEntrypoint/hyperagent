@@ -1,4 +1,8 @@
 cmake_minimum_required(VERSION 3.21)
+if(CMAKE_HOST_WIN32 AND VCPKG_TARGET_TRIPLET MATCHES "-static$")
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
+
 project(hyperagent VERSION 0.1.0 LANGUAGES C CXX)
 
 set(HYPERAGENT_VERSION "0.1.0" CACHE STRING "version reported by hyperagent --version")
@@ -40,7 +44,12 @@ target_link_libraries(hyperagent PRIVATE
 if(TARGET Boost::system)
     target_link_libraries(hyperagent PRIVATE Boost::system)
 endif()
-target_compile_options(hyperagent PRIVATE -Wall -Wextra -Wpedantic)
+if(MSVC)
+    target_compile_options(hyperagent PRIVATE /W4 /utf-8 /permissive- /bigobj)
+    target_compile_definitions(hyperagent PRIVATE _CRT_SECURE_NO_WARNINGS _WIN32_WINNT=0x0A00 NOMINMAX WIN32_LEAN_AND_MEAN)
+else()
+    target_compile_options(hyperagent PRIVATE -Wall -Wextra -Wpedantic)
+endif()
 
 enable_testing()
 
@@ -49,6 +58,7 @@ set_target_properties(ccbridge PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINAR
 add_dependencies(hyperagent ccbridge)
 target_compile_definitions(hyperagent PRIVATE HYPERAGENT_CCBRIDGE="$<TARGET_FILE:ccbridge>")
 
+if(NOT WIN32)
 add_subdirectory(tests/fake_claude)
 
 add_test(NAME orch_launch
@@ -65,6 +75,7 @@ add_test(NAME follow_transcript
     COMMAND ${CMAKE_COMMAND} -E env HYPERAGENT_BUILD=${CMAKE_BINARY_DIR}
         bash ${CMAKE_CURRENT_SOURCE_DIR}/tests/follow_transcript.sh)
 set_tests_properties(follow_transcript PROPERTIES TIMEOUT 180)
+endif()
 
 install(TARGETS hyperagent RUNTIME DESTINATION bin)
 install(DIRECTORY gui/public DESTINATION share/hyperagent/gui)

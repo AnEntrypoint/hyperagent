@@ -1,13 +1,12 @@
 #include "cli/setup.hpp"
 
-#include <unistd.h>
-
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
 #include <sstream>
 
 #include "core/paths.hpp"
+#include "core/platform.hpp"
 #include "core/process.hpp"
 
 namespace hyperagent::cli::setup {
@@ -19,9 +18,9 @@ std::filesystem::path find_on_path(const std::string& name)
     const char* raw = std::getenv("PATH");
     std::stringstream directories(raw == nullptr ? "" : raw);
     std::string directory;
-    while (std::getline(directories, directory, ':')) {
-        const auto candidate = std::filesystem::path(directory) / name;
-        if (!directory.empty() && std::filesystem::is_regular_file(candidate) && ::access(candidate.c_str(), X_OK) == 0) {
+    while (std::getline(directories, directory, core::platform::path_separator)) {
+        const auto candidate = std::filesystem::path(directory) / (name + core::platform::executable_suffix);
+        if (!directory.empty() && std::filesystem::is_regular_file(candidate) && core::platform::is_executable(candidate)) {
             return candidate;
         }
     }

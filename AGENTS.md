@@ -327,12 +327,16 @@ executable as shipped when `<exe dir>/../share/hyperagent/gui` exists, and then 
 there first, before `HYPERAGENT_ROOT` and the development walk-up to the directory holding
 `CMakeLists.txt` and `AGENTS.md`. A shipped copy keeps `.orch` under the user data directory
 (`$XDG_DATA_HOME` or `~/.local/share` plus `hyperagent` on Linux, `~/Library/Application
-Support/hyperagent` on macOS) unless `ORCH_HOME` is set, and its peer projects directory is
+Support/hyperagent` on macOS, `%LOCALAPPDATA%\hyperagent` on Windows) unless `ORCH_HOME` is set, and its peer projects directory is
 `HYPERAGENT_PROJECTS`, then `ORCH_PARENT`, then `<data dir>/projects`; the development layout
 keeps the parent of the repo root. `ccbridge` is found as `CCBRIDGE_BIN`, then beside the
 binary, then the build-path constant. `hyperagent setup` is idempotent: it creates the state
 directory and runs `claude mcp add --scope user hyperagent -- <this binary> mcp` unless claude
 already lists it; with no `claude` on PATH it says so and exits 0.
+
+Windows (x64-windows-static, MSVC, `/W4`, static CRT) builds hosted only; everything that differs
+from POSIX (file locks, terminate, detached spawn, exec, terminal width, gmtime/localtime/timegm)
+sits behind `src/core/platform.hpp`, and `core/process.cpp` has a CreateProcessW branch.
 
 `-DHYPERAGENT_VERSION=<tag or sha>` sets `--version`. `CMakePresets.json` has one preset per
 static vcpkg triplet (x64-linux, arm64-linux, arm64-osx, x64-osx); the Linux ones add

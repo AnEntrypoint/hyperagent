@@ -1,15 +1,15 @@
 #include "orch/ccbridge.hpp"
 
-#include <csignal>
 #include <cerrno>
 #include <chrono>
 #include <cstdlib>
-#include <fcntl.h>
-#include <sys/file.h>
-#include <sys/types.h>
-#include <sys/wait.h>
 #include <thread>
+
+#if !defined(_WIN32)
+#include <fcntl.h>
+#include <sys/types.h>
 #include <unistd.h>
+#endif
 
 #if defined(__APPLE__)
 #include <crt_externs.h>
@@ -23,6 +23,7 @@
 #include "core/http.hpp"
 #include "core/json.hpp"
 #include "core/paths.hpp"
+#include "core/platform.hpp"
 #include "core/process.hpp"
 #include "core/text.hpp"
 #include "orch/config.hpp"
@@ -43,6 +44,8 @@ std::vector<std::string> environment_with(const std::vector<std::pair<std::strin
     std::vector<std::string> out;
 #if defined(__APPLE__)
     char** const process_environment = *_NSGetEnviron();
+#elif defined(_WIN32)
+    char** const process_environment = _environ;
 #else
     char** const process_environment = environ;
 #endif
@@ -68,15 +71,23 @@ std::vector<std::string> environment_with(const std::vector<std::pair<std::strin
     return out;
 }
 
-pid_t spawn_detached(const std::string& binary)
+#if defined(_WIN32)
+using ProcessId = core::platform::ProcessId;
+#else
+using ProcessId = pid_t;
+#endif
+
+ProcessId spawn_detached(const std::string& binary)
 {
     namespace fs = std::filesystem;
     const auto dir = config::orch_dir();
     fs::create_directories(dir);
+#if !defined(_WIN32)
     const int log = ::open((dir / "server.log").c_str(), O_WRONLY | O_CREAT | O_APPEND, 0644);
     if (log < 0) {
         throw Error("cannot open " + (dir / "server.log").string());
     }
+#endif
 
     std::vector<std::pair<std::string, std::optional<std::string>>> changes;
     changes.emplace_back("AIRC_CLAUDE_SKIP_PERMISSIONS",
@@ -88,6 +99,15 @@ pid_t spawn_detached(const std::string& binary)
     }
 
     auto env_text = environment_with(changes);
+#if defined(_WIN32)
+    try {
+        return core::platform::spawn_detached(
+            {binary, "serve", "--host", config::host(), "--port", config::port()}, env_text, config::root_dir(),
+            dir / "server.log");
+    } catch (const std::exception& failure) {
+        throw Error(failure.what());
+    }
+#else
     std::vector<char*> envp;
     for (auto& entry : env_text) {
         envp.push_back(entry.data());
@@ -122,9 +142,10 @@ pid_t spawn_detached(const std::string& binary)
     }
     ::close(log);
     return child;
+#endif
 }
 
-void record_server_process(pid_t server, const std::string& binary)
+void record_server_process(ProcessId server, const std::string& binary)
 {
     const auto dir = config::orch_dir();
     core::files::write_bytes(dir / "server.pid", std::to_string(server));
@@ -137,21 +158,20 @@ public:
     {
         const auto path = config::orch_dir() / "server.lock";
         std::filesystem::create_directories(path.parent_path());
-        descriptor_ = ::open(path.c_str(), O_CREAT | O_RDWR | O_CLOEXEC, 0644);
-        if (descriptor_ < 0 || ::flock(descriptor_, LOCK_EX) != 0) {
+        handle_ = core::platform::lock_open(path);
+        if (handle_ == core::platform::no_lock || !core::platform::lock_wait(handle_)) {
             throw Error("cannot lock " + path.string());
         }
     }
     ~ServerStartLock()
     {
-        ::flock(descriptor_, LOCK_UN);
-        ::close(descriptor_);
+        core::platform::lock_release(handle_);
     }
     ServerStartLock(const ServerStartLock&) = delete;
     ServerStartLock& operator=(const ServerStartLock&) = delete;
 
 private:
-    int descriptor_ = -1;
+    core::platform::LockHandle handle_ = core::platform::no_lock;
 };
 
 constexpr int slow_server_probe_seconds = 5;
@@ -262,7 +282,7 @@ std::string ccbridge_binary()
     if (const char* override_binary = std::getenv("CCBRIDGE_BIN"); override_binary != nullptr && *override_binary != '\0') {
         return override_binary;
     }
-    const auto beside = core::paths::executable_path().parent_path() / "ccbridge";
+    const auto beside = core::paths::executable_path().parent_path() / (std::string("ccbridge") + core::platform::executable_suffix);
     if (std::filesystem::is_regular_file(beside)) {
         return beside.string();
     }
@@ -308,7 +328,7 @@ void ensure_server()
         return;
     }
     const std::string binary = ccbridge_binary();
-    const pid_t child = spawn_detached(binary);
+    const ProcessId child = spawn_detached(binary);
     bool child_exited = false;
     const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(25);
     while (std::chrono::steady_clock::now() < deadline) {
@@ -316,8 +336,7 @@ void ensure_server()
             record_server_process(child, binary);
             return;
         }
-        int status = 0;
-        if (::waitpid(child, &status, WNOHANG) == child) {
+        if (core::platform::child_exited(child)) {
             child_exited = true;
             break;
         }
@@ -332,8 +351,7 @@ void ensure_server()
 void stop_server_process()
 {
     const auto pid_file = config::orch_dir() / "server.pid";
-    const pid_t pid = static_cast<pid_t>(std::stol(stripped_file_text(pid_file)));
-    ::kill(pid, SIGTERM);
+    core::platform::terminate_process(std::stol(stripped_file_text(pid_file)));
     const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(20);
     while (std::chrono::steady_clock::now() < deadline && server_alive()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(200));

@@ -1,7 +1,10 @@
 #include "core/files.hpp"
 
+#if !defined(_WIN32)
 #include <sys/stat.h>
+#endif
 
+#include <chrono>
 #include <cstddef>
 #include <fstream>
 #include <system_error>
@@ -61,6 +64,19 @@ void append_bytes(const std::filesystem::path& path, std::string_view bytes)
 
 std::optional<FileStat> stat(const std::filesystem::path& path)
 {
+#if defined(_WIN32)
+    std::error_code failure;
+    const auto written = std::filesystem::last_write_time(path, failure);
+    if (failure) {
+        return std::nullopt;
+    }
+    const std::uintmax_t size = std::filesystem::is_directory(path, failure) ? 0 : std::filesystem::file_size(path, failure);
+    if (failure) {
+        return std::nullopt;
+    }
+    const auto since_epoch = std::chrono::clock_cast<std::chrono::system_clock>(written).time_since_epoch();
+    return FileStat{size, std::chrono::duration<double>(since_epoch).count()};
+#else
     struct ::stat info {};
     if (::stat(path.c_str(), &info) != 0) {
         return std::nullopt;
@@ -72,6 +88,7 @@ std::optional<FileStat> stat(const std::filesystem::path& path)
 #endif
     const double mtime = static_cast<double>(modified.tv_sec) + static_cast<double>(modified.tv_nsec) / 1e9;
     return FileStat{static_cast<std::uintmax_t>(info.st_size), mtime};
+#endif
 }
 
 bool is_directory(const std::filesystem::path& path)
