@@ -37,7 +37,7 @@ Every goal that spans stages or peers is driven from one spec file, `specs/<name
 ## Cycle
 
 1. `node scripts/cycle.cjs`.
-2. For each peer marked ENDED: read its report once, decide, and send its next prompt. A peer whose own job is still running gets no prompt until the job exits. A running peer is left alone.
+2. For each peer marked ENDED: read its report once, update its queue file, and send its whole remaining list. A peer whose own job is still running gets no prompt until the job exits. A running peer is left alone.
 3. For each spec: its owning peer is working on it, or is sent its next stage.
 4. Act on the host lines (see Host).
 5. Commit and push every change in this repository. Untracked files that are not the orchestrator's are left alone.
@@ -50,7 +50,7 @@ Every goal that spans stages or peers is driven from one spec file, `specs/<name
 - After every send, `cycle.cjs sent` once. After a relaunch, `peer_status` must show the saved session as `output_session` with `--resume` in the launch arguments. A new session with no launch arguments has lost the peer's context: stop it and resume the saved session again.
 - A peer's model is set with `model` on `resume_project`. It applies from the next launch and is kept with the project.
 - A prompt begins "We want …" and uses plain sentences: what to do, what must not change, what to send back. Standing rules are not repeated in prompts. They are in `docs/peer-rules.md`, and each prompt ends: "The standing rules in /workspace/hyperagent/docs/peer-rules.md apply. End with REPORT: finished|open|blocked — reason — witness: <evidence>."
-- Send a peer every reachable item it has, in order, so it never waits for the dispatcher. An ENDED peer with an empty queue is asked for its ranked remaining work.
+- Each peer has an ordered queue file, specs/queue/<peer>.md: one numbered line per remaining instruction, with its source. Keep it complete: add an item in the cycle it is decided, even while the peer is busy. When a peer ENDS, read its REPORT, delete the items it finished or that no longer apply, assess the rest, and send the whole remaining list in one prompt, numbered, in order ("Your remaining work, in order: ..."), so nothing waits for the dispatcher. Send the whole remaining list again at every later turn end until the file is empty. cycle.cjs shows queue=N per peer and "cycle.cjs queue <peer>" prints the list. A peer with an empty queue is asked for its ranked remaining work.
 - When two peers finish something faster together, give both the same contract: the goal, the owner of the result, the done condition, and the file where each side's hand-off goes. Relay what one REPORT asks of another peer.
 
 ## Deciding
