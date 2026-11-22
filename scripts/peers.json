@@ -49,6 +49,13 @@
     "remote": "fetch"
   },
   {
+    "name": "extra",
+    "session": "cddce0d4-21b5-4620-b76a-cf9a6dac5789",
+    "checkout": "/workspace/extra",
+    "journal": "-workspace-extra",
+    "remote": "fetch"
+  },
+  {
     "name": "mc-420",
     "session": "6d7ab162-ac91-4735-a1c5-3ba0d365aab9",
     "checkout": "/config/workspace/mc-420",
