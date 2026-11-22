@@ -73,6 +73,8 @@ Every goal that spans stages or peers is driven from one spec file, `specs/<name
 - Work in a repository that has no peer runs as subagents under the same rules; the dispatcher follows their detached tickets and makes the push.
 - `cycle.cjs` marks a peer `DUE` when it is ENDED with tickets=0 and a non-empty list: every DUE peer is sent its list in that cycle. A peer ENDED on tickets only is not DUE.
 - A question that a published binary or another project's artifact can answer is not answered by a gated build. When one peer's build blocks others, find the artifact and hand it to all of them.
+- Prune a peer's queue file in the same call that reads its REPORT: the numbers it says are finished come out before the list is sent, so no peer is handed done work.
+- The gate is bounded by this host's 15 GB of memory. When queue wait stays the longest step after the rules above, say so to the owner with the history numbers; hosted runners for a public repository's windows, or more memory, are the owner's levers, not the dispatcher's.
 - The dispatcher's own cycle is three calls: the cycle read, every send in one message, every delivery check in one body.
 - Fact finding for a spec or an owner's question runs as parallel read-only agents while the dispatcher keeps dispatching.
 - Measure waste from the journals: the gap from a turn's end to its next prompt, queue wait, the longest step each REPORT names, and repeated commands. Fix the largest in the cycle that finds it: dispatcher time in this skill, repeated work and tokens as a gm change sent to gm with the evidence, a project's slow loop as an instruction to that project.
@@ -89,5 +91,5 @@ Every goal that spans stages or peers is driven from one spec file, `specs/<name
 ## Session start
 
 1. Run `build/hyperagent watch` in the background and confirm it is alive.
-2. `CronList`. If the 10-minute wake is missing, register it with `CronCreate` on minutes that are not 0 or 30 (`7,17,27,37,47,57 * * * *`), with a prompt that says to run the orchestrate cycle. It is session-only and expires after 7 days.
+2. `CronList`. If the 5-minute wake is missing, register it with `CronCreate` on minutes that are not 0 or 30 (`2,7,12,17,22,27,32,37,42,47,52,57 * * * *`); a peer that ends its turn then waits at most five minutes for its list, with a prompt that says to run the orchestrate cycle. It is session-only and expires after 7 days.
 3. The dispatcher never arms a Monitor. `ScheduleWakeup` is a one-shot fallback, not the loop.
