@@ -52,12 +52,15 @@ function peerLine(peer) {
   const records = tailRecords(journalOf(peer), 400000);
   const last = records.at(-1);
   const lastText = records.findLast((record) => record.kind === 'text' && record.text);
-  const state = last?.kind === 'result' ? 'ENDED' : 'running';
+  const ended = last?.kind === 'result';
   const head = sh('git rev-parse --short HEAD', peer.checkout);
   const origin = remoteHead[peer.remote](peer.checkout);
   const ahead = peer.remote === 'ls-remote' ? (head === origin ? '0' : '?') : sh('git rev-list --count origin/main..HEAD', peer.checkout);
   const dirty = sh('git status --short | wc -l', peer.checkout);
-  return [peer.name, state, 'last=' + ageOf(last), 'HEAD=' + head, 'origin=' + origin, 'ahead=' + ahead, 'dirty=' + dirty, 'queue=' + queueOf(peer.name).length, 'tickets=' + ticketRows().filter((row) => row.owner === peer.name).length, '| ' + oneLine(lastText?.text, 260)].join(' ');
+  const queued = queueOf(peer.name).length;
+  const tickets = ticketRows().filter((row) => row.owner === peer.name).length;
+  const state = !ended ? 'running' : tickets === 0 && queued > 0 ? 'ENDED DUE' : 'ENDED';
+  return [peer.name, state, 'last=' + ageOf(last), 'HEAD=' + head, 'origin=' + origin, 'ahead=' + ahead, 'dirty=' + dirty, 'queue=' + queued, 'tickets=' + tickets, '| ' + oneLine(lastText?.text, 260)].join(' ');
 }
 
 let ticketCache;

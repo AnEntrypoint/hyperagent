@@ -8,12 +8,12 @@ const script = path.join(__dirname, 'gate-ticket.cjs');
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const holdCode = "const fs = require('fs'); const [label, file] = process.argv.slice(1); fs.appendFileSync(file, 'start ' + label + '\\n'); setTimeout(() => fs.appendFileSync(file, 'end ' + label + '\\n'), 800);";
 
-async function scenario(memoryMb) {
+async function scenario(memoryMb, firstIsExclusive = false) {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gate-slots-'));
     const log = path.join(dir, 'window.log');
     const env = { ...process.env, GATE_TICKET_DIR: path.join(dir, 'tickets'), GATE_READING_CMD: 'true', GATE_POLL_MS: '50', GATE_SLOTS: '2', GATE_MEMORY_MB: String(memoryMb) };
-    const start = (label) => new Promise((resolve) => spawn('node', [script, 'run', label, '--', 'node', '-e', holdCode, label, log], { env, stdio: 'ignore' }).on('exit', resolve));
-    const exits = [start('alpha-a')];
+    const start = (label, exclusive) => new Promise((resolve) => spawn('node', [script, 'run', label, '--', 'node', '-e', holdCode, label, log], { env: { ...env, GATE_EXCLUSIVE: exclusive ? '1' : '0' }, stdio: 'ignore' }).on('exit', resolve));
+    const exits = [start('alpha-a', firstIsExclusive)];
     await sleep(150);
     exits.push(start('beta-a'));
     const codes = await Promise.all(exits);
@@ -24,14 +24,17 @@ async function scenario(memoryMb) {
 
 async function main() {
     const roomy = await scenario(9999);
-    const tight = await scenario(100);
+    const tight = await scenario(3000);
+    const timed = await scenario(9999, true);
+    const alone = JSON.stringify(timed.events) === JSON.stringify(['start alpha-a', 'end alpha-a', 'start beta-a', 'end beta-a']);
     const overlapped = roomy.events[1] === 'start beta-a';
     const serial = JSON.stringify(tight.events) === JSON.stringify(['start alpha-a', 'end alpha-a', 'start beta-a', 'end beta-a']);
-    const clean = [...roomy.codes, ...tight.codes].every((code) => code === 0);
+    const clean = [...roomy.codes, ...tight.codes, ...timed.codes].every((code) => code === 0);
+    console.log((alone ? 'ok   ' : 'FAIL ') + 'an exclusive window runs alone ' + JSON.stringify(timed.events));
     console.log((overlapped ? 'ok   ' : 'FAIL ') + 'a second window starts when memory allows ' + JSON.stringify(roomy.events));
     console.log((serial ? 'ok   ' : 'FAIL ') + 'windows run one at a time when memory is short ' + JSON.stringify(tight.events));
     console.log((clean ? 'ok   ' : 'FAIL ') + 'every window exited cleanly');
-    process.exit(overlapped && serial && clean ? 0 : 1);
+    process.exit(overlapped && serial && alone && clean ? 0 : 1);
 }
 
 main();
