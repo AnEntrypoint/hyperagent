@@ -45,7 +45,7 @@ jobs:
             target: x64-windows
             triplet: x64-windows-static
             ext: zip
-            optional: true
+            optional: false
             configure: ""
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.optional }}
