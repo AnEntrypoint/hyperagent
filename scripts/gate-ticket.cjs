@@ -9,11 +9,20 @@ const LAST_TURNS = TICKET_DIR + '-turns.json';
 const GATE_READING = process.env.GATE_READING_CMD || '';
 const HEAVY_JOBS_CHECK = process.env.HEAVY_JOBS_CHECK || '/workspace/bevy/scripts/heavy-jobs.cjs';
 const POLL_MS = Number(process.env.GATE_POLL_MS || 60000);
+const SLOTS = Number(process.env.GATE_SLOTS || 2);
+const SECOND_SLOT_MB = Number(process.env.GATE_SECOND_SLOT_MB || 5000);
 const TICKET = /^(\d{15})-(\d+)\.json$/;
 const TAKES_TURNS = 2;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const ownerOf = (label) => String(label || '').split('-')[0];
+const readJson = (file, fallback) => {
+    try {
+        return JSON.parse(fs.readFileSync(file, 'utf8'));
+    } catch {
+        return fallback;
+    }
+};
 
 function alive(pid) {
     try {
@@ -21,14 +30,6 @@ function alive(pid) {
         return true;
     } catch (error) {
         return error.code === 'EPERM';
-    }
-}
-
-function readTicket(name) {
-    try {
-        return JSON.parse(fs.readFileSync(path.join(TICKET_DIR, name), 'utf8'));
-    } catch {
-        return {};
     }
 }
 
@@ -42,23 +43,14 @@ function liveTickets() {
             fs.rmSync(path.join(TICKET_DIR, name), { force: true });
             continue;
         }
-        live.push(name);
+        live.push({ name, ...readJson(path.join(TICKET_DIR, name), {}) });
     }
     return live;
 }
 
-function lastTurns() {
-    try {
-        return JSON.parse(fs.readFileSync(LAST_TURNS, 'utf8'));
-    } catch {
-        return {};
-    }
-}
-
-function turnOrder() {
-    const tickets = liveTickets().map((name) => ({ name, ...readTicket(name) }));
-    if (!tickets.every((ticket) => ticket.v === TAKES_TURNS)) return tickets.map((ticket) => ticket.name);
-    const last = lastTurns();
+function inTurn(tickets) {
+    if (!tickets.every((ticket) => ticket.v === TAKES_TURNS)) return tickets;
+    const last = readJson(LAST_TURNS, {});
     const queuedOwners = new Set();
     for (const ticket of tickets) {
         const owner = ownerOf(ticket.label);
@@ -66,11 +58,11 @@ function turnOrder() {
         ticket.ownerLastTurn = ticket.rank === 1 ? last[owner] || 0 : 0;
         if (!ticket.granted) queuedOwners.add(owner);
     }
-    return tickets.sort((a, b) => a.rank - b.rank || a.ownerLastTurn - b.ownerLastTurn || a.name.localeCompare(b.name)).map((ticket) => ticket.name);
+    return tickets.sort((a, b) => a.rank - b.rank || a.ownerLastTurn - b.ownerLastTurn || a.name.localeCompare(b.name));
 }
 
 function takeTicket(ownerPid, label) {
-    const latest = liveTickets().reduce((max, name) => Math.max(max, Number(name.slice(0, 15))), 0);
+    const latest = liveTickets().reduce((max, ticket) => Math.max(max, Number(ticket.name.slice(0, 15))), 0);
     const arrival = Math.max(Date.now(), latest + 1);
     const name = String(arrival).padStart(15, '0') + '-' + ownerPid + '.json';
     const ticket = { pid: ownerPid, arrival, label, v: TAKES_TURNS };
@@ -78,21 +70,27 @@ function takeTicket(ownerPid, label) {
     return { name, ticket };
 }
 
-function gateClear() {
+function availableMb() {
+    if (process.env.GATE_MEMORY_MB) return Number(process.env.GATE_MEMORY_MB);
+    const line = fs.readFileSync('/proc/meminfo', 'utf8').split('\n').find((row) => row.startsWith('MemAvailable:'));
+    return Math.floor(Number(line.split(/\s+/)[1]) / 1024);
+}
+
+function hostQuiet() {
     if (GATE_READING) return spawnSync('bash', ['-c', GATE_READING], { stdio: 'ignore' }).status === 0;
     const vm = spawnSync('vmstat', ['1', '2'], { encoding: 'utf8' }).stdout.trim().split('\n');
     const sample = vm[vm.length - 1].trim().split(/\s+/);
-    const si = Number(sample[6]);
-    const so = Number(sample[7]);
     const heavy = spawnSync('node', [HEAVY_JOBS_CHECK], { encoding: 'utf8', timeout: 60000 });
-    return si < 1000 && so < 1000 && heavy.status === 0;
+    return Number(sample[6]) < 1000 && Number(sample[7]) < 1000 && heavy.status === 0;
 }
 
-async function waitForTurn(name) {
-    for (;;) {
-        if (turnOrder()[0] === name && gateClear()) return;
-        await sleep(POLL_MS);
-    }
+function myTurn(name) {
+    const tickets = inTurn(liveTickets());
+    if (!tickets.every((ticket) => ticket.v === TAKES_TURNS)) return tickets[0]?.name === name && hostQuiet();
+    const running = tickets.filter((ticket) => ticket.granted).length;
+    const next = tickets.find((ticket) => !ticket.granted);
+    if (next?.name !== name || running >= SLOTS) return false;
+    return running === 0 ? hostQuiet() : availableMb() >= SECOND_SLOT_MB && hostQuiet();
 }
 
 async function run(args) {
@@ -106,10 +104,10 @@ async function run(args) {
     process.on('SIGINT', () => process.exit(130));
     process.on('SIGTERM', () => process.exit(143));
     process.on('SIGHUP', () => {});
-    await waitForTurn(name);
+    while (!myTurn(name)) await sleep(POLL_MS);
     const granted = Date.now();
     fs.writeFileSync(file, JSON.stringify({ ...ticket, granted }) + '\n');
-    fs.writeFileSync(LAST_TURNS, JSON.stringify({ ...lastTurns(), [ownerOf(label)]: granted }) + '\n');
+    fs.writeFileSync(LAST_TURNS, JSON.stringify({ ...readJson(LAST_TURNS, {}), [ownerOf(label)]: granted }) + '\n');
     console.log('GRANTED ' + label + ' ' + name.slice(0, 15));
     const child = spawn(command[0], command.slice(1), { stdio: 'inherit' });
     const code = await new Promise((resolve) => child.on('exit', (status) => resolve(status ?? 1)));
@@ -136,7 +134,7 @@ function history() {
 async function main() {
     const [verb, ...rest] = process.argv.slice(2);
     if (verb === 'run') return run(rest);
-    if (verb === 'list') return console.log(turnOrder().join('\n'));
+    if (verb === 'list') return console.log(inTurn(liveTickets()).map((ticket) => ticket.name).join('\n'));
     if (verb === 'history') return console.log(history().join('\n'));
     throw new Error('usage: gate-ticket.cjs run <label> -- <command> [args] | list | history');
 }

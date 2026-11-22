@@ -23,7 +23,7 @@ These apply to every assignment from the dispatcher. Read them again after a com
 ## The gate
 
 - A heavy window (a compile, a browser, a cargo, zig or cc job) starts through the ticket gate, detached, with its output in a file: `setsid nohup node /workspace/hyperagent/scripts/gate-ticket.cjs run <project>-<part> -- <window command> > <result file> 2>&1 < /dev/null &`. The label starts with your project name. The window prints `<PART>_DONE <exit code>` as its last line. A ticket started any other way dies with the shell or session that started it.
-- The gate runs one window at a time and takes turns between projects: the project that ran longest ago goes next, and your own tickets keep their order. Do not write your own polling loop and do not cut the queue.
+- The gate runs one window, and a second when the host has at least 5 GB available and no swap traffic, and takes turns between projects: the project that ran longest ago goes next, and your own tickets keep their order. Do not write your own polling loop and do not cut the queue.
 - Queue a window only on a tree that is final for it. A window re-queued because an edit landed costs a full turn of the queue.
 - A window of plain scripts takes no ticket and starts when available memory is at least 2.5 GB. Split a mixed window so only its heavy steps take a ticket, and split a heavy window over about 30 minutes into separately ticketed parts.
 - While a ticket is queued, work through the rest of your list that the window does not test. When nothing else is reachable, end the turn with `REPORT: open`, naming each ticket label and its result file. The dispatcher resumes you when your tickets have left the queue. Never poll a queued ticket: a turn spent re-reading the queue is waste.

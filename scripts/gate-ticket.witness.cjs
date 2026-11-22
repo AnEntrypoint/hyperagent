@@ -8,7 +8,7 @@ const script = path.join(__dirname, 'gate-ticket.cjs');
 const classifier = '/workspace/bevy/scripts/check-heavy-jobs.cjs';
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gate-ticket-'));
 const log = path.join(dir, 'window.log');
-const env = { ...process.env, GATE_TICKET_DIR: path.join(dir, 'tickets'), GATE_READING_CMD: 'true', GATE_POLL_MS: '50' };
+const env = { ...process.env, GATE_TICKET_DIR: path.join(dir, 'tickets'), GATE_READING_CMD: 'true', GATE_POLL_MS: '50', GATE_SLOTS: '1' };
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const holdCode = "const fs = require('fs'); const [label, file] = process.argv.slice(1); fs.appendFileSync(file, 'start ' + label + '\\n'); setTimeout(() => fs.appendFileSync(file, 'end ' + label + '\\n'), 1200);";
 

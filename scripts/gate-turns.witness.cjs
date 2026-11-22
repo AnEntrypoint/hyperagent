@@ -7,7 +7,7 @@ const { spawn } = require('node:child_process');
 const script = path.join(__dirname, 'gate-ticket.cjs');
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gate-turns-'));
 const log = path.join(dir, 'window.log');
-const env = { ...process.env, GATE_TICKET_DIR: path.join(dir, 'tickets'), GATE_READING_CMD: 'true', GATE_POLL_MS: '50' };
+const env = { ...process.env, GATE_TICKET_DIR: path.join(dir, 'tickets'), GATE_READING_CMD: 'true', GATE_POLL_MS: '50', GATE_SLOTS: '1' };
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const holdCode = "const fs = require('fs'); const [label, file] = process.argv.slice(1); fs.appendFileSync(file, label + '\\n'); setTimeout(() => {}, 600);";
 const startWindow = (label) => new Promise((resolve) => spawn('node', [script, 'run', label, '--', 'node', '-e', holdCode, label, log], { env, stdio: 'ignore' }).on('exit', resolve));
