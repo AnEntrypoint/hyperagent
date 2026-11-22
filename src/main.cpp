@@ -2,6 +2,7 @@
 
 #include "cli/ccbridge.hpp"
 #include "cli/open.hpp"
+#include "cli/setup.hpp"
 #include "gui/command.hpp"
 #include "journal/command.hpp"
 #include "monitor/command.hpp"
@@ -20,6 +21,7 @@ int main(int argc, char** argv)
     hyperagent::watch::add_command(app);
     hyperagent::cli::ccbridge::add_command(app);
     hyperagent::cli::open::add_command(app);
+    hyperagent::cli::setup::add_command(app);
 
     hyperagent::orch::add_command(app);
     hyperagent::mcp::add_command(app);
