@@ -1,0 +1,212 @@
+name: release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  RELEASE_REPO: AnEntrypoint/hyperagent
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x64-linux
+            triplet: x64-linux
+            ext: tar.gz
+            optional: false
+            configure: ""
+          - os: ubuntu-24.04-arm
+            target: arm64-linux
+            triplet: arm64-linux
+            ext: tar.gz
+            optional: false
+            configure: ""
+          - os: macos-latest
+            target: arm64-macos
+            triplet: arm64-osx
+            ext: tar.gz
+            optional: false
+            configure: ""
+          - os: macos-latest
+            target: x64-macos
+            triplet: x64-osx
+            ext: tar.gz
+            optional: false
+            configure: "-DCMAKE_OSX_ARCHITECTURES=x86_64"
+          - os: windows-latest
+            target: x64-windows
+            triplet: x64-windows-static
+            ext: zip
+            optional: true
+            configure: ""
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.optional }}
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    env:
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/.vcpkg-binary-cache
+    steps:
+      - uses: actions/checkout@v4
+      - name: Version
+        run: echo "HYPERAGENT_BUILD_VERSION=${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
+      - name: Prepare the vcpkg binary cache
+        run: mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE"
+      - uses: actions/cache@v4
+        with:
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: vcpkg-${{ matrix.triplet }}-${{ hashFiles('vcpkg.json') }}
+          restore-keys: vcpkg-${{ matrix.triplet }}-
+      - name: Configure
+        run: >
+          cmake -S . -B build
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_TOOLCHAIN_FILE="$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+          -DVCPKG_TARGET_TRIPLET=${{ matrix.triplet }}
+          -DHYPERAGENT_VERSION="$HYPERAGENT_BUILD_VERSION"
+          ${{ matrix.configure }}
+      - name: Build
+        run: cmake --build build --config Release --parallel
+      - name: Install into the shipped layout
+        run: |
+          layout="$RUNNER_TEMP/layout/hyperagent-${{ matrix.target }}"
+          mkdir -p "$layout/bin" "$layout/share/ccbridge" "$layout/share/hyperagent"
+          for program in hyperagent ccbridge; do
+            built=$(find build -maxdepth 2 -type f \( -name "$program" -o -name "$program.exe" \) | head -n 1)
+            cp "$built" "$layout/bin/"
+          done
+          cp -R airc/templates "$layout/share/ccbridge/templates"
+          cp -R airc/web "$layout/share/ccbridge/web"
+          mkdir -p "$layout/share/hyperagent/gui" && cp -R gui/public "$layout/share/hyperagent/gui/public"
+          echo "LAYOUT=$layout" >> "$GITHUB_ENV"
+      - name: Package
+        run: |
+          mkdir -p dist
+          archive="hyperagent-${{ matrix.target }}.${{ matrix.ext }}"
+          binary="$LAYOUT/bin/hyperagent"
+          [ -e "$binary.exe" ] && binary="$binary.exe"
+          if [ "${{ matrix.ext }}" = zip ]; then
+            (cd "$RUNNER_TEMP/layout" && 7z a -tzip "$GITHUB_WORKSPACE/dist/$archive" "hyperagent-${{ matrix.target }}")
+          else
+            tar -C "$RUNNER_TEMP/layout" -czf "dist/$archive" "hyperagent-${{ matrix.target }}"
+          fi
+          (cd dist && if command -v sha256sum >/dev/null; then sha256sum "$archive"; else shasum -a 256 "$archive"; fi) > "dist/$archive.sha256"
+          "$binary" --version
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hyperagent-${{ matrix.target }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    needs: [build]
+    if: ${{ always() && needs.build.result != 'cancelled' && needs.build.result != 'failure' && github.repository == 'AnEntrypoint/hyperagent' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: publish-latest
+      cancel-in-progress: false
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Publish only a build newer than latest
+        id: head
+        run: |
+          gh_retry() { for n in 1 2 3 4 5; do "$@" && return 0; echo "retry $n for $1" >&2; sleep $((n * 5)); done; return 1; }
+          probe="$RUNNER_TEMP/latest-tag.sha"
+          probe_err="$RUNNER_TEMP/latest-tag.err"
+          read_latest_tag() {
+            if gh api "repos/$RELEASE_REPO/git/ref/tags/latest" --jq .object.sha > "$probe" 2> "$probe_err"; then return 0; fi
+            if grep -q 'HTTP 404' "$probe_err"; then : > "$probe"; return 0; fi
+            return 1
+          }
+          gh_retry read_latest_tag || { echo "cannot read the latest tag ref" >&2; cat "$probe_err" >&2; exit 1; }
+          published=$(cat "$probe")
+          order=new
+          if [ -n "$published" ]; then
+            order=$(gh_retry gh api "repos/$RELEASE_REPO/compare/$published...$GITHUB_SHA" --jq .status) || { echo "cannot read the release order"; exit 1; }
+          fi
+          case "$order" in
+            ahead | identical | new) echo "current=true" >> "$GITHUB_OUTPUT" ;;
+            *)
+              echo "current=false" >> "$GITHUB_OUTPUT"
+              echo "latest is $published; $GITHUB_SHA is $order to it and is not published"
+              ;;
+          esac
+      - uses: actions/download-artifact@v4
+        if: steps.head.outputs.current == 'true'
+        with:
+          pattern: hyperagent-*
+          path: dist
+          merge-multiple: true
+      - name: Version names, checksums and manifest
+        if: steps.head.outputs.current == 'true'
+        run: |
+          build="${GITHUB_SHA:0:7}-$GITHUB_RUN_NUMBER"
+          mkdir -p release
+          : > release/SHA256SUMS
+          targets='{}'
+          for file in dist/hyperagent-*.tar.gz dist/hyperagent-*.zip; do
+            [ -e "$file" ] || continue
+            stable=$(basename "$file")
+            target="${stable#hyperagent-}"
+            ext=tar.gz
+            target="${target%.tar.gz}"
+            case "$stable" in *.zip) ext=zip; target="${target%.zip}" ;; esac
+            versioned="hyperagent-$build-$target.$ext"
+            cp "$file" "release/$stable"
+            cp "$file" "release/$versioned"
+            sum=$(sha256sum "$file" | cut -d' ' -f1)
+            size=$(stat -c %s "$file")
+            echo "$sum  $stable" >> release/SHA256SUMS
+            echo "$sum  $versioned" >> release/SHA256SUMS
+            targets=$(jq -c --arg target "$target" --arg asset "$versioned" --arg sha256 "$sum" --argjson size "$size" '.[$target] = {asset: $asset, sha256: $sha256, size: $size}' <<< "$targets")
+          done
+          jq -n --arg build "$build" --arg sha "$GITHUB_SHA" --argjson targets "$targets" '{build: $build, sha: $sha, targets: $targets}' > release/manifest.json
+          cat release/manifest.json
+      - name: Create the release if absent
+        if: steps.head.outputs.current == 'true'
+        run: |
+          gh release view latest --repo "$RELEASE_REPO" >/dev/null 2>&1 || gh release create latest --repo "$RELEASE_REPO" --target "$GITHUB_SHA" --title latest --notes "Latest hyperagent build" --latest
+      - name: Upload the assets
+        if: steps.head.outputs.current == 'true'
+        run: |
+          gh_retry() { for n in 1 2 3 4 5; do "$@" && return 0; echo "retry $n for $1" >&2; sleep $((n * 5)); done; return 1; }
+          gh_retry gh release upload latest release/* --repo "$RELEASE_REPO" --clobber
+          gh_retry gh release edit latest --repo "$RELEASE_REPO" --latest
+      - name: Move the latest tag
+        if: steps.head.outputs.current == 'true'
+        run: |
+          gh_retry() { for n in 1 2 3 4 5; do "$@" && return 0; echo "retry $n for $1" >&2; sleep $((n * 5)); done; return 1; }
+          tag_probe="$RUNNER_TEMP/latest-tag.sha"
+          tag_err="$RUNNER_TEMP/latest-tag.err"
+          read_latest_tag() {
+            if gh api "repos/$RELEASE_REPO/git/ref/tags/latest" --jq .object.sha > "$tag_probe" 2> "$tag_err"; then return 0; fi
+            if grep -q 'HTTP 404' "$tag_err"; then : > "$tag_probe"; return 0; fi
+            return 1
+          }
+          gh_retry read_latest_tag || { echo "cannot read the latest tag ref" >&2; cat "$tag_err" >&2; exit 1; }
+          if [ -s "$tag_probe" ]; then
+            gh_retry gh api -X PATCH "repos/$RELEASE_REPO/git/refs/tags/latest" -f sha="$GITHUB_SHA" -F force=true
+          else
+            gh_retry gh api -X POST "repos/$RELEASE_REPO/git/refs" -f ref=refs/tags/latest -f sha="$GITHUB_SHA"
+          fi
+      - name: Prune versioned assets beyond the newest 3 builds
+        if: steps.head.outputs.current == 'true'
+        run: |
+          gh release view latest --repo "$RELEASE_REPO" --json assets --jq '.assets[].name' > "$RUNNER_TEMP/assets.txt"
+          kept=$(grep -oE '^hyperagent-[0-9a-f]{7}-[0-9]+-' "$RUNNER_TEMP/assets.txt" | sort -u | sort -t- -k3,3nr | head -n 3)
+          grep -E '^hyperagent-[0-9a-f]{7}-[0-9]+-' "$RUNNER_TEMP/assets.txt" | while read -r name; do
+            prefix=$(grep -oE '^hyperagent-[0-9a-f]{7}-[0-9]+-' <<< "$name")
+            grep -qxF "$prefix" <<< "$kept" || gh release delete-asset latest "$name" --repo "$RELEASE_REPO" --yes
+          done
