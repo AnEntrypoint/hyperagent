@@ -1,9 +1,5 @@
 #include "orch/state.hpp"
 
-#include <fcntl.h>
-#include <sys/file.h>
-#include <unistd.h>
-
 #include <algorithm>
 #include <filesystem>
 #include <functional>
@@ -13,6 +9,7 @@
 
 #include "core/clock.hpp"
 #include "core/files.hpp"
+#include "core/platform.hpp"
 #include "orch/config.hpp"
 
 namespace hyperagent::orch::state {
@@ -32,21 +29,20 @@ public:
     explicit LockFile(const std::filesystem::path& path)
     {
         core::files::ensure_parent_directory(path);
-        descriptor_ = ::open(path.c_str(), O_CREAT | O_RDWR | O_APPEND, 0644);
-        if (descriptor_ < 0 || ::flock(descriptor_, LOCK_EX) != 0) {
+        handle_ = core::platform::lock_open(path);
+        if (handle_ == core::platform::no_lock || !core::platform::lock_wait(handle_)) {
             throw std::runtime_error("cannot lock " + path.string());
         }
     }
     ~LockFile()
     {
-        ::flock(descriptor_, LOCK_UN);
-        ::close(descriptor_);
+        core::platform::lock_release(handle_);
     }
     LockFile(const LockFile&) = delete;
     LockFile& operator=(const LockFile&) = delete;
 
 private:
-    int descriptor_ = -1;
+    core::platform::LockHandle handle_ = core::platform::no_lock;
 };
 
 }

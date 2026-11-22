@@ -26,7 +26,9 @@ struct Options {
 
 int run(const Options& options)
 {
+#if defined(SIGPIPE)
     std::signal(SIGPIPE, SIG_IGN);
+#endif
     const std::filesystem::path public_dir = core::paths::data_root() / "gui" / "public";
     JournalFeed feed(core::paths::journal_root(), core::paths::orch_home() / "server.log");
     ReloadWatcher reloads(public_dir);

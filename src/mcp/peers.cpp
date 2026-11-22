@@ -7,15 +7,14 @@
 #include <filesystem>
 #include <optional>
 #include <semaphore>
-#include <signal.h>
 #include <string>
 #include <string_view>
-#include <sys/types.h>
 #include <thread>
 #include <utility>
 #include <vector>
 
 #include "core/files.hpp"
+#include "core/platform.hpp"
 #include "core/text.hpp"
 #include "journal/records.hpp"
 #include "mcp/args.hpp"
@@ -633,7 +632,7 @@ std::string server_down(const Value&)
     }
     const Value pid_text(std::string(core::text::strip(core::files::read_bytes(pid_file).value_or(""))));
     const long long pid = to_int(&pid_text);
-    ::kill(static_cast<pid_t>(pid), SIGTERM);
+    core::platform::terminate_process(pid);
     const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(20);
     while (std::chrono::steady_clock::now() < deadline && orch::ccbridge::server_alive()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(200));

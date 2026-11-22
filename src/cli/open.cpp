@@ -1,13 +1,12 @@
 #include "cli/open.hpp"
 
-#include <unistd.h>
-
 #include <cstdlib>
 #include <filesystem>
 #include <string>
 #include <vector>
 
 #include "core/paths.hpp"
+#include "core/platform.hpp"
 
 namespace hyperagent::cli::open {
 
@@ -15,19 +14,14 @@ namespace {
 
 void set_default_environment(const char* name, const char* value)
 {
-    ::setenv(name, value, 0);
+    core::platform::set_default_environment(name, value);
 }
 
 [[noreturn]] void exec_claude(const std::vector<std::string>& args)
 {
-    std::vector<char*> argv;
-    argv.push_back(const_cast<char*>("claude"));
-    for (const auto& arg : args) {
-        argv.push_back(const_cast<char*>(arg.c_str()));
-    }
-    argv.push_back(nullptr);
-    ::execvp("claude", argv.data());
-    std::_Exit(127);
+    std::vector<std::string> argv{"claude"};
+    argv.insert(argv.end(), args.begin(), args.end());
+    core::platform::exec_program(argv);
 }
 
 }

@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "core/json.hpp"
+#include "core/platform.hpp"
 #include "core/text.hpp"
 #include "journal/records.hpp"
 #include "orch/ccbridge.hpp"
@@ -80,8 +81,7 @@ std::string json_text(const Value& value)
 std::string stamp_text(double epoch)
 {
     const auto moment = static_cast<std::time_t>(std::floor(epoch));
-    std::tm local{};
-    localtime_r(&moment, &local);
+    const std::tm local = core::platform::local_time(moment);
     char buffer[64];
     std::strftime(buffer, sizeof buffer, "%Y-%m-%d %H:%M:%S", &local);
     return buffer;

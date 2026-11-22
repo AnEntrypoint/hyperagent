@@ -19,6 +19,7 @@
 #include "core/clock.hpp"
 #include "core/files.hpp"
 #include "core/json.hpp"
+#include "core/platform.hpp"
 #include "core/text.hpp"
 #include "journal/journal.hpp"
 #include "orch/ccbridge.hpp"
@@ -197,7 +198,7 @@ std::optional<double> parse_stamp(const std::string& raw)
     moment.tm_sec = second;
     moment.tm_isdst = -1;
     if (offset_seconds) {
-        return static_cast<double>(timegm(&moment)) - static_cast<double>(*offset_seconds) + fraction;
+        return static_cast<double>(core::platform::utc_epoch(moment)) - static_cast<double>(*offset_seconds) + fraction;
     }
     return static_cast<double>(mktime(&moment)) + fraction;
 }

@@ -2,6 +2,8 @@
 
 #include <string>
 
+#include "core/platform.hpp"
+
 namespace hyperagent::orch {
 
 class SessionLock {
@@ -13,7 +15,7 @@ public:
     SessionLock& operator=(const SessionLock&) = delete;
 
 private:
-    int descriptor_ = -1;
+    core::platform::LockHandle descriptor_ = core::platform::no_lock;
 };
 
 }
