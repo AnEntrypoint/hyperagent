@@ -65,7 +65,12 @@ std::optional<FileStat> stat(const std::filesystem::path& path)
     if (::stat(path.c_str(), &info) != 0) {
         return std::nullopt;
     }
-    const double mtime = static_cast<double>(info.st_mtim.tv_sec) + static_cast<double>(info.st_mtim.tv_nsec) / 1e9;
+#if defined(__APPLE__)
+    const timespec& modified = info.st_mtimespec;
+#else
+    const timespec& modified = info.st_mtim;
+#endif
+    const double mtime = static_cast<double>(modified.tv_sec) + static_cast<double>(modified.tv_nsec) / 1e9;
     return FileStat{static_cast<std::uintmax_t>(info.st_size), mtime};
 }
 
