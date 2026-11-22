@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.21)
 project(hyperagent VERSION 0.1.0 LANGUAGES C CXX)
 
+set(HYPERAGENT_VERSION "0.1.0" CACHE STRING "version reported by hyperagent --version")
+option(HYPERAGENT_STATIC_RUNTIME "link the C++ runtime statically on Linux" OFF)
+if(HYPERAGENT_STATIC_RUNTIME AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    add_link_options(-static-libstdc++ -static-libgcc)
+endif()
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -22,7 +28,7 @@ add_executable(hyperagent ${HYPERAGENT_SOURCES})
 target_include_directories(hyperagent PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${SQLite3_INCLUDE_DIR})
-target_compile_definitions(hyperagent PRIVATE HYPERAGENT_VERSION="${PROJECT_VERSION}")
+target_compile_definitions(hyperagent PRIVATE HYPERAGENT_VERSION="${HYPERAGENT_VERSION}")
 target_link_libraries(hyperagent PRIVATE
     Boost::headers
     nlohmann_json::nlohmann_json
@@ -61,3 +67,4 @@ add_test(NAME follow_transcript
 set_tests_properties(follow_transcript PROPERTIES TIMEOUT 180)
 
 install(TARGETS hyperagent RUNTIME DESTINATION bin)
+install(DIRECTORY gui/public DESTINATION share/hyperagent/gui)
