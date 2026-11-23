@@ -31,6 +31,8 @@ These apply to every assignment from the dispatcher. Read them again after a com
 - While a ticket is queued, work through the rest of your list that the window does not test. When nothing else is reachable, end the turn with `REPORT: open`, naming each ticket label and its result file. The dispatcher resumes you when your tickets have left the queue. Never poll a queued ticket: a turn spent re-reading the queue is waste.
 - When you are resumed, or your ticket is granted while you are working, read the result file. Wait on a window that is running now with one bounded wait on its PID.
 
+- A heavy plain-script batch (more than about three parallel test processes, a full suite, many browsers) is a window, not a plain script: take a gate ticket for it, so a timing witness that runs exclusively (GATE_EXCLUSIVE=1) is not measured under someone else's load. Seen 2026-11-23: bevy's exclusive timing bench ran at load average 15 on the 3-core host while fx ran 29 test files outside the gate, so its over-budget count was noise. A timing result taken at load average above about 4 is rerun, not interpreted.
+
 ## Pace
 
 - Before queueing a build to answer a question, look for a published binary or an artifact another project already built, and use it.
