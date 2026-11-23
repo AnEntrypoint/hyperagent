@@ -33,6 +33,8 @@ These apply to every assignment from the dispatcher. Read them again after a com
 
 - A heavy plain-script batch (more than about three parallel test processes, a full suite, many browsers) is a window, not a plain script: take a gate ticket for it, so a timing witness that runs exclusively (GATE_EXCLUSIVE=1) is not measured under someone else's load. Seen 2026-11-23: bevy's exclusive timing bench ran at load average 15 on the 3-core host while fx ran 29 test files outside the gate, so its over-budget count was noise. A timing result taken at load average above about 4 is rerun, not interpreted.
 
+- A window whose build needs more memory than the gate floor says sets GATE_MIN_MB in its environment (megabytes available the gate must see before it grants the ticket; the default floors are 2.5 GB for the first window and 6 GB for a second). Seen 2026-11-23: fx Zig builds peak at about 7 to 8 GB and were admitted at 2.5 GB, which pushed swap to 13 GB at 40 MB/s in and out. Set GATE_MIN_MB=9000 for fx Zig windows and for bevy full cargo builds; measure your window once and set it to its peak plus 1 GB.
+
 ## Pace
 
 - Before queueing a build to answer a question, look for a published binary or an artifact another project already built, and use it.
