@@ -68,7 +68,7 @@ function takeTicket(ownerPid, label) {
     const latest = liveTickets().reduce((max, ticket) => Math.max(max, Number(ticket.name.slice(0, 15))), 0);
     const arrival = Math.max(Date.now(), latest + 1);
     const name = String(arrival).padStart(15, '0') + '-' + ownerPid + '.json';
-    const ticket = { pid: ownerPid, arrival, label, v: TAKES_TURNS, exclusive: process.env.GATE_EXCLUSIVE === '1', quick: process.env.GATE_QUICK === '1' };
+    const ticket = { pid: ownerPid, arrival, label, v: TAKES_TURNS, exclusive: process.env.GATE_EXCLUSIVE === '1', quick: process.env.GATE_QUICK === '1', minMb: Number(process.env.GATE_MIN_MB || 0) };
     fs.writeFileSync(path.join(TICKET_DIR, name), JSON.stringify(ticket) + '\n');
     return { name, ticket };
 }
@@ -91,12 +91,12 @@ function myTurn(name) {
     const tickets = inTurn(liveTickets());
     const mine = tickets.find((ticket) => ticket.name === name);
     if (mine?.quick) return tickets.filter((ticket) => ticket.quick && ticket.granted).length < QUICK_SLOTS && hostHasRoom(QUICK_SLOT_MB);
-    if (!tickets.every((ticket) => ticket.v === TAKES_TURNS)) return tickets[0]?.name === name && hostHasRoom(FIRST_SLOT_MB);
+    if (!tickets.every((ticket) => ticket.v === TAKES_TURNS)) return tickets[0]?.name === name && hostHasRoom(Math.max(FIRST_SLOT_MB, mine?.minMb || 0));
     const running = tickets.filter((ticket) => ticket.granted && !ticket.quick);
     const next = tickets.find((ticket) => !ticket.granted && !ticket.quick);
     if (next?.name !== name || running.length >= SLOTS) return false;
-    if (running.length === 0) return hostHasRoom(FIRST_SLOT_MB);
-    return !next.exclusive && !running.some((ticket) => ticket.exclusive) && hostHasRoom(SECOND_SLOT_MB);
+    if (running.length === 0) return hostHasRoom(Math.max(FIRST_SLOT_MB, next.minMb || 0));
+    return !next.exclusive && !running.some((ticket) => ticket.exclusive) && hostHasRoom(Math.max(SECOND_SLOT_MB, next.minMb || 0));
 }
 
 async function run(args) {
