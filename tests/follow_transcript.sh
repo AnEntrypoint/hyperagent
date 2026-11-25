@@ -13,7 +13,6 @@ SERVER_PID=
 CLIENT_PID=
 WATCH_PID=
 HOLDER_PID=
-LOCK_DIR=
 SCRATCH=
 TMP=
 
@@ -30,9 +29,6 @@ cleanup() {
     stop_pid "$SERVER_PID"
     if [ -n "$TMP" ]; then
         rm -rf "$TMP"
-    fi
-    if [ -n "$LOCK_DIR" ] && [ -d "$LOCK_DIR" ]; then
-        rmdir "$LOCK_DIR" 2>/dev/null || true
     fi
     if [ -n "$SCRATCH" ]; then
         rm -rf "$SCRATCH"
@@ -145,7 +141,7 @@ journal_pairs() {
     jq -r 'select(.kind == "text" or .kind == "tool" or .kind == "you") | .kind + "\t" + (.text // "")' "$(journal_file)"
 }
 lock_held() {
-    [ -d "$LOCK_DIR" ]
+    python3 -I "$ROOT/tools/lock-held.py" "$LOCK"
 }
 
 SEED_DIR=$HOME/.claude/projects/$(printf '%s' "$TMP/work" | sed 's/[^A-Za-z0-9]/-/g')
@@ -188,10 +184,8 @@ diff "$TMP/expect1" "$TMP/actual1" || fail "the journal does not match the auton
 echo "ok autonomous turn with no job attached: $(wc -l < "$TMP/actual1") records (text, tool, you) match the transcript one for one, plus one turn_end result"
 
 LOCK=$ORCH_HOME/locks/$PEER.lock
-LOCK_DIR=$LOCK.dir
 wait_until 50 test -e "$LOCK" || fail "the watch never created $LOCK"
-mkdir "$LOCK_DIR" || fail "could not create $LOCK_DIR"
-( exec sleep 300 ) &
+python3 -I "$ROOT/tools/hold-lock.py" "$LOCK" 300 > "$TMP/holder.log" 2>&1 &
 HOLDER_PID=$!
 wait_until 50 lock_held || fail "the holder never took $LOCK"
 LOCKED_BEFORE=$(journal_count)
@@ -201,7 +195,6 @@ sleep 3
 P2_END=$(transcript_lines)
 stop_pid "$HOLDER_PID"
 HOLDER_PID=
-rmdir "$LOCK_DIR" 2>/dev/null || true
 sleep 3
 [ "$(journal_count)" = "$LOCKED_BEFORE" ] || fail "records written under the lock were journaled after it released"
 
