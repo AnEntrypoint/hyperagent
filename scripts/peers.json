@@ -65,9 +65,9 @@
   {
     "name": "zellous",
     "session": "d363015c-a6f9-487b-953c-6264a26e443b",
-    "checkout": "/config/workspace/zellous",
-    "journal": "-config-workspace-zellous",
-    "remote": "fetch"
+    "checkout": "/config/workspace/zellous-discord",
+    "journal": "-config-workspace-zellous-discord",
+    "remote": "gh"
   },
   {
     "name": "thorns-cpp",
