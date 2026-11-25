@@ -24,7 +24,7 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-`cmake --install build --prefix <dir>` produces the shipped layout. `tools/ship-witness.sh build` installs that layout into scratch and runs the portable setup, doctor and red-check witness.
+`cmake --install build --prefix <dir>` produces the shipped layout. `tools/ship-witness.sh build` installs that layout into scratch and runs the portable setup, doctor and red-check witness. Release publication is a manual `workflow_dispatch` after the source push; it verifies all five target archives and checksum sidecars before uploading or moving the latest tag.
 
 ## Setup and doctor
 

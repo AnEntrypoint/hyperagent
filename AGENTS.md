@@ -357,4 +357,7 @@ sits behind `src/core/platform.hpp`, and `core/process.cpp` has a CreateProcessW
 `-DHYPERAGENT_VERSION=<tag or sha>` sets `--version`. `CMakePresets.json` has one preset per
 static vcpkg triplet (x64-linux, arm64-linux, arm64-osx, x64-osx, x64-windows); the Linux ones
 add `HYPERAGENT_STATIC_RUNTIME`. `tools/ship-witness.sh BUILD_DIR` installs a finished build
-into scratch and runs the portable setup, doctor and red-check witness there.
+into scratch and runs the portable setup, doctor and red-check witness there. The release workflow
+is a manual `workflow_dispatch` after the source push; its publish job verifies all five target
+archives and checksum sidecars before writing `manifest.json` or `SHA256SUMS`, writes ten checksum
+lines, and skips a duplicate same-SHA run when the latest published manifest is complete.
