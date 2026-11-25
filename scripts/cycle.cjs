@@ -5,6 +5,7 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
 const peers = JSON.parse(fs.readFileSync(path.join(__dirname, 'peers.json'), 'utf8'));
+const journalRoot = process.env.HYPERAGENT_JOURNAL || path.join(root, '.orch/projects');
 const ghHelper = '-c credential.helper= -c credential.helper="!gh auth git-credential"';
 const systemProcesses = /s6|dbus|gvfs|xfce|Xvfb|ssh-agent|gpg-agent|at-spi|dconf|udisks|crashpad|tumbler|gate-ticket\.cjs|ccbridge serve|hyperagent orch p/;
 
@@ -16,7 +17,24 @@ const sh = (command, cwd) => {
   }
 };
 const oneLine = (text, limit) => String(text ?? '').replace(/\s+/g, ' ').trim().slice(0, limit);
-const journalOf = (peer) => path.join(root, '.orch/projects', peer.journal, peer.session + '.jsonl');
+const peerRoots = () => {
+  const candidates = [];
+  if (process.env.HYPERAGENT_PEERS_ROOTS) candidates.push(...process.env.HYPERAGENT_PEERS_ROOTS.split(path.delimiter).filter(Boolean));
+  candidates.push(path.dirname(root));
+  candidates.push(path.join(path.parse(root).root, 'workspace'));
+  return candidates.filter(Boolean);
+};
+const checkoutOf = (peer) => {
+  if (path.isAbsolute(peer.checkout)) return peer.checkout;
+  const roots = peerRoots();
+  for (const base of roots) {
+    const candidate = path.resolve(base, peer.checkout);
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return path.resolve(roots[0], peer.checkout);
+};
+const slugOf = (cwd) => Array.from(path.resolve(cwd)).map((symbol) => /[0-9A-Za-z]/.test(symbol) ? symbol : '-').join('');
+const journalOf = (peer) => path.join(journalRoot, slugOf(checkoutOf(peer)), peer.session + '.jsonl');
 const parse = (lines) => lines.flatMap((line) => {
   try {
     return [JSON.parse(line)];
@@ -49,14 +67,15 @@ const queueOf = (name) => {
 };
 
 function peerLine(peer) {
+  const cwd = checkoutOf(peer);
   const records = tailRecords(journalOf(peer), 400000);
   const last = records.at(-1);
   const lastText = records.findLast((record) => record.kind === 'text' && record.text);
   const ended = last?.kind === 'result';
-  const head = sh('git rev-parse --short HEAD', peer.checkout);
-  const origin = remoteHead[peer.remote](peer.checkout);
-  const ahead = peer.remote === 'ls-remote' ? (head === origin ? '0' : '?') : sh('git rev-list --count origin/main..HEAD', peer.checkout);
-  const dirty = sh('git status --short | wc -l', peer.checkout);
+  const head = sh('git rev-parse --short HEAD', cwd);
+  const origin = remoteHead[peer.remote](cwd);
+  const ahead = peer.remote === 'ls-remote' ? (head === origin ? '0' : '?') : sh('git rev-list --count origin/main..HEAD', cwd);
+  const dirty = sh('git status --short | wc -l', cwd);
   const queued = queueOf(peer.name).length;
   const tickets = ticketRows().filter((row) => row.owner === peer.name).length;
   const state = !ended ? 'running' : tickets === 0 && queued > 0 ? 'ENDED DUE' : 'ENDED';
@@ -75,16 +94,21 @@ function ticketLines() {
 }
 
 function hostLines() {
-  const [, , swap, , , , swapIn, swapOut, , , , , , , idle] = sh('vmstat 1 2').split('\n').at(-1).trim().split(/\s+/);
-  const available = sh("free -m | awk 'NR==2{print $7}'");
-  const disk = (mount) => sh('df --output=avail -BG ' + mount + ' | tail -1').trim();
+  const vmColumns = (sh('vmstat 1 2').split('\n').at(-1) || '').trim().split(/\s+/);
+  const swap = Number(vmColumns[2] || 0);
+  const swapIn = vmColumns[6] || '?';
+  const swapOut = vmColumns[7] || '?';
+  const idle = vmColumns[14] || '?';
+  const available = sh("free -m | awk 'NR==2{print $7}'") || '?';
+  const disk = (target) => sh('df --output=avail -BG ' + target + ' | tail -1').trim() || '?';
   const orphans = sh('ps -eo pid,ppid,etimes,rss,args').split('\n').slice(1)
     .map((line) => line.trim().split(/\s+/))
     .filter(([, parent, , , ...args]) => parent === '1' && !systemProcesses.test(args.join(' ')))
     .map(([pid, , age, rss, ...args]) => 'orphan ' + pid + ' ' + age + 's ' + Math.round(rss / 1024) + 'MB ' + args.join(' ').slice(0, 90));
   const network = sh('curl -s -o /dev/null -m 6 -w "%{http_code}" https://api.anthropic.com/');
+  const swapText = Number.isFinite(swap) ? Math.round(swap / 1024) + 'MB' : '?';
   return [
-    'host ' + new Date().toISOString().slice(11, 19) + ' si=' + swapIn + ' so=' + swapOut + ' KB/s idle=' + idle + '% available=' + available + 'MB swap=' + Math.round(swap / 1024) + 'MB root=' + disk('/') + ' workspace=' + disk(path.dirname(root)) + ' api=' + (network || 'unreachable'),
+    'host ' + new Date().toISOString().slice(11, 19) + ' si=' + swapIn + ' so=' + swapOut + ' KB/s idle=' + idle + '% available=' + available + 'MB swap=' + swapText + ' root=' + disk(path.parse(root).root) + ' workspace=' + disk(path.dirname(root)) + ' api=' + (network || 'unreachable'),
     ...orphans,
   ];
 }

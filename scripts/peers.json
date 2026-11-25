@@ -2,92 +2,79 @@
   {
     "name": "signal",
     "session": "70909ee0-b1b9-49cc-aa97-bc8b136fa838",
-    "checkout": "/workspace/signal/world/signal-stage",
-    "journal": "-workspace-signal",
+    "checkout": "signal/world/signal-stage",
     "remote": "gh"
   },
   {
     "name": "thebird",
     "session": "94edcb5e-19f4-4d45-a42c-d3404e2ef932",
-    "checkout": "/workspace/thebird",
-    "journal": "-workspace-thebird",
+    "checkout": "thebird",
     "remote": "fetch"
   },
   {
     "name": "fx",
     "session": "c1b5c744-b949-4a27-bf3c-42b0cb5122d3",
-    "checkout": "/workspace/fx/fx",
-    "journal": "-workspace-fx",
+    "checkout": "fx/fx",
     "remote": "fetch"
   },
   {
     "name": "freddie",
     "session": "5cb6cedd-2569-4bba-9a75-05ecaf2ec841",
-    "checkout": "/workspace/freddie",
-    "journal": "-workspace-freddie",
+    "checkout": "freddie",
     "remote": "fetch"
   },
   {
     "name": "gm",
     "session": "57a3f21e-09df-4804-8a83-c6fd3b6f87f0",
-    "checkout": "/workspace/gm",
-    "journal": "-workspace-gm",
+    "checkout": "gm",
     "remote": "ls-remote"
   },
   {
     "name": "bevy",
     "session": "0f054132-9d13-4196-b9d1-da8e68e7c630",
-    "checkout": "/workspace/bevy",
-    "journal": "-workspace-bevy",
+    "checkout": "bevy",
     "remote": "fetch"
   },
   {
     "name": "oscraft",
     "session": "b9b76055-2097-4b88-a339-bbe27edb03ca",
-    "checkout": "/workspace/oscraft",
-    "journal": "-workspace-oscraft",
+    "checkout": "oscraft",
     "remote": "fetch"
   },
   {
     "name": "extra",
     "session": "cddce0d4-21b5-4620-b76a-cf9a6dac5789",
-    "checkout": "/workspace/extra",
-    "journal": "-workspace-extra",
+    "checkout": "extra",
     "remote": "fetch"
   },
   {
     "name": "mc-420",
     "session": "6d7ab162-ac91-4735-a1c5-3ba0d365aab9",
-    "checkout": "/config/workspace/mc-420",
-    "journal": "-config-workspace-mc-420",
+    "checkout": "mc-420",
     "remote": "fetch"
   },
   {
     "name": "zellous",
     "session": "d4df8d39-52e8-49e4-9138-529dc9271202",
-    "checkout": "/config/workspace/zellous-discord",
-    "journal": "-config-workspace-zellous-discord",
+    "checkout": "zellous-discord",
     "remote": "gh"
   },
   {
     "name": "hyperagent",
     "session": "cde324cd-0fe9-4327-b3a3-66c51a85c1f0",
-    "checkout": "/config/workspace/hyperagent-portable",
-    "journal": "-config-workspace-hyperagent-portable",
+    "checkout": "hyperagent-portable",
     "remote": "gh"
   },
   {
     "name": "hyperagent-install",
     "session": "a9b97f7c-321d-4071-b3b1-b88ffdf80f09",
-    "checkout": "/config/workspace/hyperagent-install",
-    "journal": "-config-workspace-hyperagent-install",
+    "checkout": "hyperagent-install",
     "remote": "gh"
   },
   {
     "name": "thorns-cpp",
     "session": "de38240d-2791-4502-8003-2b5c69575f71",
-    "checkout": "/config/workspace/thorns-cpp",
-    "journal": "-config-workspace-thorns-cpp",
+    "checkout": "thorns-cpp",
     "remote": "fetch"
   }
 ]

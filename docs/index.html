@@ -183,7 +183,7 @@ questions for the owner report. A timeout does not cancel the peer's turn: check
 <p>One line per peer: <strong>finished</strong>, <strong>open</strong>, <strong>blocked</strong>, and which held decisions it is waiting on.</p>
 
 <h2>10 — Open</h2>
-<pre>cd /data/workspace/hyperagent
+<pre>cd hyperagent
 build/hyperagent open</pre>
 <p><code>build/hyperagent open</code> starts Claude Code in this project and sets <code>MCP_TOOL_TIMEOUT=14400000</code>.
 The server is registered by <code>.mcp.json</code> and enabled by <code>.claude/settings.json</code>
@@ -191,7 +191,8 @@ The server is registered by <code>.mcp.json</code> and enabled by <code>.claude/
 <code>build/hyperagent orch</code>: <code>projects</code>, <code>start NAME</code>, <code>prompt</code>,
 <code>fanout</code>, <code>status</code>, <code>pane</code>, <code>stop</code>, <code>down</code>.</p>
 <p>The airc (ccbridge) source is the vendored <code>airc/</code> directory, built into <code>build/ccbridge</code>; <code>CCBRIDGE_BIN</code> overrides that binary, projects come from the parent
-folder (<code>ORCH_PARENT</code>), and the server listens on <code>127.0.0.1:8787</code>
+folder (<code>ORCH_PARENT</code>), and the server listens on the port chosen by
+<code>hyperagent setup</code>; <code>hyperagent doctor</code> reports it
 (<code>ORCH_HOST</code> / <code>ORCH_PORT</code>).</p>
 
 <h2>11 — Limits</h2>

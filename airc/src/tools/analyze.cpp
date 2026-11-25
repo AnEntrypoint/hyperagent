@@ -263,9 +263,17 @@ bool has_prefix(CodepointView text, CodepointView prefix) {
     return text.size() >= prefix.size() && text.substr(0, prefix.size()) == prefix;
 }
 
+bool is_path_banner(CodepointView body) {
+    if (body.empty()) return false;
+    const auto first = body[0];
+    if (first == U'/' || first == U'\\') return true;
+    const bool drive = (first >= U'A' && first <= U'Z') || (first >= U'a' && first <= U'z');
+    return body.size() >= 2 && drive && body[1] == U':';
+}
+
 bool is_banner(CodepointView line) {
     const CodepointView body = ltrim(line);
-    return has_prefix(body, U"Claude Code v") || has_prefix(body, U"/workspace") || has_prefix(body, U"hf:") ||
+    return has_prefix(body, U"Claude Code v") || is_path_banner(body) || has_prefix(body, U"hf:") ||
            has_prefix(body, U"claude-");
 }
 

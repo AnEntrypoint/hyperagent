@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { spawn, spawnSync } = require('node:child_process');
 
-const TICKET_DIR = process.env.GATE_TICKET_DIR || '/tmp/gate-tickets';
-const HISTORY = process.env.GATE_HISTORY || TICKET_DIR + '-history.jsonl';
-const LAST_TURNS = TICKET_DIR + '-turns.json';
+const TICKET_DIR = process.env.GATE_TICKET_DIR || path.join(os.tmpdir(), 'gate-tickets');
+const HISTORY = process.env.GATE_HISTORY || path.join(os.tmpdir(), 'gate-tickets-history.jsonl');
+const LAST_TURNS = path.join(TICKET_DIR, 'turns.json');
 const GATE_READING = process.env.GATE_READING_CMD || '';
 const POLL_MS = Number(process.env.GATE_POLL_MS || 60000);
 const SLOTS = Number(process.env.GATE_SLOTS || 2);
