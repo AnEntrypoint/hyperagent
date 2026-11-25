@@ -72,8 +72,8 @@
   {
     "name": "hyperagent",
     "session": "cde324cd-0fe9-4327-b3a3-66c51a85c1f0",
-    "checkout": "/config/workspace/hyperagent",
-    "journal": "-config-workspace-hyperagent",
+    "checkout": "/config/workspace/hyperagent-portable",
+    "journal": "-config-workspace-hyperagent-portable",
     "remote": "gh"
   },
   {
