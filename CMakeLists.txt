@@ -53,6 +53,25 @@ endif()
 
 enable_testing()
 
+add_executable(install_unit
+    tests/install_unit.cpp
+    src/core/install.cpp
+    src/core/paths.cpp
+    src/core/ports.cpp
+    src/core/files.cpp
+    src/core/json.cpp
+    src/core/text.cpp)
+target_include_directories(install_unit PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(install_unit PRIVATE Boost::headers nlohmann_json::nlohmann_json Threads::Threads)
+if(TARGET Boost::system)
+    target_link_libraries(install_unit PRIVATE Boost::system)
+endif()
+if(WIN32)
+    target_link_libraries(install_unit PRIVATE ws2_32)
+endif()
+add_test(NAME install_unit COMMAND install_unit)
+set_tests_properties(install_unit PROPERTIES TIMEOUT 60)
+
 add_subdirectory(airc)
 set_target_properties(ccbridge PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 add_dependencies(hyperagent ccbridge)
@@ -79,3 +98,5 @@ endif()
 
 install(TARGETS hyperagent RUNTIME DESTINATION bin)
 install(DIRECTORY gui/public DESTINATION share/hyperagent/gui)
+install(FILES .mcp.json AGENTS.md CLAUDE.md README.md DESTINATION .)
+install(DIRECTORY docs scripts tools DESTINATION .)
