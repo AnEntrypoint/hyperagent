@@ -44,11 +44,11 @@ target_compile_definitions(ccbridge PRIVATE CCB_VERSION="${PROJECT_VERSION}")
 target_link_libraries(ccbridge PRIVATE ccb_core)
 
 enable_testing()
-add_executable(claude_channel_test EXCLUDE_FROM_ALL ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/claude_channel_test.cpp)
+add_executable(claude_channel_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/claude_channel_test.cpp)
 target_link_libraries(claude_channel_test PRIVATE ccb_core)
 add_test(NAME claude_channel COMMAND claude_channel_test)
 
-add_executable(opencode_channel_test EXCLUDE_FROM_ALL ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/opencode_channel_test.cpp)
+add_executable(opencode_channel_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/opencode_channel_test.cpp)
 target_link_libraries(opencode_channel_test PRIVATE ccb_core)
 add_test(NAME opencode_channel COMMAND opencode_channel_test)
 
