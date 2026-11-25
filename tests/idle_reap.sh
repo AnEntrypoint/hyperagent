@@ -11,6 +11,7 @@ TURN_SECONDS=16
 BUSY_CHECK_SECONDS=12
 CLIENT_SECONDS=3
 SERVER_PID=
+SCRATCH=
 TMP=
 
 fail() {
@@ -30,7 +31,13 @@ port_listening() {
 }
 port_listening && fail "port $PORT is already in use; set IDLE_REAP_TEST_PORT"
 
-TMP=$(mktemp -d)
+if [ -n "${HYPERAGENT_WITNESS_DIR:-}" ]; then
+    mkdir -p "$HYPERAGENT_WITNESS_DIR"
+    TMP=$(mktemp -d "$HYPERAGENT_WITNESS_DIR/idle-reap.XXXXXX")
+else
+    SCRATCH=$(mktemp -d)
+    TMP=$(mktemp -d "$SCRATCH/idle-reap.XXXXXX")
+fi
 export HOME=$TMP/home
 export FAKE_CLAUDE_TURN_MS=$((TURN_SECONDS * 1000))
 export PATH=$BUILD/fake_claude/bin:$PATH
@@ -44,13 +51,16 @@ stop_test_server() {
         wait "$SERVER_PID" 2>/dev/null || true
     fi
     rm -rf "$TMP"
+    if [ -n "$SCRATCH" ]; then
+        rm -rf "$SCRATCH"
+    fi
 }
 trap stop_test_server EXIT
 
 "$CCBRIDGE" serve --host 127.0.0.1 --port "$PORT" --cwd "$TMP/scratch" --idle-reap "$REAP_SECONDS" \
     > "$TMP/server.log" 2>&1 &
 SERVER_PID=$!
-for _ in $(seq 1 100); do
+for ((i = 0; i < 100; i += 1)); do
     port_listening && break
     kill -0 "$SERVER_PID" 2>/dev/null || fail "the test server exited before listening"
     sleep 0.1
@@ -78,7 +88,7 @@ clients() {
 wait_until() {
     local tries=$1
     shift
-    for _ in $(seq 1 "$tries"); do
+    for ((i = 0; i < tries; i += 1)); do
         "$@" && return 0
         sleep 0.2
     done
@@ -101,7 +111,7 @@ attach_then_leave() {
     exec 7>&-
 }
 
-timeout "$CLIENT_SECONDS" "$CCBRIDGE" client --url "ws://127.0.0.1:$PORT/ws" --harness claude --session worker \
+node "$ROOT/tools/timeout-command.cjs" "$CLIENT_SECONDS" "$CCBRIDGE" client --url "ws://127.0.0.1:$PORT/ws" --harness claude --session worker \
     --cwd "$TMP/worker" "a long TOOL turn" > "$TMP/client.out" 2>&1 &
 CLIENT_PID=$!
 wait_until 100 busy worker || fail "worker never became busy: $(session_record worker) $(cat "$TMP/client.out")"

@@ -81,6 +81,7 @@ async function main() {
         'docs/peer-rules.md',
         'scripts/cycle.cjs',
         'tools/portable-setup-witness.cjs',
+        'tools/timeout-command.cjs',
     ]) {
         close(fs.existsSync(path.join(ship, relative)), 'missing shipped resource ' + relative);
     }

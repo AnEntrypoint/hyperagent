@@ -6,6 +6,8 @@ case "$BUILD" in /*) ;; *) BUILD=$PWD/$BUILD ;; esac
 HYPERAGENT=$BUILD/hyperagent
 PORT=${ORCH_TEST_PORT:-18947}
 LIVE_PORTS="8787 8795"
+SCRATCH=
+TMP=
 
 fail() {
     echo "FAIL: $1"
@@ -27,7 +29,26 @@ port_listening() {
 }
 port_listening && fail "port $PORT is already in use; set ORCH_TEST_PORT"
 
-TMP=$(mktemp -d)
+count_servers() {
+    local count=0
+    local line
+    while IFS= read -r line; do
+        case "$line" in
+            *"serve --host 127.0.0.1 --port $PORT"*) count=$((count + 1)) ;;
+        esac
+    done <<EOF
+$(ps -axo command=)
+EOF
+    printf '%s\n' "$count"
+}
+
+if [ -n "${HYPERAGENT_WITNESS_DIR:-}" ]; then
+    mkdir -p "$HYPERAGENT_WITNESS_DIR"
+    TMP=$(mktemp -d "$HYPERAGENT_WITNESS_DIR/orch-launch.XXXXXX")
+else
+    SCRATCH=$(mktemp -d)
+    TMP=$(mktemp -d "$SCRATCH/orch-launch.XXXXXX")
+fi
 export HOME=$TMP/home
 export ORCH_HOME=$TMP/orch
 export ORCH_PARENT=$TMP/projects
@@ -55,13 +76,16 @@ stop_test_processes() {
         server=$(cat "$ORCH_HOME/server.pid")
         if [ "$server" != "${STALE_PID:-}" ] && kill -0 "$server" 2>/dev/null; then
             kill "$server" 2>/dev/null || true
-            for _ in $(seq 1 100); do
+            for ((i = 0; i < 100; i += 1)); do
                 kill -0 "$server" 2>/dev/null || break
                 sleep 0.1
             done
         fi
     fi
     rm -rf "$TMP"
+    if [ -n "$SCRATCH" ]; then
+        rm -rf "$SCRATCH"
+    fi
 }
 trap stop_test_processes EXIT
 
@@ -80,7 +104,7 @@ REQUEST_ID=0
 REPLY_TEXT=
 reply_for() {
     local id=$1 line
-    for _ in $(seq 1 900); do
+    for ((i = 0; i < 900; i += 1)); do
         line=$(grep -m1 -E "\"id\": ?$id[,}]" "$TMP/mcp.out" || true)
         if [ -n "$line" ]; then
             REPLY_TEXT=$(printf '%s' "$line" | sed 's/\\n/\n/g; s/\\"/"/g')
@@ -136,7 +160,7 @@ for turn in $TURN_IDS; do
     expect_reply 'fake reply to: hello' "background turn after a stale pid file"
 done
 port_listening || fail "no server listens after the prompt"
-SERVERS=$(pgrep -fc -- "serve --host 127.0.0.1 --port $PORT" || true)
+SERVERS=$(count_servers)
 [ "$SERVERS" = 1 ] || fail "concurrent prompts left $SERVERS servers on port $PORT"
 NEW_PID=$(cat "$ORCH_HOME/server.pid")
 [ "$NEW_PID" != "$STALE_PID" ] || fail "server.pid still names the stale pid $STALE_PID"

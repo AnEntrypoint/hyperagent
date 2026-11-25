@@ -13,6 +13,7 @@ SERVER_PID=
 CLIENT_PID=
 WATCH_PID=
 HOLDER_PID=
+LOCK_DIR=
 SCRATCH=
 TMP=
 
@@ -29,6 +30,9 @@ cleanup() {
     stop_pid "$SERVER_PID"
     if [ -n "$TMP" ]; then
         rm -rf "$TMP"
+    fi
+    if [ -n "$LOCK_DIR" ] && [ -d "$LOCK_DIR" ]; then
+        rmdir "$LOCK_DIR" 2>/dev/null || true
     fi
     if [ -n "$SCRATCH" ]; then
         rm -rf "$SCRATCH"
@@ -78,7 +82,7 @@ mkdir -p "$HOME" "$ORCH_HOME" "$TMP/work" "$TMP/scratch"
 
 "$CCBRIDGE" serve --host 127.0.0.1 --port "$PORT" --cwd "$TMP/scratch" --idle-reap 3600 > "$TMP/server.log" 2>&1 &
 SERVER_PID=$!
-for _ in $(seq 1 100); do
+for ((i = 0; i < 100; i += 1)); do
     port_listening && break
     kill -0 "$SERVER_PID" 2>/dev/null || fail "the test server exited before listening"
     sleep 0.1
@@ -100,7 +104,7 @@ peer_alive() {
 wait_until() {
     local tries=$1
     shift
-    for _ in $(seq 1 "$tries"); do
+    for ((i = 0; i < tries; i += 1)); do
         "$@" && return 0
         sleep 0.2
     done
@@ -141,13 +145,13 @@ journal_pairs() {
     jq -r 'select(.kind == "text" or .kind == "tool" or .kind == "you") | .kind + "\t" + (.text // "")' "$(journal_file)"
 }
 lock_held() {
-    ! flock -n "$LOCK" -c true
+    [ -d "$LOCK_DIR" ]
 }
 
 SEED_DIR=$HOME/.claude/projects/$(printf '%s' "$TMP/work" | sed 's/[^A-Za-z0-9]/-/g')
 mkdir -p "$SEED_DIR"
 : > "$SEED_DIR/$SESSION.jsonl"
-timeout 60 "$CCBRIDGE" client --url "ws://127.0.0.1:$PORT/ws?resume=$SESSION" --harness claude --session "$PEER" \
+node "$ROOT/tools/timeout-command.cjs" 60 "$CCBRIDGE" client --url "ws://127.0.0.1:$PORT/ws?resume=$SESSION" --harness claude --session "$PEER" \
     --cwd "$TMP/work" "a turn before the watch starts" > "$TMP/client.out" 2>&1 &
 CLIENT_PID=$!
 wait "$CLIENT_PID" || fail "the first client turn failed: $(cat "$TMP/client.out")"
@@ -184,8 +188,10 @@ diff "$TMP/expect1" "$TMP/actual1" || fail "the journal does not match the auton
 echo "ok autonomous turn with no job attached: $(wc -l < "$TMP/actual1") records (text, tool, you) match the transcript one for one, plus one turn_end result"
 
 LOCK=$ORCH_HOME/locks/$PEER.lock
+LOCK_DIR=$LOCK.dir
 wait_until 50 test -e "$LOCK" || fail "the watch never created $LOCK"
-( exec 9>"$LOCK"; flock -x 9; exec sleep 300 ) &
+mkdir "$LOCK_DIR" || fail "could not create $LOCK_DIR"
+( exec sleep 300 ) &
 HOLDER_PID=$!
 wait_until 50 lock_held || fail "the holder never took $LOCK"
 LOCKED_BEFORE=$(journal_count)
@@ -195,6 +201,7 @@ sleep 3
 P2_END=$(transcript_lines)
 stop_pid "$HOLDER_PID"
 HOLDER_PID=
+rmdir "$LOCK_DIR" 2>/dev/null || true
 sleep 3
 [ "$(journal_count)" = "$LOCKED_BEFORE" ] || fail "records written under the lock were journaled after it released"
 
