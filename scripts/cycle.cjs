@@ -6,7 +6,7 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const peers = JSON.parse(fs.readFileSync(path.join(__dirname, 'peers.json'), 'utf8'));
 const ghHelper = '-c credential.helper= -c credential.helper="!gh auth git-credential"';
-const systemProcesses = /s6|dbus|gvfs|xfce|Xvfb|ssh-agent|gpg-agent|at-spi|dconf|udisks|crashpad|tumbler|gate-ticket\.cjs/;
+const systemProcesses = /s6|dbus|gvfs|xfce|Xvfb|ssh-agent|gpg-agent|at-spi|dconf|udisks|crashpad|tumbler|gate-ticket\.cjs|ccbridge serve/;
 
 const sh = (command, cwd) => {
   try {
