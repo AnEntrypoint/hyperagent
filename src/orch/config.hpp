@@ -17,18 +17,25 @@ inline constexpr double local_command_settle = 5.0;
 inline constexpr double poll_interval = 5.0;
 inline constexpr std::string_view default_harness = "claude";
 inline constexpr std::string_view saved_model_reset = "default";
+inline constexpr std::string_view default_host = "127.0.0.1";
+inline constexpr std::string_view default_port = "8787";
+inline constexpr std::string_view default_startup_timeout = "60000";
+inline constexpr std::string_view default_tool_timeout = "14400000";
 inline constexpr std::string_view trust_text = "Yes, I trust this folder";
 inline constexpr std::string_view trust_hint = "Enter to confirm";
 
 std::string host();
 std::string port();
 std::string base_url();
+std::string startup_timeout();
+std::string tool_timeout();
 std::filesystem::path orch_dir();
 std::filesystem::path state_file();
 std::filesystem::path state_lock_file();
 std::filesystem::path locks_dir();
 std::filesystem::path parent_dir();
 std::filesystem::path root_dir();
+std::filesystem::path templates_dir();
 std::string skip_permissions_setting();
 std::optional<std::string> claude_model_setting();
 

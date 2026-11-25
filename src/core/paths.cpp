@@ -11,6 +11,7 @@
 #include <mach-o/dyld.h>
 #endif
 
+#include "core/install.hpp"
 #include "core/text.hpp"
 
 namespace hyperagent::core::paths {
@@ -115,6 +116,9 @@ std::filesystem::path repo_root()
     if (const auto override_root = environment("HYPERAGENT_ROOT")) {
         return resolve(*override_root);
     }
+    if (const auto saved_root = core::install::value("HYPERAGENT_ROOT")) {
+        return resolve(*saved_root);
+    }
     const auto executable = executable_path();
     if (!executable.empty()) {
         for (auto directory = executable.parent_path();; directory = directory.parent_path()) {
@@ -135,6 +139,20 @@ std::filesystem::path data_root()
         return *prefix / "share" / "hyperagent";
     }
     return repo_root();
+}
+
+std::filesystem::path templates_dir()
+{
+    if (const auto raw = environment("CCBRIDGE_TEMPLATES")) {
+        return resolve(expand_user(*raw));
+    }
+    if (const auto saved = core::install::value("CCBRIDGE_TEMPLATES")) {
+        return resolve(expand_user(*saved));
+    }
+    if (is_shipped()) {
+        return resolve(data_root().parent_path() / "ccbridge" / "templates");
+    }
+    return resolve(repo_root() / "airc" / "templates");
 }
 
 std::filesystem::path expand_user(std::string_view text)
@@ -211,7 +229,10 @@ std::string slug(std::string_view cwd)
 std::filesystem::path orch_home()
 {
     if (const auto raw = environment("ORCH_HOME")) {
-        return resolve(*raw);
+        return resolve(expand_user(*raw));
+    }
+    if (const auto saved = core::install::value("ORCH_HOME")) {
+        return resolve(expand_user(*saved));
     }
     if (is_shipped()) {
         return user_data_dir() / ".orch";
@@ -223,6 +244,9 @@ std::filesystem::path journal_root()
 {
     if (const auto raw = environment("ORCH_JOURNAL")) {
         return resolve(expand_user(*raw));
+    }
+    if (const auto saved = core::install::value("ORCH_JOURNAL")) {
+        return resolve(expand_user(*saved));
     }
     return orch_home() / "projects";
 }

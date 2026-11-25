@@ -5,8 +5,10 @@
 #include <string>
 #include <vector>
 
+#include "core/install.hpp"
 #include "core/paths.hpp"
 #include "core/platform.hpp"
+#include "orch/config.hpp"
 
 namespace hyperagent::cli::open {
 
@@ -31,8 +33,13 @@ void add_command(CLI::App& app)
     auto* command = app.add_subcommand("open", "set the MCP timeouts and launch claude in the repo root");
     command->allow_extras();
     command->callback([command]() {
-        set_default_environment("MCP_TIMEOUT", "60000");
-        set_default_environment("MCP_TOOL_TIMEOUT", "14400000");
+        if (const auto manifest = core::install::read()) {
+            for (const auto& [name, value] : core::install::environment(*manifest)) {
+                set_default_environment(name.c_str(), value.c_str());
+            }
+        }
+        set_default_environment("MCP_TIMEOUT", orch::config::startup_timeout().c_str());
+        set_default_environment("MCP_TOOL_TIMEOUT", orch::config::tool_timeout().c_str());
         std::filesystem::current_path(core::paths::repo_root());
         exec_claude(command->remaining());
     });

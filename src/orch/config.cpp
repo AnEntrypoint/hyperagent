@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <stdexcept>
 
+#include "core/install.hpp"
 #include "core/paths.hpp"
 #include "core/text.hpp"
 #include "orch/orch.hpp"
@@ -12,10 +13,18 @@ namespace hyperagent::orch::config {
 
 namespace {
 
-std::string environment_or(const char* name, const char* fallback)
+std::optional<std::string> environment(const char* name)
 {
     const char* value = std::getenv(name);
-    return value != nullptr && *value != '\0' ? std::string(value) : std::string(fallback);
+    if (value == nullptr || *value == '\0') {
+        return std::nullopt;
+    }
+    return std::string(value);
+}
+
+std::string environment_or(const char* name, std::string_view fallback)
+{
+    return environment(name).value_or(std::string(fallback));
 }
 
 bool is_alnum(char symbol)
@@ -27,17 +36,29 @@ bool is_alnum(char symbol)
 
 std::string host()
 {
-    return environment_or("ORCH_HOST", "127.0.0.1");
+    return environment_or("ORCH_HOST", core::install::value("ORCH_HOST").value_or(std::string(default_host)));
 }
 
 std::string port()
 {
-    return environment_or("ORCH_PORT", "8787");
+    return environment_or("ORCH_PORT", core::install::value("ORCH_PORT").value_or(std::string(default_port)));
 }
 
 std::string base_url()
 {
     return "http://" + host() + ":" + port();
+}
+
+std::string startup_timeout()
+{
+    return environment_or("MCP_TIMEOUT",
+                          core::install::value("MCP_TIMEOUT").value_or(std::string(default_startup_timeout)));
+}
+
+std::string tool_timeout()
+{
+    return environment_or("MCP_TOOL_TIMEOUT",
+                          core::install::value("MCP_TOOL_TIMEOUT").value_or(std::string(default_tool_timeout)));
 }
 
 std::filesystem::path orch_dir()
@@ -62,13 +83,14 @@ std::filesystem::path locks_dir()
 
 std::filesystem::path parent_dir()
 {
-    const char* raw = std::getenv("ORCH_PARENT");
-    if (raw != nullptr && *raw != '\0') {
-        return core::paths::resolve(core::paths::expand_user(raw));
+    if (const auto parent = environment("ORCH_PARENT")) {
+        return core::paths::resolve(core::paths::expand_user(*parent));
     }
-    const char* projects = std::getenv("HYPERAGENT_PROJECTS");
-    if (projects != nullptr && *projects != '\0') {
-        return core::paths::resolve(core::paths::expand_user(projects));
+    if (const auto projects = environment("HYPERAGENT_PROJECTS")) {
+        return core::paths::resolve(core::paths::expand_user(*projects));
+    }
+    if (const auto saved = core::install::value("ORCH_PARENT")) {
+        return core::paths::resolve(core::paths::expand_user(*saved));
     }
     if (core::paths::is_shipped()) {
         return core::paths::user_data_dir() / "projects";
@@ -81,6 +103,11 @@ std::filesystem::path root_dir()
     return core::paths::repo_root();
 }
 
+std::filesystem::path templates_dir()
+{
+    return core::paths::templates_dir();
+}
+
 std::string skip_permissions_setting()
 {
     return environment_or("ORCH_SKIP_PERMISSIONS", "1");
@@ -88,8 +115,8 @@ std::string skip_permissions_setting()
 
 std::optional<std::string> claude_model_setting()
 {
-    const std::string model = environment_or("ORCH_CLAUDE_MODEL", "haiku");
-    if (model.empty()) {
+    const auto model = environment("ORCH_CLAUDE_MODEL");
+    if (!model || model->empty() || *model == saved_model_reset) {
         return std::nullopt;
     }
     return model;

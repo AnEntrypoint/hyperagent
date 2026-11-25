@@ -9,19 +9,10 @@
 #include "core/clock.hpp"
 #include "core/http.hpp"
 #include "core/json.hpp"
+#include "orch/config.hpp"
 #include "orch/turn.hpp"
 
 namespace hyperagent::watch {
-
-namespace {
-
-std::string environment_or(const char* name, const char* fallback)
-{
-    const char* value = std::getenv(name);
-    return value != nullptr && *value != '\0' ? std::string(value) : std::string(fallback);
-}
-
-}
 
 CcbridgeSource::CcbridgeSource(std::string host, std::string port)
     : host_(std::move(host))
@@ -66,7 +57,7 @@ std::string CcbridgeSource::capture(const std::string& name)
 
 int run(const monitor::CommandOptions& options)
 {
-    CcbridgeSource source(environment_or("ORCH_HOST", "127.0.0.1"), environment_or("ORCH_PORT", "8787"));
+    CcbridgeSource source(orch::config::host(), orch::config::port());
     monitor::Monitor watcher(source, monitor::to_monitor_options(options), []() {
         return core::clock::now_epoch();
     });
