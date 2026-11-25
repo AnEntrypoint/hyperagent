@@ -6,7 +6,7 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const peers = JSON.parse(fs.readFileSync(path.join(__dirname, 'peers.json'), 'utf8'));
 const ghHelper = '-c credential.helper= -c credential.helper="!gh auth git-credential"';
-const systemProcesses = /s6|dbus|gvfs|xfce|Xvfb|ssh-agent|gpg-agent|at-spi|dconf|udisks|crashpad|tumbler|gate-ticket\.cjs|ccbridge serve/;
+const systemProcesses = /s6|dbus|gvfs|xfce|Xvfb|ssh-agent|gpg-agent|at-spi|dconf|udisks|crashpad|tumbler|gate-ticket\.cjs|ccbridge serve|hyperagent orch p/;
 
 const sh = (command, cwd) => {
   try {
@@ -84,7 +84,7 @@ function hostLines() {
     .map(([pid, , age, rss, ...args]) => 'orphan ' + pid + ' ' + age + 's ' + Math.round(rss / 1024) + 'MB ' + args.join(' ').slice(0, 90));
   const network = sh('curl -s -o /dev/null -m 6 -w "%{http_code}" https://api.anthropic.com/');
   return [
-    'host ' + new Date().toISOString().slice(11, 19) + ' si=' + swapIn + ' so=' + swapOut + ' KB/s idle=' + idle + '% available=' + available + 'MB swap=' + Math.round(swap / 1024) + 'MB root=' + disk('/') + ' workspace=' + disk('/workspace') + ' api=' + (network || 'unreachable'),
+    'host ' + new Date().toISOString().slice(11, 19) + ' si=' + swapIn + ' so=' + swapOut + ' KB/s idle=' + idle + '% available=' + available + 'MB swap=' + Math.round(swap / 1024) + 'MB root=' + disk('/') + ' workspace=' + disk(path.dirname(root)) + ' api=' + (network || 'unreachable'),
     ...orphans,
   ];
 }
