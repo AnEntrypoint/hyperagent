@@ -85,6 +85,8 @@ jobs:
         run: cmake --build build --config Release --parallel
       - name: Test
         run: ctest --test-dir build -C Release --output-on-failure
+        env:
+          HYPERAGENT_WITNESS_DIR: ${{ runner.temp }}
       - name: Airc parity
         if: runner.os != 'Windows'
         run: bash airc/tests/e2e.sh
