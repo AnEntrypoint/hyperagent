@@ -1,8 +1,6 @@
 name: release
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -132,7 +130,8 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Publish only a build newer than latest
+      - uses: actions/checkout@v4
+      - name: Decide whether to publish
         id: head
         run: |
           gh_retry() { for n in 1 2 3 4 5; do "$@" && return 0; echo "retry $n for $1" >&2; sleep $((n * 5)); done; return 1; }
@@ -145,6 +144,15 @@ jobs:
           }
           gh_retry read_latest_tag || { echo "cannot read the latest tag ref" >&2; cat "$probe_err" >&2; exit 1; }
           published=$(cat "$probe")
+          published_dir="$RUNNER_TEMP/published"
+          mkdir -p "$published_dir"
+          if [ "$published" = "$GITHUB_SHA" ] && gh_retry gh release download latest --repo "$RELEASE_REPO" -p manifest.json -p SHA256SUMS -D "$published_dir" --clobber >/dev/null 2>&1; then
+            if node tools/release-publication.cjs published-complete "$published_dir/manifest.json" "$published_dir/SHA256SUMS" "$GITHUB_SHA"; then
+              echo "current=false" >> "$GITHUB_OUTPUT"
+              echo "latest already has a complete manifest for $GITHUB_SHA"
+              exit 0
+            fi
+          fi
           order=new
           if [ -n "$published" ]; then
             order=$(gh_retry gh api "repos/$RELEASE_REPO/compare/$published...$GITHUB_SHA" --jq .status) || { echo "cannot read the release order"; exit 1; }
@@ -162,30 +170,14 @@ jobs:
           pattern: hyperagent-*
           path: dist
           merge-multiple: true
+      - name: Verify all five build artifacts
+        if: steps.head.outputs.current == 'true'
+        run: node tools/release-publication.cjs verify-artifacts dist
       - name: Version names, checksums and manifest
         if: steps.head.outputs.current == 'true'
         run: |
           build="${GITHUB_SHA:0:7}-$GITHUB_RUN_NUMBER"
-          mkdir -p release
-          : > release/SHA256SUMS
-          targets='{}'
-          for file in dist/hyperagent-*.tar.gz dist/hyperagent-*.zip; do
-            [ -e "$file" ] || continue
-            stable=$(basename "$file")
-            target="${stable#hyperagent-}"
-            ext=tar.gz
-            target="${target%.tar.gz}"
-            case "$stable" in *.zip) ext=zip; target="${target%.zip}" ;; esac
-            versioned="hyperagent-$build-$target.$ext"
-            cp "$file" "release/$stable"
-            cp "$file" "release/$versioned"
-            sum=$(sha256sum "$file" | cut -d' ' -f1)
-            size=$(stat -c %s "$file")
-            echo "$sum  $stable" >> release/SHA256SUMS
-            echo "$sum  $versioned" >> release/SHA256SUMS
-            targets=$(jq -c --arg target "$target" --arg asset "$versioned" --arg sha256 "$sum" --argjson size "$size" '.[$target] = {asset: $asset, sha256: $sha256, size: $size}' <<< "$targets")
-          done
-          jq -n --arg build "$build" --arg sha "$GITHUB_SHA" --argjson targets "$targets" '{build: $build, sha: $sha, targets: $targets}' > release/manifest.json
+          node tools/release-publication.cjs write-manifest dist release "$build" "$GITHUB_SHA"
           cat release/manifest.json
       - name: Create the release if absent
         if: steps.head.outputs.current == 'true'

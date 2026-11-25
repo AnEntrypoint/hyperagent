@@ -26,6 +26,7 @@ cmake --build build --parallel 2
 ctest --test-dir build --output-on-failure
 node tools/validate-json.cjs
 node tools/portable-paths.witness.cjs
+node tools/release-publication.witness.cjs
 for file in scripts/*.cjs tools/*.cjs; do node --check "$file"; done
 python3 -I tools/check-python.py .
 bash -n tools/*.sh tests/*.sh
