@@ -218,6 +218,12 @@ async function main() {
         },
         () => fs.writeFileSync(templateFile, templateText));
 
+    const staleOrder = spawnSync(process.execPath, [fakeClaude, 'mcp', 'add', '--scope', 'user', '-e', 'STALE=1', 'hyperagent', '--', manifest.binary, 'mcp'], { encoding: 'utf8', env, timeout: 600000 });
+    const staleOutput = (staleOrder.stdout || '') + (staleOrder.stderr || '');
+    close(staleOrder.status !== 0, 'mcp-add-order red check unexpectedly passed');
+    close(staleOutput.includes('Invalid environment variable format: hyperagent'), 'mcp-add-order red check failed for the wrong reason: ' + staleOutput.trim());
+    console.log('RED_OK mcp-add-order');
+
     const originalHolder = children[0];
     await startServer(Number(manifest.port));
     const blocker = children[children.length - 1];

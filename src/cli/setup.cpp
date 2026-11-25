@@ -178,8 +178,8 @@ bool register_with_claude(const fs::path& claude, const core::install::Manifest&
         arguments.emplace_back("-e");
         arguments.emplace_back(name + "=" + value);
     }
-    arguments.emplace_back("hyperagent");
     arguments.emplace_back("--");
+    arguments.emplace_back("hyperagent");
     arguments.emplace_back(manifest.binary);
     arguments.emplace_back("mcp");
     const auto added = core::process::run_capture(arguments);
