@@ -82,6 +82,9 @@ async function main() {
         'scripts/cycle.cjs',
         'tools/portable-setup-witness.cjs',
         'tools/timeout-command.cjs',
+        'tools/hold-lock.py',
+        'tools/lock-held.py',
+        'tools/check-python.py',
     ]) {
         close(fs.existsSync(path.join(ship, relative)), 'missing shipped resource ' + relative);
     }

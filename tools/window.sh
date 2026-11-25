@@ -27,5 +27,6 @@ ctest --test-dir build --output-on-failure
 node tools/validate-json.cjs
 node tools/portable-paths.witness.cjs
 for file in scripts/*.cjs tools/*.cjs; do node --check "$file"; done
+python3 -I tools/check-python.py .
 bash -n tools/*.sh tests/*.sh
 node tools/portable-setup-witness.cjs build
