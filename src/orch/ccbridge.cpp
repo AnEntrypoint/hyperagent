@@ -18,9 +18,11 @@
 #include <filesystem>
 #include <mutex>
 #include <stdexcept>
+#include <system_error>
 
 #include "core/files.hpp"
 #include "core/http.hpp"
+#include "core/install.hpp"
 #include "core/json.hpp"
 #include "core/paths.hpp"
 #include "core/platform.hpp"
@@ -93,9 +95,12 @@ ProcessId spawn_detached(const std::string& binary)
     changes.emplace_back("AIRC_CLAUDE_SKIP_PERMISSIONS",
                          config::skip_permissions_setting() == "1" ? std::optional<std::string>("1") : std::nullopt);
     changes.emplace_back("AIRC_CLAUDE_MODEL", config::claude_model_setting());
-    const auto source_templates = config::root_dir() / "airc" / "templates";
-    if (std::getenv("CCBRIDGE_TEMPLATES") == nullptr && std::filesystem::is_directory(source_templates)) {
-        changes.emplace_back("CCBRIDGE_TEMPLATES", source_templates.string());
+    if (std::getenv("CCBRIDGE_TEMPLATES") == nullptr) {
+        const auto templates = config::templates_dir();
+        std::error_code ignored;
+        if (std::filesystem::is_directory(templates, ignored)) {
+            changes.emplace_back("CCBRIDGE_TEMPLATES", templates.string());
+        }
     }
 
     auto env_text = environment_with(changes);
@@ -186,11 +191,11 @@ bool server_answers()
 Value fetch_sessions()
 {
     const auto response = core::http::get(config::host(), config::port(), "/sessions", std::chrono::seconds(10));
-    if (response.status >= 400) {
-        throw Error("GET /sessions answered " + std::to_string(response.status));
+    if (response.status >= 400 || core::http::header(response, "server") != "ccbridge") {
+        throw Error("GET /sessions is not a ccbridge server");
     }
     const auto parsed = core::json::parse(response.body);
-    if (!parsed) {
+    if (!parsed || !parsed->is_object()) {
         throw Error("GET /sessions returned invalid JSON");
     }
     return *parsed;
@@ -201,7 +206,11 @@ bool server_alive(int timeout_seconds)
     try {
         const auto response = core::http::get(config::host(), config::port(), "/sessions",
                                               std::chrono::seconds(timeout_seconds));
-        return response.status == 200;
+        if (response.status != 200 || core::http::header(response, "server") != "ccbridge") {
+            return false;
+        }
+        const auto parsed = core::json::parse(response.body);
+        return parsed && parsed->is_object();
     } catch (const std::exception&) {
         return false;
     }
@@ -281,6 +290,9 @@ std::string ccbridge_binary()
 {
     if (const char* override_binary = std::getenv("CCBRIDGE_BIN"); override_binary != nullptr && *override_binary != '\0') {
         return override_binary;
+    }
+    if (const auto saved_binary = core::install::value("CCBRIDGE_BIN")) {
+        return *saved_binary;
     }
     const auto beside = core::paths::executable_path().parent_path() / (std::string("ccbridge") + core::platform::executable_suffix);
     if (std::filesystem::is_regular_file(beside)) {

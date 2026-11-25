@@ -65,6 +65,13 @@ Result run_capture(const std::vector<std::string>& argv)
     Pipe standard_error;
 
     std::wstring line = platform::command_line(argv);
+    const std::string program = argv.front();
+    if (program.size() >= 4) {
+        const std::string extension = program.substr(program.size() - 4);
+        if (extension == ".cmd" || extension == ".bat") {
+            line = L"cmd.exe /c " + line;
+        }
+    }
     STARTUPINFOW startup{};
     startup.cb = sizeof startup;
     startup.dwFlags = STARTF_USESTDHANDLES;
