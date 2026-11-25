@@ -35,6 +35,7 @@ const checkoutOf = (peer) => {
 };
 const slugOf = (cwd) => Array.from(path.resolve(cwd)).map((symbol) => /[0-9A-Za-z]/.test(symbol) ? symbol : '-').join('');
 const journalOf = (peer) => path.join(journalRoot, slugOf(checkoutOf(peer)), peer.session + '.jsonl');
+const unboundJournalOf = (peer) => path.join(journalRoot, slugOf(checkoutOf(peer)), `peer-${peer.name}.jsonl`);
 const parse = (lines) => lines.flatMap((line) => {
   try {
     return [JSON.parse(line)];
@@ -54,6 +55,18 @@ const tailRecords = (file, bytes) => {
 };
 const allRecords = (file) => (fs.existsSync(file) ? parse(fs.readFileSync(file, 'utf8').split('\n')) : []);
 const ageOf = (record) => (record?.ts ? Math.round((Date.now() - Date.parse(record.ts)) / 1000) + 's' : '?');
+const timeOf = (record) => {
+  const parsed = Date.parse(record?.ts || '');
+  if (Number.isFinite(parsed)) return parsed;
+  const epoch = Number(record?.epoch || 0);
+  return epoch > 1e12 ? epoch : epoch * 1000;
+};
+const recordsFor = (peer) => [journalOf(peer), unboundJournalOf(peer)].flatMap(allRecords).sort((left, right) => timeOf(left) - timeOf(right));
+const newestRecords = (peer) => {
+  const bound = tailRecords(journalOf(peer), 400000);
+  const unbound = tailRecords(unboundJournalOf(peer), 400000);
+  return timeOf(unbound.at(-1)) > timeOf(bound.at(-1)) ? unbound : bound;
+};
 
 const remoteHead = {
   gh: (cwd) => sh('git ' + ghHelper + ' fetch origin --quiet; git rev-parse --short origin/main', cwd),
@@ -68,7 +81,7 @@ const queueOf = (name) => {
 
 function peerLine(peer) {
   const cwd = checkoutOf(peer);
-  const records = tailRecords(journalOf(peer), 400000);
+  const records = newestRecords(peer);
   const last = records.at(-1);
   const lastText = records.findLast((record) => record.kind === 'text' && record.text);
   const ended = last?.kind === 'result';
@@ -122,7 +135,7 @@ function specLines() {
 function sent(name, phrase) {
   const peer = peers.find((candidate) => candidate.name === name);
   if (!peer) throw new Error('unknown peer ' + name);
-  const records = allRecords(journalOf(peer));
+  const records = recordsFor(peer);
   const wanted = oneLine(phrase, phrase.length);
   const index = records.findLastIndex((record) => oneLine(record.text, 1e9).includes(wanted));
   if (index < 0) return ['NOT DELIVERED ' + name + ': the phrase is not in the journal'];
