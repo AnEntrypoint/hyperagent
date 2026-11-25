@@ -40,6 +40,13 @@
       "cacheVariables": {
         "VCPKG_TARGET_TRIPLET": "x64-osx"
       }
+    },
+    {
+      "name": "x64-windows",
+      "inherits": "ship",
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static"
+      }
     }
   ]
 }

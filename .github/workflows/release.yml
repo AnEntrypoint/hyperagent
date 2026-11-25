@@ -83,18 +83,22 @@ jobs:
           ${{ matrix.configure }}
       - name: Build
         run: cmake --build build --config Release --parallel
+      - name: Test
+        run: ctest --test-dir build -C Release --output-on-failure
+      - name: Airc parity
+        if: runner.os != 'Windows'
+        run: bash airc/tests/e2e.sh
+        env:
+          CCBRIDGE_BIN: ${{ github.workspace }}/build/ccbridge
       - name: Install into the shipped layout
         run: |
           layout="$RUNNER_TEMP/layout/hyperagent-${{ matrix.target }}"
-          mkdir -p "$layout/bin" "$layout/share/ccbridge" "$layout/share/hyperagent"
-          for program in hyperagent ccbridge; do
-            built=$(find build -maxdepth 2 -type f \( -name "$program" -o -name "$program.exe" \) | head -n 1)
-            cp "$built" "$layout/bin/"
-          done
-          cp -R airc/templates "$layout/share/ccbridge/templates"
-          cp -R airc/web "$layout/share/ccbridge/web"
-          mkdir -p "$layout/share/hyperagent/gui" && cp -R gui/public "$layout/share/hyperagent/gui/public"
+          cmake --install build --config Release --prefix "$layout"
           echo "LAYOUT=$layout" >> "$GITHUB_ENV"
+      - name: Ship witness
+        run: node tools/portable-setup-witness.cjs build
+        env:
+          HYPERAGENT_WITNESS_DIR: ${{ runner.temp }}
       - name: Package
         run: |
           mkdir -p dist

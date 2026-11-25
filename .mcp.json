@@ -4,7 +4,12 @@
       "command": "build/hyperagent",
       "args": [
         "mcp"
-      ]
+      ],
+      "env": {
+        "MCP_TIMEOUT": "60000",
+        "MCP_TOOL_TIMEOUT": "14400000"
+      },
+      "timeout": 14400000
     }
   }
 }
