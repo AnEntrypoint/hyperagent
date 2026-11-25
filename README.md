@@ -34,7 +34,7 @@ hyperagent doctor
 hyperagent setup --check
 ```
 
-`setup` writes a user-scope install manifest containing the absolute installed binary, repository or shipped root, project parent, free airc port, state home, journal root, harness-template directory, ccbridge binary and MCP timeouts. It creates every directory, updates the user-scope Claude MCP registration with those values, rewrites the project `.mcp.json`, and prints the Claude Code restart instruction. `doctor` and `setup --check` verify the paths, binaries, templates, saved MCP registration, port identity, long tool timeout and absence of a conflicting model override.
+`setup` writes a user-scope install manifest containing the absolute installed binary, repository or shipped root, project parent, free airc port, state home, journal root, harness-template directory, ccbridge binary and MCP timeouts. It creates every directory, updates the user-scope Claude MCP registration with those values using `--` before the server name and command, rewrites the project `.mcp.json`, and prints the Claude Code restart instruction. `doctor` and `setup --check` verify the paths, binaries, templates, saved MCP registration, port identity, long tool timeout and absence of a conflicting model override.
 
 Options for a custom installation:
 

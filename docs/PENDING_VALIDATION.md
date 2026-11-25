@@ -6,3 +6,4 @@
 - Documentation and this ledger — witness: node tools/validate-json.cjs, node tools/portable-paths.witness.cjs, tools/window.sh; red check: hardcoded host-specific path.
 - Local test fix — witness: ctest claude_channel, opencode_channel and orch_launch with an explicit ORCH_CLAUDE_MODEL; red check: a missing unit executable or an implicit server-wide model default.
 - macOS release fix — witness: ctest orch_launch, idle_reap and follow_transcript with the Node timeout helper, arithmetic loops, ps-based server count and a Python flock helper; red check: BSD pgrep usage or a missing GNU timeout, seq or flock CLI.
+- MCP add order fix — witness: fake-home setup writes the real Claude Code user MCP entry with -- before the server name and command; red check: the old name-before-separator order must fail as an invalid environment variable.
