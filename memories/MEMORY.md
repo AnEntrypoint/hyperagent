@@ -8,3 +8,4 @@
 - [Gate ticket dies with its launcher](gate-ticket-dies-with-launcher.md) — troubleshooting: a ticket gone from the queue with no result file was started attached; launch with setsid nohup
 - [Project browser stops without a lease](project-browser-stops-without-lease.md) — troubleshooting: gate.log "no lease for the grace period" closes Chrome, tabs and Google sign-in; read it first
 - [Peers launch via chlaude](feedback-peers-launch-via-chlaude.md) — owner rule: use chlaude's env and flags through a shebang wrapper; never add a conflicting model flag
+- [Dispatcher makes decisions](feedback-dispatcher-makes-decisions.md) — owner rule: choose reversible designs from evidence; live GitHub Pages is the Zellous runtime source of truth
