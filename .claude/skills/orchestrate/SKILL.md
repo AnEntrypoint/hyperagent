@@ -50,7 +50,7 @@ Every goal that spans stages or peers is driven from one spec file, `specs/<name
 - After every send, `cycle.cjs sent` once. After a relaunch, `peer_status` must show the saved session as `output_session` with `--resume` in the launch arguments. A new session with no launch arguments has lost the peer's context: stop it and resume the saved session again.
 - A peer's model is set with `model` on `resume_project`. It applies from the next launch and is kept with the project. Owner instruction 2026-11-23: every peer runs claude-haiku-5-5, so every `resume_project` passes that model until the owner says otherwise. A switch is made at a turn end; a peer with subagents running is not relaunched until they report, because a stop kills them.
 - A prompt may point at the peer's queue file ("your remaining list is specs/queue/<peer>.md; read it and work it in order") instead of pasting it: the peer reads the file, and the dispatcher's send stays short.
-- Write each prompt the way you'd message a colleague you trust: a sentence or two, plain words, no labels, no greeting, no formal framing. Say what to do and what to send back, and let the peer decide how. Standing rules, guardrails included, are not repeated in prompts. They are in `docs/peer-rules.md`, and each prompt ends: "The standing rules in /workspace/hyperagent/docs/peer-rules.md apply. End with REPORT: finished|open|blocked — reason — witness: <evidence>."
+- Write each prompt the way you'd message a colleague you trust: a sentence or two, plain words, no labels, no greeting, no formal framing. Say what to do and what to send back, and let the peer decide how. Standing rules, guardrails included, are not repeated in prompts. They are in `docs/peer-rules.md`, and each prompt ends: "The standing rules in docs/peer-rules.md apply. End with REPORT: finished|open|blocked — reason — witness: <evidence>."
 - Each peer has an ordered queue file, specs/queue/<peer>.md: one numbered line per remaining instruction, with its source. Keep it complete: add an item in the cycle it is decided, even while the peer is busy. When a peer ENDS, read its REPORT, delete the items it finished or that no longer apply, assess the rest, and send the whole remaining list in one prompt, numbered, in order ("Your remaining work, in order: ..."), so nothing waits for the dispatcher. Send the whole remaining list again at every later turn end until the file is empty. cycle.cjs shows queue=N per peer and "cycle.cjs queue <peer>" prints the list. A peer with an empty queue is asked for its ranked remaining work.
 - When two peers finish something faster together, give both the same contract: the goal, the owner of the result, the done condition, and the file where each side's hand-off goes. Relay what one REPORT asks of another peer.
 
@@ -89,9 +89,9 @@ Every goal that spans stages or peers is driven from one spec file, `specs/<name
 ## Host
 
 - Swap-in or swap-out in the tens of MB/s means builds and browsers are fighting for memory. Add no parallel heavy work until it settles.
-- Root disk under 10 GB free: remove regenerable scratch that is over 24 hours old and held open by no process, tell the owner what was removed, and tell the owning peer. Peers keep scratch under `/workspace/tmp/<peer>`.
+- Root disk under 10 GB free: remove regenerable scratch that is over 24 hours old and held open by no process, tell the owner what was removed, and tell the owning peer. Peers keep scratch under `$HYPERAGENT_SCRATCH/<peer>`.
 - An orphan process left by a finished check is stopped by its PID and reported to its project as a defect. A process that may be the owner's own is reported, not stopped. Never `pkill` or `killall`.
-- Cargo goes through the slot shim at `/config/.local/bin/cargo`. Nobody works around it.
+- Cargo uses the shim named by `$HYPERAGENT_CARGO_SHIM`. Nobody works around it.
 
 ## Session start
 

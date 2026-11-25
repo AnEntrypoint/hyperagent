@@ -11,7 +11,7 @@ These apply to every assignment from the dispatcher. Read them again after a com
 - No comments in code. Say it in names and structure, and move what cannot be said that way into AGENTS.md after checking it is still true.
 - Write the simplest, most efficient, most maintainable code with only what it needs: delete, deduplicate, share modules, and drive behaviour from data.
 - Browser work goes through playwriter. If it fails, report the failure and record the check as open.
-- Scratch goes under `/config/workspace/tmp/<your project>`, never `/tmp`. Every window and witness removes its scratch and stops every process it started, by PID. Never `pkill` or `killall`.
+- Scratch goes under `$HYPERAGENT_SCRATCH/<your project>`, never an OS temp directory. Every window and witness removes its scratch and stops every process it started, by PID. Never `pkill` or `killall`.
 
 ## Two phases
 
@@ -23,7 +23,7 @@ These apply to every assignment from the dispatcher. Read them again after a com
 
 ## The gate
 
-- A heavy window (a compile, a browser, a cargo, zig or cc job) starts through the ticket gate, detached, with its output in a file: `setsid nohup node /config/workspace/hyperagent/scripts/gate-ticket.cjs run <project>-<part> -- <window command> > <result file> 2>&1 < /dev/null &`. The label starts with your project name. The window prints `<PART>_DONE <exit code>` as its last line. A ticket started any other way dies with the shell or session that started it.
+- A heavy window (a compile, a browser, a cargo, zig or cc job) starts through the ticket gate, detached, with its output in a file: `setsid nohup node scripts/gate-ticket.cjs run <project>-<part> -- <window command> > <result file> 2>&1 < /dev/null &`. The label starts with your project name. The window prints `<PART>_DONE <exit code>` as its last line. A ticket started any other way dies with the shell or session that started it.
 - The gate admits a window on memory alone: the first with 2.5 GB available, a quick window with 4 GB, a second window with 6 GB, and neither while the host is swapping out. Another project's compile does not hold it. A witness that measures time (frame budgets, benchmarks) is queued with `GATE_EXCLUSIVE=1` in its environment and runs alone. The gate takes turns between projects: the project that ran longest ago goes next, and your own tickets keep their order. Do not write your own polling loop and do not cut the queue.
 - Queue a window only on a tree that is final for it. A window re-queued because an edit landed costs a full turn of the queue.
 - A window that runs in a few minutes (a browser probe, a single check, a reading) is queued with `GATE_QUICK=1` and goes past the queue as long as memory allows and no other quick window is running. Measured 2026-11-22: freddie's browser witness waited 10,445 s to run for 17 s, a probe waited 4,382 s to run for 3 s, and signal's waited 6,303 s to run for 143 s, all behind long windows. Anything over about 4 minutes is not quick.

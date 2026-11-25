@@ -13,6 +13,7 @@ SERVER_PID=
 CLIENT_PID=
 WATCH_PID=
 HOLDER_PID=
+SCRATCH=
 TMP=
 
 stop_pid() {
@@ -28,6 +29,9 @@ cleanup() {
     stop_pid "$SERVER_PID"
     if [ -n "$TMP" ]; then
         rm -rf "$TMP"
+    fi
+    if [ -n "$SCRATCH" ]; then
+        rm -rf "$SCRATCH"
     fi
 }
 fail() {
@@ -55,7 +59,13 @@ port_listening() {
 }
 port_listening && fail "port $PORT is already in use; set FOLLOW_TEST_PORT"
 
-TMP=$(mktemp -d)
+if [ -n "${HYPERAGENT_WITNESS_DIR:-}" ]; then
+    mkdir -p "$HYPERAGENT_WITNESS_DIR"
+    TMP=$(mktemp -d "$HYPERAGENT_WITNESS_DIR/follow-transcript.XXXXXX")
+else
+    SCRATCH=$(mktemp -d)
+    TMP=$(mktemp -d "$SCRATCH/follow-transcript.XXXXXX")
+fi
 export HOME=$TMP/home
 export ORCH_HOME=$TMP/orch
 export ORCH_HOST=127.0.0.1
@@ -153,7 +163,7 @@ sleep 3
 kill -0 "$WATCH_PID" 2>/dev/null || fail "the watch exited: $(cat "$TMP/watch.log")"
 
 R_THINK='{"type":"assistant","message":{"role":"assistant","content":[{"type":"thinking","thinking":"plan the read"}]}}'
-R_TOOL='{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Reading the file now."},{"type":"tool_use","id":"toolu_01","name":"Read","input":{"file_path":"/tmp/x"}}]}}'
+R_TOOL='{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Reading the file now."},{"type":"tool_use","id":"toolu_01","name":"Read","input":{"file_path":"file.txt"}}]}}'
 R_TOOL_RESULT='{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_01","content":"ok"}]}}'
 R_DONE='{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Background agent finished."}]}}'
 R_NOTE='{"type":"user","message":{"role":"user","content":"task-notification: the background agent finished"}}'
