@@ -6,3 +6,4 @@
 - [Monitors are for peers, not the orchestrator](feedback-monitors-orchestrator-only.md) — owner rule: the orchestrator's cycle is CronCreate; peers may arm Monitors; never carry orchestrator rules into peer prompts
 - [Mid-turn prompts get dropped](peer-midturn-prompt-dropped.md) — a prompt sent to a busy peer can vanish; grep its journal and resend at turn end
 - [Gate ticket dies with its launcher](gate-ticket-dies-with-launcher.md) — troubleshooting: a ticket gone from the queue with no result file was started attached; launch with setsid nohup
+- [Project browser stops without a lease](project-browser-stops-without-lease.md) — troubleshooting: gate.log "no lease for the grace period" closes Chrome, tabs and Google sign-in; read it first
