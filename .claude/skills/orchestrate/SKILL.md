@@ -56,6 +56,10 @@ Every goal that spans stages or peers is driven from one spec file, `specs/<name
 
 ## Deciding
 
+- Scope is maximal, never minimal. Large changes and architectural improvements are approved by default; do not ask for them, and do not shrink a change to a smaller one to avoid a decision. Choose the design that the result needs and say what it is.
+- This work is pre-alpha. Breaking changes inside a project are allowed when they are the better design; record the break in the ledger and in the REPORT.
+- A minimal patch is chosen only when a larger one is shown to be wrong by evidence, and the reason is written in the REPORT.
+
 - Choose for the best result the project can reach and for finished, verified work per cycle. Effort has no budget. Rearchitect when the result needs it.
 - Any failing witness, warning, slow path, flaky check or surprising output is a defect: fixed, or recorded with its cause.
 - Decide every reversible choice and report it afterwards with its reason. Make an irreversible one reversible where that is possible.
