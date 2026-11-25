@@ -256,23 +256,34 @@ Claude transcript channel binds to the newest session file in a project director
 
 | variable | default | meaning |
 |---|---|---|
-| `CCBRIDGE_BIN` | unset | ccbridge binary to serve; unset runs the compiled-in `build/ccbridge` |
-| `ORCH_PARENT` | parent of this project | directory whose projects become peers |
-| `ORCH_PORT` | `8787` | airc WebSocket server port |
-| `ORCH_HOST` | `127.0.0.1` | airc WebSocket server host |
-| `ORCH_HOME` | `.orch` | pid file, server log, session locks |
-| `ORCH_JOURNAL` | `$ORCH_HOME/projects` | root of the per-session output journal |
+| `HYPERAGENT_INSTALL_MANIFEST` | `<user data>/hyperagent/install.json` | install manifest written by `setup` |
+| `HYPERAGENT_ROOT` | executable-derived root | source or shipped root |
+| `HYPERAGENT_PROJECTS` | unset | peer parent after `ORCH_PARENT` |
+| `HYPERAGENT_PEERS_ROOTS` | checkout parent | path-list of peer checkout roots for `cycle.cjs` |
+| `HYPERAGENT_JOURNAL` | `<checkout>/.orch/projects` | dispatcher journal root |
+| `HYPERAGENT_SCRATCH` | sibling `tmp` directory | peer and witness scratch parent |
+| `HYPERAGENT_WITNESS_DIR` | OS temp directory | shipped and portable witness scratch |
+| `HYPERAGENT_CARGO_SHIM` | unset | host cargo slot shim |
+| `CCBRIDGE_BIN` | saved manifest, then beside the binary | ccbridge binary to serve |
+| `CCBRIDGE_TEMPLATES` | saved manifest, then the shipped template directory | custom ccbridge harness templates |
+| `ORCH_PARENT` | saved manifest, then the project parent | directory whose projects become peers |
+| `ORCH_PORT` | saved manifest, then `8787` | airc WebSocket server port |
+| `ORCH_HOST` | saved manifest, then `127.0.0.1` | airc WebSocket server host |
+| `ORCH_HOME` | saved manifest, then `.orch` | pid file, server log, session locks |
+| `ORCH_JOURNAL` | saved manifest, then `$ORCH_HOME/projects` | root of the per-session output journal |
+| `ORCH_CLAUDE_MODEL` | unset | `default` clears any server-wide model override |
+| `MCP_TIMEOUT` | saved manifest, then `60000` | MCP startup timeout in milliseconds |
+| `MCP_TOOL_TIMEOUT` | saved manifest, then `14400000` | MCP tool timeout in milliseconds |
 | `ORCH_WATCH_IDLE` | `20` | fallback idle seconds when no result or busy marker is available |
 | `ORCH_WATCH_POLL` | `1` | MCP monitor poll seconds |
 | `ORCH_WATCH_AGENTS` | empty | comma separated peers the MCP monitor keeps |
 | `ORCH_WATCH_LAST_CHARS` | `4000` | last-output characters in an event |
 | `ORCH_PROGRESS_INTERVAL` | `5` | seconds between MCP progress notifications |
-| `MCP_TOOL_TIMEOUT` | set by `hyperagent open` to 14400000 | client limit for one tool call |
 
 ## airc coupling
 
 - Claude turn completion is the `system`/`turn_duration` transcript record.
-- `GET /sessions` reports `alive`, `busy`, `cwd`, `harness`, `clients` and `pane_tail`.
+- `GET /sessions` reports `alive`, `busy`, `cwd`, `harness`, `clients` and `pane_tail`; the server probe also requires `Server: ccbridge` and a JSON object, so another HTTP 200 service cannot stand in for airc.
 - `DELETE /sessions/{name}` stops one hub and its PTY.
 - `server_down` / `build/hyperagent orch down` ends every peer.
 
@@ -299,8 +310,8 @@ Claude transcript channel binds to the newest session file in a project director
 
 ## C++ port (`src/`)
 
-- Build: `cmake -B build -G Ninja && cmake --build build`; targets `hyperagent` and `ccbridge` (from `airc/`; C++20; Boost.Beast/Asio headers, nlohmann-json, CLI11, sqlite3, OpenSSL). Boost.System is header-only here, so it is linked only when its target exists.
-- Layout: `src/main.cpp` (CLI11 dispatch); `src/core/` (`text`, `json`, `files`, `paths`, `clock`, `process`, `http`); `src/journal/` (`Journal` writer, `records` readers, `command`); `src/monitor/` (`Monitor` state machine behind `SessionSource`, `command` replay); `src/watch/` (ccbridge `/sessions` source and loop); `src/cli/` (`ccbridge` path, `open`); `src/gui/` (`command` options and startup, `server` Beast HTTP with SSE and static files, `feed` `JournalFeed` over the `tail` readers and a `hub` of subscribers, `reload` watcher for `gui/public`, `wire` Python-style JSON with ASCII escapes); `src/orch/` (the `orch` port: `config`, `state`, `projects`, `harness` (airc mods), `ccbridge` (HTTP and server lifecycle), `websocket`, `lock`, `turn` (run_job), `orch` (the function API for the MCP port), `command` (CLI11)); `src/mcp/` (`hyperagent mcp`: `server` JSON-RPC loop, `tools`, `peers`, `outputs` resources, `turns`, `events`, `args` Python-compatible JSON and argument coercion, `schema` (the tool and resource definitions), `command`).
+- Build: `cmake -S . -B build && cmake --build build`; targets `hyperagent`, `ccbridge` and `install_unit` (from `airc/` and `src/`; C++20; Boost.Beast/Asio headers, nlohmann-json, CLI11, sqlite3, OpenSSL). `ctest --test-dir build --output-on-failure` runs the portable unit witness on every host and the shell parity tests on POSIX. Boost.System is header-only here, so it is linked only when its target exists.
+- Layout: `src/main.cpp` (CLI11 dispatch); `src/core/` (`text`, `json`, `files`, `paths`, `install`, `ports`, `clock`, `process`, `http`); `src/journal/` (`Journal` writer, `records` readers, `command`); `src/monitor/` (`Monitor` state machine behind `SessionSource`, `command` replay); `src/watch/` (ccbridge `/sessions` source and loop); `src/cli/` (`ccbridge` path, `open`); `src/gui/` (`command` options and startup, `server` Beast HTTP with SSE and static files, `feed` `JournalFeed` over the `tail` readers and a `hub` of subscribers, `reload` watcher for `gui/public`, `wire` Python-style JSON with ASCII escapes); `src/orch/` (the `orch` port: `config`, `state`, `projects`, `harness` (airc mods), `ccbridge` (HTTP and server lifecycle), `websocket`, `lock`, `turn` (run_job), `orch` (the function API for the MCP port), `command` (CLI11)); `src/mcp/` (`hyperagent mcp`: `server` JSON-RPC loop, `tools`, `peers`, `outputs` resources, `turns`, `events`, `args` Python-compatible JSON and argument coercion, `schema` (the tool and resource definitions), `command`).
 - The GUI reads the journal bytes the way the removed Python server did: `tail` replays the backward block scan of `read_last_lines`, the 500-per-source and 1500-total backfill, and the `<source>@<offset>` ids. Its server log is `orch_home()/server.log`, so `ORCH_HOME` moves it. That is kept on purpose: the airc server log lives under `ORCH_HOME`, and `build/hyperagent orch` and `hyperagent ccbridge` read it from there, so the viewer follows that path. `/api/reload` sends `change` with `restart: false`; a rebuild plus restart replaces the old Python HMR restart. Responses are HTTP/1.0 with Python's header order (`Server`, `Date`, then the response fields); a 501 reason phrase is the error message, as in `HTTP/1.0 501 Unsupported method ('POST')`. The `Server` header is `orch-gui`. Journal lines are parsed by `core::json::parse_python`, which accepts NaN, Infinity, -Infinity, float literals that overflow to Infinity, and lone `\uD800`-`\uDFFF` escapes as Python's `json.loads` does; a lone surrogate is kept as WTF-8 and written back as a `\udXXX` escape. The strict `core::json::parse` used by the other readers still rejects these. The journal writer keeps UTF-8 unescaped, so it cannot write a lone surrogate, which is why the journal does not contain them today. `tests/fixtures/gui/` is the parity fixture: `journal/root` holds the NaN, Infinity and lone surrogate lines, and `expected-snapshot.json` is the backfill snapshot with `airc/server` records removed (drop `src == "airc/server"` from both sides, then compare `json.dumps(records, indent=1)`).
 - Journal bytes: records are written compact with insertion order (`ordered_json`), Python float repr and unescaped UTF-8. `core::json::dumps(value, spaced)` gives Python's default `json.dumps` text.
 - Text is counted in code points, as Python `len` and slicing do, and `splitlines` uses Python's separator set.
@@ -316,29 +327,34 @@ Claude transcript channel binds to the newest session file in a project director
 - MCP success-path sandbox (no `harness fake`, which orch rejects): a `mktemp -d` root with `HOME`, `ORCH_HOME`, `CCBRIDGE_TEMPLATES` (a copy of `airc/templates`), `ORCH_PARENT` holding throwaway project dirs with an `AGENTS.md` marker, `CCBRIDGE_BIN` set to the installed binary, `ORCH_PORT` on a spare port, and `PATH` with `build/fake_claude/bin` first. Drive `hyperagent mcp` through a FIFO pair. `stop_peer` ends peers, but closing the MCP stdin leaves the ccbridge running: stop it by the PID in `$ORCH_HOME/server.pid` and its children, never by name.
 - `stop_peer` during an outstanding background turn: airc keeps the turn's WebSocket open after `DELETE /sessions/{name}`, so the turn cannot see the stop through its socket. Each idle poll (`poll_interval`, 5 s) checks the hub instead (`hub_stopped` in `src/orch/turn.cpp`, same name in `build/hyperagent orch`); a missing or dead hub ends the turn with status `stopped` and releases `.orch/locks/<name>.lock`, so a queued `resume_project` prompt runs. A fetch failure keeps the turn waiting. airc's claude reader stitches text blocks inside one `poll()` only, so a message whose text blocks land in different polls shows the tail of the second block alone; the fake writes one text block per final message for that reason.
 - `hyperagent orch`, `hyperagent watch` and `hyperagent gui` keep the same argument surface, JSON shapes and `.orch/` state as the removed Python tools.
-- `hyperagent ccbridge` prints the binary hyperagent runs: `CCBRIDGE_BIN` when set, else the compiled-in `build/ccbridge`. There is no release download. At spawn, `CCBRIDGE_TEMPLATES` is set to `airc/templates` unless the caller already set it.
-- `hyperagent open` sets `MCP_TIMEOUT` and `MCP_TOOL_TIMEOUT` only when unset and changes to the repo root.
+- `hyperagent ccbridge` prints the binary hyperagent runs: `CCBRIDGE_BIN`, the saved manifest, the executable beside it, then the build-path constant. At spawn, `CCBRIDGE_TEMPLATES` uses the environment, saved manifest or shipped template directory.
+- `hyperagent setup` registers `setup` and `doctor`; `setup --check` runs the doctor without changing the tree. `open` applies the saved manifest and MCP timeouts only when unset, then changes to the repo root.
 
 ## Shipped layout
 
-A release archive holds `bin/hyperagent`, `bin/ccbridge`, `share/ccbridge/{templates,web}` and
-`share/hyperagent/gui/public`; `cmake --install` produces it. `core::paths` treats the
-executable as shipped when `<exe dir>/../share/hyperagent/gui` exists, and then looks up files
-there first, before `HYPERAGENT_ROOT` and the development walk-up to the directory holding
-`CMakeLists.txt` and `AGENTS.md`. A shipped copy keeps `.orch` under the user data directory
+A release archive holds `bin/hyperagent`, `bin/ccbridge`, `share/ccbridge/{templates,web}`,
+`share/hyperagent/gui/public`, `.mcp.json`, `AGENTS.md`, `CLAUDE.md`, `README.md`, `docs/`,
+`scripts/` and `tools/`; `cmake --install` produces it. `core::paths` treats the executable as
+shipped when `<exe dir>/../share/hyperagent/gui` exists, and then looks up files there first,
+before `HYPERAGENT_ROOT` and the development walk-up to the directory holding `CMakeLists.txt`
+and `AGENTS.md`. A shipped copy keeps `.orch` under the user data directory
 (`$XDG_DATA_HOME` or `~/.local/share` plus `hyperagent` on Linux, `~/Library/Application
-Support/hyperagent` on macOS, `%LOCALAPPDATA%\hyperagent` on Windows) unless `ORCH_HOME` is set, and its peer projects directory is
-`HYPERAGENT_PROJECTS`, then `ORCH_PARENT`, then `<data dir>/projects`; the development layout
-keeps the parent of the repo root. `ccbridge` is found as `CCBRIDGE_BIN`, then beside the
-binary, then the build-path constant. `hyperagent setup` is idempotent: it creates the state
-directory and runs `claude mcp add --scope user hyperagent -- <this binary> mcp` unless claude
-already lists it; with no `claude` on PATH it says so and exits 0.
+Support/hyperagent` on macOS, `%LOCALAPPDATA%\hyperagent` on Windows), after `ORCH_HOME` and
+the saved manifest. The peer parent is `ORCH_PARENT`, then `HYPERAGENT_PROJECTS`, then the
+saved manifest, then `<data dir>/projects` for a shipped copy or the parent of a source root.
+`hyperagent setup` binds a loopback socket to choose a free port, writes the manifest, creates
+the state, parent, journal and template directories, replaces the user-scope MCP registration
+with an absolute command and every persisted environment value, rewrites the project
+`.mcp.json`, and prints the Claude Code restart instruction. `hyperagent doctor` verifies all
+of those facts, ccbridge, the templates, the MCP registration, the long tool timeout and the
+absence of a conflicting `--model` override. `--model default` clears a saved model and leaves
+no server-wide model flag.
 
 Windows (x64-windows-static, MSVC, `/W4`, static CRT) builds hosted only; everything that differs
 from POSIX (file locks, terminate, detached spawn, exec, terminal width, gmtime/localtime/timegm)
 sits behind `src/core/platform.hpp`, and `core/process.cpp` has a CreateProcessW branch.
 
 `-DHYPERAGENT_VERSION=<tag or sha>` sets `--version`. `CMakePresets.json` has one preset per
-static vcpkg triplet (x64-linux, arm64-linux, arm64-osx, x64-osx); the Linux ones add
-`HYPERAGENT_STATIC_RUNTIME`. `tools/ship-witness.sh BUILD_DIR` installs a finished build into a
-temp prefix, copies it away from the source tree and checks `--version` and `setup` there.
+static vcpkg triplet (x64-linux, arm64-linux, arm64-osx, x64-osx, x64-windows); the Linux ones
+add `HYPERAGENT_STATIC_RUNTIME`. `tools/ship-witness.sh BUILD_DIR` installs a finished build
+into scratch and runs the portable setup, doctor and red-check witness there.
