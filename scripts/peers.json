@@ -60,6 +60,12 @@
     "remote": "fetch"
   },
   {
+    "name": "zellous-discord",
+    "session": "d4df8d39-52e8-49e4-9138-529dc9271202",
+    "checkout": "zellous-discord",
+    "remote": "gh"
+  },
+  {
     "name": "hyperagent",
     "session": "cde324cd-0fe9-4327-b3a3-66c51a85c1f0",
     "checkout": "hyperagent-portable",
