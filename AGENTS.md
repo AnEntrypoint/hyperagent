@@ -361,3 +361,7 @@ into scratch and runs the portable setup, doctor and red-check witness there. Th
 is a manual `workflow_dispatch` after the source push; its publish job verifies all five target
 archives and checksum sidecars before writing `manifest.json` or `SHA256SUMS`, writes ten checksum
 lines, and skips a duplicate same-SHA run when the latest published manifest is complete.
+
+## Owner settings on this host
+
+- Every peer is launched with the model `claude-haiku-5-5` until the owner names another.
