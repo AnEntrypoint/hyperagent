@@ -1,0 +1,34 @@
+[
+  {
+    "id": "probe-0618",
+    "kind": "evidence",
+    "title": "Callback 000 at 06:18:25 UTC on 25 Nov 2026 has no proven cause",
+    "owner": "uhh",
+    "status": "open",
+    "closes": "The same event recurs and scripts/probe/callback-probe.sh records host and TCP state at that moment"
+  },
+  {
+    "id": "probe-0620",
+    "kind": "evidence",
+    "title": "Probe blip at 06:20:06 UTC on 25 Nov 2026 has no proven cause",
+    "owner": "uhh",
+    "status": "open",
+    "closes": "The same event recurs and the host sample explains it"
+  },
+  {
+    "id": "information-officer",
+    "kind": "decision",
+    "title": "Information officer appointment and Regulator registration under POPIA s55(2)",
+    "owner": "owner",
+    "status": "open",
+    "closes": "Owner confirms the appointment and files the registration. Last recorded as open; not re-verified since 25 Nov 2026"
+  },
+  {
+    "id": "retention-schedule",
+    "kind": "decision",
+    "title": "Retention schedule adoption",
+    "owner": "owner",
+    "status": "open",
+    "closes": "Owner adopts the recommended retention schedule. Last recorded as open; not re-verified since 25 Nov 2026"
+  }
+]
