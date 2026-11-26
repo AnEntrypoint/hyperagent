@@ -9,3 +9,4 @@
 - [Peers launch via chlaude](feedback-peers-launch-via-chlaude.md) — owner rule: use chlaude's env and flags through a shebang wrapper; never add a conflicting model flag
 - [Dispatcher makes decisions](feedback-dispatcher-makes-decisions.md) — owner rule: choose reversible designs from evidence; live GitHub Pages is the Zellous runtime source of truth
 - [Report style](report-style.md) — BLUF first, YAGNI sections, maps only with a geographic need
+- [Peer first start needs trust](peer-first-start-needs-trust.md) — a new peer dying in 5 s is the folder-trust dialog; start_projects with trust true
