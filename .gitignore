@@ -8,3 +8,4 @@ build-verify/
 specs/
 .claude/scheduled_tasks.lock
 docs/fx-freddie-txiki-plan.md
+reports/
