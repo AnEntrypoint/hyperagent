@@ -4,7 +4,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { spawn, spawnSync } = require('node:child_process');
 
-const SCRATCH = process.env.GATE_SCRATCH || '/workspace/tmp/gate';
+const SCRATCH = process.env.GATE_SCRATCH || path.join(process.env.HYPERAGENT_SCRATCH || path.resolve(__dirname, '..', '..', 'tmp'), 'gate');
 const TICKET_DIR = process.env.GATE_TICKET_DIR || path.join(SCRATCH, 'tickets');
 const LEGACY_TICKET_DIR = path.join(os.tmpdir(), 'gate-tickets');
 const HISTORY = process.env.GATE_HISTORY || path.join(SCRATCH, 'history.jsonl');
