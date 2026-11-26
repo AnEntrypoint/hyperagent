@@ -217,6 +217,18 @@ std::string_view rstrip(std::string_view text)
     return text.substr(0, last_end);
 }
 
+std::string join_lines(const std::vector<std::string>& lines)
+{
+    std::string out;
+    for (std::size_t index = 0; index < lines.size(); ++index) {
+        if (index > 0) {
+            out += "\n";
+        }
+        out += lines[index];
+    }
+    return out + "\n";
+}
+
 std::vector<std::string> splitlines(std::string_view text)
 {
     std::vector<std::string> lines;

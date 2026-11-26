@@ -23,6 +23,7 @@ std::string replace_all(std::string_view text, std::string_view from, std::strin
 std::string_view strip(std::string_view text);
 std::string_view rstrip(std::string_view text);
 std::vector<std::string> splitlines(std::string_view text);
+std::string join_lines(const std::vector<std::string>& lines);
 bool is_python_space(char32_t code_point);
 
 }
