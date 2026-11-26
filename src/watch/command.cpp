@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <memory>
 
+#include "core/update.hpp"
 #include "monitor/command.hpp"
 #include "watch/watch.hpp"
 
@@ -14,6 +15,7 @@ void add_command(CLI::App& app)
     auto* command = app.add_subcommand("watch", "emit one line when a peer's output stops animating");
     monitor::add_monitor_options(command, *options);
     command->callback([options]() {
+        core::update::start_background();
         std::exit(run(*options));
     });
 }

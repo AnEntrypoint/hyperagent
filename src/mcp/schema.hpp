@@ -438,6 +438,119 @@ inline constexpr const char* tools_json = R"schema([
       ],
       "additionalProperties": false
     }
+  },
+  {
+    "name": "cycle",
+    "description": "Status board: each peer's state, git sync, queue and tickets, then the live gate tickets, the spec files and a host line. Same text as hyperagent cycle.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "queue",
+    "description": "Queued items of one peer: the lines of specs/queue/<peer>.md that start with a number and a dot.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "peer": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "peer"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "sent",
+    "description": "Find a phrase in one peer's journal. Reports whether it was delivered and the text, tool and result records that followed it.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "peer": {
+          "type": "string"
+        },
+        "phrase": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "peer",
+        "phrase"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "specs",
+    "description": "List the spec files under specs/.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "gate_run",
+    "description": "Start a gate ticket for a command and return at once with the ticket id, the result file and the log file. The ticket waits for its turn, runs the command detached and writes its result file when it ends.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "owner-first label, for example thebird-build; the part before the first dash is the owner"
+        },
+        "command": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "tree": {
+          "type": "string",
+          "description": "tree id; a label that already passed on this tree is not run again unless force is set"
+        },
+        "exclusive": {
+          "type": "boolean"
+        },
+        "quick": {
+          "type": "boolean"
+        },
+        "min_mb": {
+          "type": "number"
+        },
+        "force": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "label",
+        "command"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "gate_list",
+    "description": "Live gate tickets in turn order, one ticket file name per line.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "gate_history",
+    "description": "Gate history per owner: windows, seconds waited and ran, and the longest run.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    }
   }
 ])schema";
 

@@ -6,6 +6,16 @@ endif()
 project(hyperagent VERSION 0.1.0 LANGUAGES C CXX)
 
 set(HYPERAGENT_VERSION "0.1.0" CACHE STRING "version reported by hyperagent --version")
+set(HYPERAGENT_COMMIT "" CACHE STRING "git commit the build is made from; empty asks git")
+set(HYPERAGENT_COMMIT_TIME "" CACHE STRING "commit time in epoch seconds; empty asks git")
+if(HYPERAGENT_COMMIT STREQUAL "")
+    execute_process(COMMAND git rev-parse HEAD WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        OUTPUT_VARIABLE HYPERAGENT_COMMIT OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+endif()
+if(HYPERAGENT_COMMIT_TIME STREQUAL "")
+    execute_process(COMMAND git show -s --format=%ct HEAD WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        OUTPUT_VARIABLE HYPERAGENT_COMMIT_TIME OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+endif()
 option(HYPERAGENT_STATIC_RUNTIME "link the C++ runtime statically on Linux" OFF)
 if(HYPERAGENT_STATIC_RUNTIME AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
     add_link_options(-static-libstdc++ -static-libgcc)
@@ -32,7 +42,10 @@ add_executable(hyperagent ${HYPERAGENT_SOURCES})
 target_include_directories(hyperagent PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${SQLite3_INCLUDE_DIR})
-target_compile_definitions(hyperagent PRIVATE HYPERAGENT_VERSION="${HYPERAGENT_VERSION}")
+target_compile_definitions(hyperagent PRIVATE
+    HYPERAGENT_VERSION="${HYPERAGENT_VERSION}"
+    HYPERAGENT_COMMIT="${HYPERAGENT_COMMIT}"
+    HYPERAGENT_COMMIT_TIME="${HYPERAGENT_COMMIT_TIME}")
 target_link_libraries(hyperagent PRIVATE
     Boost::headers
     nlohmann_json::nlohmann_json
@@ -71,6 +84,25 @@ if(WIN32)
 endif()
 add_test(NAME install_unit COMMAND install_unit)
 set_tests_properties(install_unit PROPERTIES TIMEOUT 60)
+
+add_executable(update_unit
+    tests/update_unit.cpp
+    src/core/update.cpp
+    src/core/paths.cpp
+    src/core/install.cpp
+    src/core/files.cpp
+    src/core/json.cpp
+    src/core/text.cpp
+    src/core/process.cpp
+    src/core/platform.cpp)
+target_include_directories(update_unit PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_compile_definitions(update_unit PRIVATE
+    HYPERAGENT_VERSION="${HYPERAGENT_VERSION}"
+    HYPERAGENT_COMMIT="${HYPERAGENT_COMMIT}"
+    HYPERAGENT_COMMIT_TIME="${HYPERAGENT_COMMIT_TIME}")
+target_link_libraries(update_unit PRIVATE nlohmann_json::nlohmann_json OpenSSL::Crypto Threads::Threads)
+add_test(NAME update_unit COMMAND update_unit)
+set_tests_properties(update_unit PROPERTIES TIMEOUT 60)
 
 add_subdirectory(airc)
 set_target_properties(ccbridge PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})

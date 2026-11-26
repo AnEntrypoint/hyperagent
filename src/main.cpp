@@ -3,10 +3,13 @@
 #include "cli/ccbridge.hpp"
 #include "cli/open.hpp"
 #include "cli/setup.hpp"
+#include "cli/update.hpp"
+#include "gate/command.hpp"
 #include "gui/command.hpp"
 #include "journal/command.hpp"
 #include "monitor/command.hpp"
 #include "orch/command.hpp"
+#include "orch/cycle.hpp"
 #include "mcp/command.hpp"
 #include "watch/command.hpp"
 
@@ -22,6 +25,9 @@ int main(int argc, char** argv)
     hyperagent::cli::ccbridge::add_command(app);
     hyperagent::cli::open::add_command(app);
     hyperagent::cli::setup::add_command(app);
+    hyperagent::cli::update::add_command(app);
+    hyperagent::orch::cycle::add_command(app);
+    hyperagent::gate::add_command(app);
 
     hyperagent::orch::add_command(app);
     hyperagent::mcp::add_command(app);
