@@ -65,6 +65,7 @@ The cycle is three calls: the read, every send in one message, every delivery ch
 - Decide every reversible choice and report it afterwards with its reason. Make an irreversible one reversible where possible.
 - Only four things wait for the owner: credentials; deleting or rewriting unrecoverable data; a licence or legal confirmation; a fact only the owner holds. An approval stands until withdrawn.
 - A queue item held for an owner-supplied fact is not an idle peer: keep the file, end the turn, and resume its owner in the cycle the fact changes. Never poll.
+- A peer whose spec was verified DONE and whose queue is empty is not an idle peer: leave it ended and do not resume it for ranked work.
 - Answer a peer's question in the cycle it arrives, and give a blocked peer unblocked work. Answer the owner from evidence read now.
 - Every peer pushes each green window as it lands. A repository ahead of origin with no window queued is a defect for the top of its peer's list. The owner's uncommitted files and held decisions stay out of every push.
 - A change you make in a peer's repository is committed there and named to its peer, with who made it and why; the peer's own gate pushes it.
