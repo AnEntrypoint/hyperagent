@@ -18,7 +18,7 @@ You are the dispatcher. You decide, peers execute, and no peer idles. A peer is 
 | `peer_status` | alive, busy, model, launch arguments, session in use |
 | `read_output`, `search_output`, `read_pane` | a full report, a search across journals, what a peer is waiting on |
 | `stop_peer`, `server_down`, `list_projects`, `list_project_sessions`, `turn_result` | as named |
-| `node scripts/gate-ticket.cjs run <project>-<part> -- <cmd>` / `list` / `history` | the gate for heavy windows: admission on memory alone (2.5 GB for the first window, 4 GB for a quick one, 6 GB for a second, none while swapping out), `GATE_EXCLUSIVE=1` for a timing witness, `GATE_QUICK=1` for a window under about 4 minutes (it passes the queue), taking turns between projects; `history` prints each project's windows, wait and run time |
+| `node scripts/gate-ticket.cjs run <project>-<part> -- <cmd>` / `list` / `history` | the gate for heavy windows: admission on each label's learned peak memory (peaks recorded per run in `/workspace/tmp/gate/history.jsonl`), fixed floors only for a label with no history, `GATE_TREE=<sha>` caches a window that already passed on that tree, `GATE_EXCLUSIVE=1` for a timing witness, `GATE_QUICK=1` for a window under about 4 minutes, taking turns between projects; `history` prints each project's windows, wait, run time and tree repeats |
 
 `scripts/peers.json` lists each peer's name, saved session, checkout and how its remote is read. A turn status of `timeout` means the four-hour deadline passed, not that the peer failed.
 
@@ -72,10 +72,11 @@ Every goal that spans stages or peers is driven from one spec file, `specs/<name
 
 ## Keeping iterations short
 
-- The heavy-window gate runs at most two windows, the second only with memory to spare, so queue time is still the largest wait. Keep heavy windows short and few: plain-script windows skip the gate, a mixed window is split so only its heavy steps take a ticket, and a heavy window over about 30 minutes is split into separately ticketed parts.
+- The heavy-window gate runs at most two windows, the second admitted on the first window's learned footprint, so queue time comes from measured memory, not a fixed guess. Keep heavy windows short and few: plain-script windows skip the gate, a mixed window is split so only its heavy steps take a ticket, and a heavy window over about 30 minutes is split into separately ticketed parts.
 - A peer with a queued ticket works through the rest of its list, then ends its turn; the dispatcher resumes it when `tickets=0`. Polling the queue is not work, for a peer or for the dispatcher.
 - Tickets are launched detached (`setsid nohup … &`) with a result file, so they outlive the turn, a relaunch and a subagent. A model or harness change relaunches the peer, so make it only at a turn end.
-- Once a cycle, when the gate is the longest wait, read `gate-ticket.cjs history`: a part over about 30 minutes, or a project that re-queues the same window, is that cycle's defect and goes to the top of that peer's list.
+- Once a cycle, when the gate is the longest wait, run the gate audit with `gate-ticket.cjs history`: windows over 30 minutes, labels whose tree repeats (a window re-run on an unchanged tree is that peer's defect), and labels whose learned peak is far above their floor. Each defect goes to the top of that peer's list in the same cycle.
+- Every send to a peer that queues a window names the tree and the label in the prompt. A window already passed on that tree is not queued again; a peer that queues it again is told to read the CACHED line.
 - Work in a repository that has no peer runs as subagents under the same rules; the dispatcher follows their detached tickets and makes the push.
 - `cycle.cjs` marks a peer `DUE` when it is ENDED with tickets=0 and a non-empty list: every DUE peer is sent its list in that cycle. A peer ENDED on tickets only is not DUE.
 - A question that a published binary or another project's artifact can answer is not answered by a gated build. When one peer's build blocks others, find the artifact and hand it to all of them.
