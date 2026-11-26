@@ -69,6 +69,7 @@ Every goal that spans stages or peers is driven from one spec file, `specs/<name
 - A peer's question about scope, size or a reversible choice is answered in the same cycle. A blocked peer is given unblocked work while the block is driven out.
 - An owner's question is answered from current evidence, read now, with the reason and the next action.
 - Pushes happen only in a peer's own Phase B, and every repository ends each stretch pushed: finish the window, then push, hyperagent included. A repo that shows ahead above 0 with tickets=0 and no window running is a defect found that cycle: put "queue the window on the final tree and push" at the top of its peer's list. The dispatcher pushes its own repository when its witness has passed. Owner instruction 2026-11-22: finish the windows, then push all of them.
+- Progress pushes (owner direction 2026-11-26): every peer pushes each green window as it lands, not once per stretch, so bevy, fx, oscraft and thebird all push progress along the way. This overrides the stretch-end wording above. The dispatcher checks each cycle: a repo with green commits ahead of origin and no window queued is sent to push them. The owner's uncommitted files and the held owner decisions recorded in each repo's queue file stay out of every push.
 
 ## Keeping iterations short
 

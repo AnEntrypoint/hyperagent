@@ -16,8 +16,8 @@ These apply to every assignment from the dispatcher. Read them again after a com
 ## Two phases
 
 - Phase A: every change for the stretch in one pass, code, docs and tests only. Commit each change locally as you make it and list it in `docs/PENDING_VALIDATION.md` with its witness and its red check. A new item that arrives joins the open pass. Push nothing.
-- Phase B: one window on the final tree. Run every listed witness, and the red checks the Pace section says are due, fix what fails, and push origin main once, only if everything that ran passed. A skip is not a run. Quote the push output and `git ls-remote origin main`.
-- A second push is allowed only when a run shows a failure in the repository that the fix addresses. Never push to see what CI says, and check a hosted run at most once.
+- Phase B: one window on the final tree. Run every listed witness, and the red checks the Pace section says are due, fix what fails, and push origin main as soon as everything that ran passed. Each green window is its own push, so finished work never waits for the end of a stretch. Never stage or push the owner's uncommitted files (for example .env, scenarios/bota/cross-contract-snapshot.json, bin/thebird-relay.js, core dumps).
+- Push after every green window. A red window's commits stay local until the fix goes in and the window that covers it passes; then that window is pushed. Never push a red tree, and never push to see what CI says; check a hosted run at most once.
 - A window covers the commits it ran on. A later commit that changes nothing the window reads (a ledger line, a doc, another area) does not void it: push the covered commits, reordered first if needed, and leave the rest for the next window. Stop a window by PID and re-queue it only when an edit changed what it tests.
 - Every stretch ends pushed. Commits ahead of origin with no window queued or running are a defect: queue their window.
 
