@@ -39,6 +39,6 @@ Anything that waits, repeats or blocks is a defect, whatever the work.
 - A label that already passed on its `GATE_TREE` prints CACHED and runs nothing. Set `GATE_FORCE=1` only when its code or its witness changed. Queue a window only on a tree that is final for it.
 - The gate admits a window on memory: its label's last recorded peak plus 15%, or a fixed floor for a new label, and nothing while the host swaps out. Set `GATE_MIN_MB` only for a new label that needs more than the floor, never above what the idle host shows.
 - `GATE_EXCLUSIVE=1` runs a window alone: use it for a window that peaks above the free memory and for any witness that measures time. A timing result taken under load is rerun, not interpreted. Any other exclusive window makes every project wait for nothing; a check that only passes alone has a load-dependent timeout, and that timeout is the defect to fix.
-- `GATE_QUICK=1` lets a window of a few minutes pass the queue.
+- `GATE_QUICK=1` lets a window of a few minutes pass the queue. A window whose last run took under five minutes also passes an exclusive ticket that is waiting for the gate to empty.
 - Plain scripts take no ticket. Split a mixed window so only its heavy steps take one, and split a heavy window over about 30 minutes into separately ticketed parts.
 - The gate polls for you. When resumed, read the result file; wait on a window that is running now with one bounded wait on its PID.
