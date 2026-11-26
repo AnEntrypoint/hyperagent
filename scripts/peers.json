@@ -66,6 +66,12 @@
     "remote": "gh"
   },
   {
+    "name": "litebox",
+    "session": "9c9f0bdc-ddba-4b91-91c4-ae7981b9f2bb",
+    "checkout": "litebox",
+    "remote": "gh"
+  },
+  {
     "name": "hyperagent",
     "session": "cde324cd-0fe9-4327-b3a3-66c51a85c1f0",
     "checkout": "hyperagent-portable",
