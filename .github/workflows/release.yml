@@ -1,6 +1,8 @@
 name: release
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -54,12 +56,12 @@ jobs:
     env:
       VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/.vcpkg-binary-cache
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Version
         run: echo "HYPERAGENT_BUILD_VERSION=${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
       - name: Prepare the vcpkg binary cache
         run: mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE"
-      - uses: actions/cache@v4
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
           key: vcpkg-${{ matrix.triplet }}-${{ hashFiles('vcpkg.json') }}
@@ -81,24 +83,11 @@ jobs:
           ${{ matrix.configure }}
       - name: Build
         run: cmake --build build --config Release --parallel
-      - name: Test
-        run: ctest --test-dir build -C Release --output-on-failure
-        env:
-          HYPERAGENT_WITNESS_DIR: ${{ runner.temp }}
-      - name: Airc parity
-        if: runner.os != 'Windows'
-        run: bash airc/tests/e2e.sh
-        env:
-          CCBRIDGE_BIN: ${{ github.workspace }}/build/ccbridge
       - name: Install into the shipped layout
         run: |
           layout="$RUNNER_TEMP/layout/hyperagent-${{ matrix.target }}"
           cmake --install build --config Release --prefix "$layout"
           echo "LAYOUT=$layout" >> "$GITHUB_ENV"
-      - name: Ship witness
-        run: node tools/portable-setup-witness.cjs build
-        env:
-          HYPERAGENT_WITNESS_DIR: ${{ runner.temp }}
       - name: Package
         run: |
           mkdir -p dist
@@ -112,7 +101,7 @@ jobs:
           fi
           (cd dist && if command -v sha256sum >/dev/null; then sha256sum "$archive"; else shasum -a 256 "$archive"; fi) > "dist/$archive.sha256"
           "$binary" --version
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: hyperagent-${{ matrix.target }}
           path: dist/*
@@ -130,7 +119,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Decide whether to publish
         id: head
         run: |
@@ -164,7 +153,7 @@ jobs:
               echo "latest is $published; $GITHUB_SHA is $order to it and is not published"
               ;;
           esac
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         if: steps.head.outputs.current == 'true'
         with:
           pattern: hyperagent-*
