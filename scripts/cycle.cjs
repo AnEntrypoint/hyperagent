@@ -110,7 +110,9 @@ let ticketCache;
 const ticketRows = () => ticketCache ??= sh('node ' + path.join(__dirname, 'gate-ticket.cjs') + ' list').split('\n').filter(Boolean).map((file) => {
   const pid = file.replace(/.*-(\d+)\.json$/, '$1');
   const args = oneLine(sh('ps -o etimes=,args= -p ' + pid), 110);
-  return { pid, args, child: sh('pgrep -P ' + pid).split('\n')[0], owner: (/ run ([^\s-]+)/.exec(args) || [])[1] || '' };
+  const label = (/ run ([^\s]+)/.exec(args) || [])[1] || '';
+  const owner = [...peers].sort((left, right) => right.name.length - left.name.length).find((peer) => label === peer.name || label.startsWith(peer.name + '-'))?.name || '';
+  return { pid, args, child: sh('pgrep -P ' + pid).split('\n')[0], owner };
 });
 
 function ticketLines() {
