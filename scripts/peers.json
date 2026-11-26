@@ -55,9 +55,9 @@
   },
   {
     "name": "zellous",
-    "session": "d4df8d39-52e8-49e4-9138-529dc9271202",
-    "checkout": "zellous-discord",
-    "remote": "gh"
+    "session": "d363015c-a6f9-487b-953c-6264a26e443b",
+    "checkout": "zellous",
+    "remote": "fetch"
   },
   {
     "name": "hyperagent",
