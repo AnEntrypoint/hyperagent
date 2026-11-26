@@ -88,5 +88,11 @@
     "session": "de38240d-2791-4502-8003-2b5c69575f71",
     "checkout": "thorns-cpp",
     "remote": "fetch"
+  },
+  {
+    "name": "uhh",
+    "session": "30cb57d0-0edb-4e4d-8063-7707738576a8",
+    "checkout": "uhh",
+    "remote": "gh"
   }
 ]
