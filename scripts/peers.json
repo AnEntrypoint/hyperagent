@@ -94,5 +94,17 @@
     "session": "30cb57d0-0edb-4e4d-8063-7707738576a8",
     "checkout": "uhh",
     "remote": "gh"
+  },
+  {
+    "name": "gmweb",
+    "session": "7561b94b-21c4-4db7-90c2-8cef24d0cf8d",
+    "checkout": "gmweb",
+    "remote": "fetch"
+  },
+  {
+    "name": "agentgui",
+    "session": "77d9a82d-dd20-43ee-922f-1439bcfa3678",
+    "checkout": "agentgui",
+    "remote": "fetch"
   }
 ]
