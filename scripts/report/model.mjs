@@ -199,7 +199,7 @@ export const buildReport = (data) => {
   );
   blocks.push({ type: 'chart', name: 'turns', alt: charts[2].title });
 
-  blocks.push({ type: 'h2', text: 'Open items' });
+  blocks.push({ type: 'h2', text: 'Open items as of generation' });
   blocks.push(
     emptyOr(
       open.map((item) => [item.title, item.kind, item.owner, item.status, item.closes]),
