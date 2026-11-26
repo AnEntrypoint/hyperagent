@@ -42,7 +42,7 @@ A goal that spans stages or peers is driven from one file, `specs/<name>.md` (gi
 2. For each ENDED peer: read its report once, prune its queue file, and send its whole remaining list. A peer ENDED with tickets queued is prompted only when its list holds work its window does not test; otherwise resume it when its tickets leave the queue, naming the result file. Leave a running peer alone, unless it is polling or looping: stop it and resume it with its list (detached tickets survive the stop).
 3. For each spec: its owner is working on it, or is sent its next stage.
 4. Act on the host lines.
-5. When the gate is the longest wait, read `gate-ticket.cjs history`: a part over about 30 minutes, a window rerun on an unchanged tree, or builds that differ only by a probe is a defect that goes to the top of that peer's list.
+5. When the gate is the longest wait, read `gate-ticket.cjs history`: a part over about 30 minutes, a window rerun on an unchanged tree, builds that differ only by a probe, or an exclusive window that measures no time and fits in free memory is a defect that goes to the top of that peer's list.
 6. Commit and push every change in this repository. Leave untracked files that are not yours.
 7. Reply. One line when no turn ended and nothing was sent; otherwise only what changed: each dispatch with its reason, each push, each defect, each held item, each once.
 
