@@ -14,6 +14,7 @@ const POLL_MS = Number(process.env.GATE_POLL_MS || 10000);
 const PEAK_SAMPLE_MS = Number(process.env.GATE_PEAK_SAMPLE_MS || 5000);
 const LEARN_MARGIN = 1.15;
 const LEARN_MIN_SECOND_MB = 3000;
+const SHORT_RUN_S = Number(process.env.GATE_SHORT_RUN_S || 300);
 const SLOTS = Number(process.env.GATE_SLOTS || 2);
 const FIRST_SLOT_MB = Number(process.env.GATE_FIRST_SLOT_MB || 2500);
 const SECOND_SLOT_MB = Number(process.env.GATE_SECOND_SLOT_MB || 6000);
@@ -65,6 +66,11 @@ function historyRows() {
     return fs.readFileSync(HISTORY, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line));
 }
 
+function lastRanSeconds(label) {
+    const rows = historyRows().filter((row) => row.label === label && row.code === 0);
+    return rows.length ? rows[rows.length - 1].ran : 0;
+}
+
 function learnedMb(label) {
     const peaks = historyRows().filter((row) => row.label === label && row.peakMb > 0).slice(-3).map((row) => row.peakMb);
     return peaks.length ? Math.ceil(Math.max(...peaks) * LEARN_MARGIN) : 0;
@@ -112,7 +118,7 @@ function takeTicket(ownerPid, label) {
     const latest = liveTickets().reduce((max, ticket) => Math.max(max, Number(ticket.name.slice(0, 15))), 0);
     const arrival = Math.max(Date.now(), latest + 1);
     const name = String(arrival).padStart(15, '0') + '-' + ownerPid + '.json';
-    const ticket = { pid: ownerPid, arrival, label, v: TAKES_TURNS, exclusive: process.env.GATE_EXCLUSIVE === '1', quick: process.env.GATE_QUICK === '1', minMb: Number(process.env.GATE_MIN_MB || 0), learnedMb: learnedMb(label), tree: process.env.GATE_TREE || '' };
+    const ticket = { pid: ownerPid, arrival, label, v: TAKES_TURNS, exclusive: process.env.GATE_EXCLUSIVE === '1', quick: process.env.GATE_QUICK === '1', minMb: Number(process.env.GATE_MIN_MB || 0), learnedMb: learnedMb(label), lastRan: lastRanSeconds(label), tree: process.env.GATE_TREE || '' };
     fs.writeFileSync(path.join(TICKET_DIR, name), JSON.stringify(ticket) + '\n');
     return { name, ticket };
 }
@@ -138,7 +144,11 @@ function myTurn(name) {
     if (!tickets.every((ticket) => ticket.v === TAKES_TURNS)) return tickets[0]?.name === name && hostHasRoom(Math.max(FIRST_SLOT_MB, mine?.minMb || 0));
     const running = tickets.filter((ticket) => ticket.granted && !ticket.quick);
     const next = tickets.find((ticket) => !ticket.granted && !ticket.quick);
-    if (next?.name !== name || running.length >= SLOTS) return false;
+    if (running.length >= SLOTS) return false;
+    if (next?.name !== name) {
+        const passesBlockedHead = next?.exclusive && running.length > 0 && !running.some((ticket) => ticket.exclusive) && mine && !mine.exclusive && mine.lastRan > 0 && mine.lastRan <= SHORT_RUN_S;
+        return Boolean(passesBlockedHead) && hostHasRoom(Math.max(LEARN_MIN_SECOND_MB, mine.learnedMb || 0, mine.minMb || 0));
+    }
     if (running.length === 0) return hostHasRoom(Math.max(next.learnedMb || FIRST_SLOT_MB, FIRST_SLOT_MB, next.minMb || 0));
     const second = next.learnedMb ? Math.max(LEARN_MIN_SECOND_MB, next.learnedMb) : SECOND_SLOT_MB;
     return !next.exclusive && !running.some((ticket) => ticket.exclusive) && hostHasRoom(Math.max(second, next.minMb || 0));
