@@ -1,4 +1,3 @@
-
 - [Dispatcher silent failures](dispatcher-silent-failures.md) — troubleshooting: mawk-buffered watch monitor delivers nothing; short session id leaves a peer at the resume picker
 - [Memory is for troubleshooting only](feedback-memory-troubleshooting-only.md) — owner rule: memorise only what shortens time-to-discover; no decisions or menial choices
 - [lanmower git email](lanmower-git-email.md) — almagestfraternite@gmail.com is lanmower's own address; not a mismatch to flag
@@ -9,3 +8,4 @@
 - [Project browser stops without a lease](project-browser-stops-without-lease.md) — troubleshooting: gate.log "no lease for the grace period" closes Chrome, tabs and Google sign-in; read it first
 - [Peers launch via chlaude](feedback-peers-launch-via-chlaude.md) — owner rule: use chlaude's env and flags through a shebang wrapper; never add a conflicting model flag
 - [Dispatcher makes decisions](feedback-dispatcher-makes-decisions.md) — owner rule: choose reversible designs from evidence; live GitHub Pages is the Zellous runtime source of truth
+- [Report style](report-style.md) — BLUF first, YAGNI sections, maps only with a geographic need
