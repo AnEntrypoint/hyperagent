@@ -364,4 +364,7 @@ lines, and skips a duplicate same-SHA run when the latest published manifest is 
 
 ## Owner settings on this host
 
-- Every peer is launched with the model `claude-haiku-5-5` until the owner names another.
+- Every peer is launched through `/config/workspace/hyperagent/.orch/bin/chlaude-peer`, which reads the export lines from `/config/.local/bin/chlaude` and runs `claude --dangerously-skip-permissions "$@"`. That sets `ANTHROPIC_MODEL=claude-hy4[1m]`, the local API proxy and an auth token, disables attribution and telemetry, and adds no conflicting `--model` flag.
+- airc listens on `ORCH_PORT=8788` with `ORCH_PARENT=/config/workspace`, `ORCH_HOME=/config/workspace/hyperagent/.orch`, `ORCH_JOURNAL=/config/workspace/hyperagent/.orch/projects` and `CCBRIDGE_TEMPLATES=/config/workspace/hyperagent/.orch/templates`.
+- Gate state defaults to `/config/workspace/tmp/gate`; `HYPERAGENT_SCRATCH` is unset here, so `scripts/gate-ticket.cjs` uses the sibling `tmp` directory.
+- Cargo goes through the slot shim at `/config/.local/bin/cargo`.

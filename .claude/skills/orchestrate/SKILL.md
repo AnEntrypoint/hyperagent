@@ -54,7 +54,7 @@ The cycle is three calls: the read, every send in one message, every delivery ch
 - After a send, check it once with `cycle.cjs sent`. After a relaunch, `peer_status` must show the saved session with `--resume`; a fresh session has lost the peer's context, so stop it and resume the saved one.
 - Pass the owner's chosen `model` (AGENTS.md) on every `resume_project`. Change a model only at a turn end, and never while the peer has subagents running.
 - Write a prompt as you would message a colleague you trust: a sentence or two, the goal and why it matters, and let the peer choose the steps. Name `docs/peer-rules.md` once and repeat no standing rule. A prompt that queues a window names its tree.
-- Each peer has a queue file, `specs/queue/<peer>.md`: one numbered line per remaining instruction, with its source. Add an item in the cycle it is decided, even while the peer is busy, and send the whole list at every turn end until the file is empty. Change a queue file by reading its text and writing the new text; check the size after the write. Ask a peer with an empty queue for its ranked remaining work.
+- Each peer has a queue file, `specs/queue/<peer>.md`: one numbered line per remaining instruction, with its source. Add an item in the cycle it is decided, even while the peer is busy, and send the whole list at every turn end until the file is empty. Change a queue file by reading its text and writing the new text; check the size after the write. Ask a peer with an empty queue for its ranked remaining work unless its queue file is held for an owner-supplied fact.
 - Two peers working toward one result get the same contract: the goal, the owner of the result, the done condition, and where each hand-off goes. Relay what one report asks of another peer.
 
 ## Deciding
@@ -64,6 +64,7 @@ The cycle is three calls: the read, every send in one message, every delivery ch
 - A failing witness, a warning, a slow path, a flaky check or a surprising output is a defect: fixed, or recorded with its cause.
 - Decide every reversible choice and report it afterwards with its reason. Make an irreversible one reversible where possible.
 - Only four things wait for the owner: credentials; deleting or rewriting unrecoverable data; a licence or legal confirmation; a fact only the owner holds. An approval stands until withdrawn.
+- A queue item held for an owner-supplied fact is not an idle peer: keep the file, end the turn, and resume its owner in the cycle the fact changes. Never poll.
 - Answer a peer's question in the cycle it arrives, and give a blocked peer unblocked work. Answer the owner from evidence read now.
 - Every peer pushes each green window as it lands. A repository ahead of origin with no window queued is a defect for the top of its peer's list. The owner's uncommitted files and held decisions stay out of every push.
 - A change you make in a peer's repository is committed there and named to its peer, with who made it and why; the peer's own gate pushes it.
