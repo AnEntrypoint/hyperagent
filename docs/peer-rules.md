@@ -13,6 +13,7 @@ Anything that waits, repeats or blocks is a defect, whatever the work.
 - Decide every reversible choice yourself and give the reason afterwards. Never end a turn to ask about scope or size. A finished stretch is not the end of the turn.
 - You are sent your whole remaining list each turn. Work it in order and skip only what is blocked.
 - When a stretch ends, say where the work stands (finished, open or blocked), what you ran to show it, and your longest step with its wall time. Say what wasted time, so it becomes a rule.
+- A block only the owner can lift is a held queue item, not an idle peer: end the turn, keep the queue file, and resume in the cycle the owner-supplied fact changes. Never poll.
 
 ## Where and how
 

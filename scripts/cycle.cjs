@@ -21,7 +21,7 @@ const peerRoots = () => {
   const candidates = [];
   if (process.env.HYPERAGENT_PEERS_ROOTS) candidates.push(...process.env.HYPERAGENT_PEERS_ROOTS.split(path.delimiter).filter(Boolean));
   candidates.push(path.dirname(root));
-  candidates.push(path.join(path.parse(root).root, 'workspace'));
+  if (process.env.HYPERAGENT_SCRATCH) candidates.push(path.dirname(process.env.HYPERAGENT_SCRATCH));
   return candidates.filter(Boolean);
 };
 const checkoutOf = (peer) => {
@@ -68,6 +68,14 @@ const newestRecords = (peer) => {
   return timeOf(unbound.at(-1)) > timeOf(bound.at(-1)) ? unbound : bound;
 };
 
+let liveCache;
+const liveSessions = () => liveCache ??= (() => {
+  const port = process.env.ORCH_PORT || '8788';
+  const host = process.env.ORCH_HOST || '127.0.0.1';
+  const body = sh('curl -s -m 2 http://' + host + ':' + port + '/sessions');
+  try { return JSON.parse(body); } catch { return {}; }
+})();
+
 const remoteHead = {
   gh: (cwd) => sh('git ' + ghHelper + ' fetch origin --quiet; git rev-parse --short origin/main', cwd),
   fetch: (cwd) => sh('git fetch origin --quiet; git rev-parse --short origin/main', cwd),
@@ -85,14 +93,17 @@ function peerLine(peer) {
   const last = records.at(-1);
   const lastText = records.findLast((record) => record.kind === 'text' && record.text);
   const ended = last?.kind === 'result';
-  const head = sh('git rev-parse --short HEAD', cwd);
-  const origin = remoteHead[peer.remote](cwd);
-  const ahead = peer.remote === 'ls-remote' ? (head === origin ? '0' : '?') : sh('git rev-list --count origin/main..HEAD', cwd);
-  const dirty = sh('git status --short | wc -l', cwd);
+  const exists = fs.existsSync(cwd);
+  const head = exists ? sh('git rev-parse --short HEAD', cwd) : '';
+  const origin = exists ? remoteHead[peer.remote](cwd) : '';
+  const ahead = !exists ? '' : peer.remote === 'ls-remote' ? (head === origin ? '0' : '?') : sh('git rev-list --count origin/main..HEAD', cwd);
+  const dirty = exists ? sh('git status --short | wc -l', cwd) : '';
   const queued = queueOf(peer.name).length;
   const tickets = ticketRows().filter((row) => row.owner === peer.name).length;
-  const state = !ended ? 'running' : tickets === 0 && queued > 0 ? 'ENDED DUE' : 'ENDED';
-  return [peer.name, state, 'last=' + ageOf(last), 'HEAD=' + head, 'origin=' + origin, 'ahead=' + ahead, 'dirty=' + dirty, 'queue=' + queued, 'tickets=' + tickets, '| ' + oneLine(lastText?.text, 260)].join(' ');
+  const live = liveSessions()[peer.name];
+  const due = tickets === 0 && queued > 0;
+  const state = !exists ? 'MISSING' : !live ? (ended ? (due ? 'ENDED DUE' : 'ENDED') : 'STOPPED') : live.busy ? 'running' : ended ? (due ? 'ENDED DUE' : 'ENDED') : 'IDLE';
+  return [peer.name, state, 'last=' + ageOf(last), 'HEAD=' + head, 'origin=' + origin, 'ahead=' + ahead, 'dirty=' + dirty, 'queue=' + queued, 'tickets=' + tickets, 'live=' + (live ? '1' : '0'), '| ' + oneLine(lastText?.text, 260)].join(' ');
 }
 
 let ticketCache;
