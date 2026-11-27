@@ -101,6 +101,7 @@ void add_monitor_options(CLI::App* command, CommandOptions& options)
     command->add_option("--poll", options.poll)->capture_default_str();
     command->add_option("--agents", options.agents, "comma separated peer names");
     command->add_flag("--once", options.once, "one pass over peers that airc reports not busy");
+    command->add_flag("--first", options.first, "exit after the first peer-finished line, so the dispatcher is woken the moment a peer is done");
     command->add_flag("--text", options.text, "human line instead of JSON");
     command->add_option("--prompt", options.prompt, "instruct prompt template; {last}, {agent}, {session}")
         ->capture_default_str();

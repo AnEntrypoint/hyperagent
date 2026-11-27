@@ -74,6 +74,9 @@ int run(const monitor::CommandOptions& options)
         orch::turn::follow_peers();
         for (const auto& event : watcher.poll()) {
             monitor::print_event(event, options.text);
+            if (options.first) {
+                return 0;
+            }
         }
         std::this_thread::sleep_for(interval);
     }

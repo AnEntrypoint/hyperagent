@@ -96,6 +96,6 @@ The cycle is three calls: the read, every send in one message, every delivery ch
 
 ## Session start
 
-1. Run `build/hyperagent watch` in the background and confirm it is alive.
+1. Run `hyperagent watch --first` in the background (Bash run_in_background) and confirm it is alive. It exits on the first peer-finished line, which wakes the dispatcher at once; run the cycle, then start the watch again.
 2. `CronList`; if the 5-minute cycle wake is missing, register it with `CronCreate` on minutes that are not 0 or 30. It is session-only.
 3. Never arm a Monitor. `ScheduleWakeup` is a one-shot fallback, not the loop.
