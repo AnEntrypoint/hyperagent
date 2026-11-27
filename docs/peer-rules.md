@@ -19,6 +19,7 @@ Anything that waits, repeats or blocks is a defect, whatever the work.
 - A shipped-layout install rewrites the portable project MCP file. Regenerate the installed project configuration with setup immediately after the install and check the doctor before dispatching peers.
 - A live channel, server-identity or author-attribution mismatch is a defect: stop the active acceptance claim, add the first-person requirement to the spec, queue a source-of-truth witness and red check, and do not claim DONE until every live surface agrees.
 - An ended peer with unblocked work is sent in the same cycle its state is read. A spec, queue or held-file rewrite that delays that send is a defect and is recorded as a rule.
+- A detached send writes its output to a directory that already exists. Create that directory in the same command before launching the send.
 
 ## Where and how
 
