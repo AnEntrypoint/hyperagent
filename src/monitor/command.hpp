@@ -17,6 +17,7 @@ struct CommandOptions {
     std::string gone_prompt{gone_prompt_template};
     bool text = false;
     bool once = false;
+    bool first = false;
 };
 
 void add_monitor_options(CLI::App* command, CommandOptions& options);
