@@ -24,7 +24,9 @@ Anything that waits, repeats or blocks is a defect, whatever the work.
 - Write the simplest code that does the job: delete, deduplicate, share modules, drive behaviour from data.
 - Browser work goes through playwriter. If it fails, report the failure and record the check as open.
 - Scratch goes under `$HYPERAGENT_SCRATCH/<your project>` (default: the `tmp` directory beside the projects), never an OS temp directory. Remove your scratch and stop every process you started, by PID, never by name pattern.
-- Never stage or push a file the owner left uncommitted.
+- Consolidate: push every green change in the repository, including files that were left uncommitted, once the build is green.
+- Progress-oriented decisions are made and executed by the peer, with the reason recorded, not held for the owner.
+- Never request a key or credential for a witness that does not need one.
 
 ## Two phases
 

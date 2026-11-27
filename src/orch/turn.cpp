@@ -298,6 +298,17 @@ bool is_busy(const std::string& harness_name, const std::string& pane)
     }
 }
 
+std::string pane_fingerprint(const std::string& pane)
+{
+    std::string letters;
+    for (const unsigned char c : pane) {
+        if (std::isalpha(c)) {
+            letters.push_back(static_cast<char>(std::tolower(c)));
+        }
+    }
+    return letters;
+}
+
 bool local_command_done(const std::string& harness_name, const std::string& prompt, const std::string& pane)
 {
     if (!prompt.starts_with('/') || is_busy(harness_name, pane)) {
@@ -490,6 +501,8 @@ Value run_job(const Value& job, const TurnOptions& options)
         double sent = epoch_now();
         int retries = 0;
         double last = epoch_now();
+        std::string pane_seen;
+        double pane_changed = epoch_now();
 
         while (true) {
             const double remaining = deadline_of(options.timing.timeout) - epoch_now();
@@ -529,6 +542,17 @@ Value run_job(const Value& job, const TurnOptions& options)
                         break;
                     }
                 }
+                if (options.timing.stall_exit > 0) {
+                    const std::string fingerprint = pane_fingerprint(ccbridge::capture(name));
+                    if (fingerprint != pane_seen) {
+                        pane_seen = fingerprint;
+                        pane_changed = now;
+                    } else if (now - pane_changed >= options.timing.stall_exit) {
+                        tail = ccbridge::pane_tail(ccbridge::capture(name));
+                        status = "stalled";
+                        break;
+                    }
+                }
                 continue;
             }
             if (event.kind == websocket::EventKind::closed) {
@@ -564,7 +588,7 @@ Value run_job(const Value& job, const TurnOptions& options)
         peer.close();
     }
 
-    if (status == "timeout" || status == "blocked") {
+    if (status == "timeout" || status == "blocked" || status == "stalled") {
         tail = ccbridge::pane_tail(ccbridge::capture(name));
     }
     Value tail_value = Value::array();

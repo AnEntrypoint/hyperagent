@@ -42,6 +42,7 @@ orch::TurnOptions turn_options(double timeout, double idle, bool tools, bool tru
     orch::TurnOptions options;
     options.timing.timeout = timeout;
     options.timing.idle_exit = idle;
+    options.timing.stall_exit = orch::config::default_stall_exit;
     options.timing.lock_wait = orch::config::default_lock_wait;
     options.tools = tools;
     options.trust = trust;
