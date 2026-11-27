@@ -184,7 +184,10 @@ long long spawn_detached(const std::vector<std::string>& argv, const std::map<st
             ::_exit(127);
         }
         if (second > 0) {
-            ::write(ends[1], &second, sizeof second);
+            const ssize_t written = ::write(ends[1], &second, sizeof second);
+            if (written != static_cast<ssize_t>(sizeof second)) {
+                ::_exit(0);
+            }
         }
         ::_exit(0);
     }
