@@ -218,7 +218,8 @@ BEFORE=$(launch_count alpha)
 tool start_projects '{"names":["alpha"]}'
 expect_reply 'harness=claude-fable' "remembered claude-fable harness"
 [ "$(launch_count alpha)" -gt "$BEFORE" ] || fail "alpha was not launched again"
-expect_launch alpha '"--resume"' "remembered claude-fable harness"
+expect_launch alpha '"--dangerously-skip-permissions"' "remembered claude-fable harness"
+refuse_launch alpha '"--model"' "remembered claude-fable harness"
 echo "ok claude-fable selects its template and is remembered"
 
 "$HYPERAGENT" orch start gamma --model fake-model-c --settle 0.2 > "$TMP/cli.out" 2>&1 || fail "orch start gamma: $(cat "$TMP/cli.out")"
