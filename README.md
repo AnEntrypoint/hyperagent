@@ -48,7 +48,7 @@ Options for a custom installation:
 hyperagent setup --parent DIR --home DIR --journal DIR --templates DIR --port PORT
 ```
 
-`HYPERAGENT_INSTALL_MANIFEST` overrides the manifest path. `HYPERAGENT_WITNESS_DIR` selects scratch for witnesses. `HYPERAGENT_SCRATCH` selects peer scratch, `HYPERAGENT_PEERS_ROOTS` is a path-list of peer checkout roots, and `HYPERAGENT_JOURNAL` overrides the dispatcher journal root. No script or rule hardcodes a host-specific workspace mount.
+`HYPERAGENT_INSTALL_MANIFEST` overrides the manifest path. `HYPERAGENT_WITNESS_DIR` selects scratch for witnesses. `HYPERAGENT_SCRATCH` selects peer scratch, `HYPERAGENT_PEERS_ROOTS` is a path-list of peer checkout roots, and `HYPERAGENT_JOURNAL` overrides the dispatcher journal root. No script or rule hardcodes a host-specific workspace mount. The peer list is local to each host: copy `scripts/peers.example.json` to `scripts/peers.local.json` (ignored by git) or point `HYPERAGENT_PEERS` at a file, and no project name, session or checkout is ever committed.
 
 ## Custom peer launch
 

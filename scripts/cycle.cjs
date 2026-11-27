@@ -4,7 +4,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
-const peers = JSON.parse(fs.readFileSync(path.join(__dirname, 'peers.json'), 'utf8'));
+const peersFile = [process.env.HYPERAGENT_PEERS, path.join(__dirname, 'peers.local.json'), path.join(__dirname, 'peers.json')].find((file) => file && fs.existsSync(file));
+const peers = peersFile ? JSON.parse(fs.readFileSync(peersFile, 'utf8')) : [];
 const journalRoot = process.env.HYPERAGENT_JOURNAL || path.join(root, '.orch/projects');
 const ghHelper = '-c credential.helper= -c credential.helper="!gh auth git-credential"';
 const systemProcesses = /s6|dbus|gvfs|xfce|Xvfb|ssh-agent|gpg-agent|at-spi|dconf|udisks|crashpad|tumbler|gate-ticket\.cjs|ccbridge serve|hyperagent orch p/;

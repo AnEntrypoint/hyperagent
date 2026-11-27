@@ -23,7 +23,7 @@ Anything that waits, repeats or blocks is a defect, whatever the work. Each cycl
 | `peer_status`, `read_output`, `search_output`, `read_pane` | a peer's liveness and launch arguments, a full report, a search across journals, what a peer is waiting on |
 | `node scripts/gate-ticket.cjs list` / `history` | the heavy-window queue, and each project's windows with wait, run time, peak memory and tree |
 
-`scripts/peers.json` lists each peer's name, saved session and checkout. A turn status of `timeout` means the deadline passed, not that the peer failed.
+`scripts/peers.local.json` (ignored by git; `scripts/peers.example.json` shows the shape) lists each peer's name, saved session and checkout on this host. A turn status of `timeout` means the deadline passed, not that the peer failed.
 
 ## Specs
 
