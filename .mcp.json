@@ -1,16 +1,3 @@
 {
-  "mcpServers": {
-    "hyperagent": {
-      "command": "build/hyperagent",
-      "args": [
-        "mcp"
-      ],
-      "env": {
-        "MCP_TIMEOUT": "60000",
-        "MCP_TOOL_TIMEOUT": "14400000",
-        "ORCH_PORT": "8788"
-      },
-      "timeout": 14400000
-    }
-  }
+  "mcpServers": {}
 }
