@@ -7,7 +7,8 @@
 
 namespace hyperagent::orch::config {
 
-inline constexpr double default_timeout = 14400.0;
+inline constexpr double default_timeout = 7200.0;
+inline constexpr double default_stall_exit = 900.0;
 inline constexpr double default_idle_exit = 120.0;
 inline constexpr double default_lock_wait = 14400.0;
 inline constexpr double default_settle = 3.0;

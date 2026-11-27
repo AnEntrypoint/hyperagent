@@ -217,7 +217,7 @@ int cmd_fanout(const std::string& file, const TurnOptions& options, bool as_json
     if (statuses == std::set<std::string>{"turn_end"}) {
         return 0;
     }
-    const bool stopped = statuses.contains("timeout") || statuses.contains("blocked");
+    const bool stopped = statuses.contains("timeout") || statuses.contains("blocked") || statuses.contains("stalled");
     return stopped ? 2 : 3;
 }
 

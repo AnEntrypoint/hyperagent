@@ -540,7 +540,7 @@ int turn_exit_code(const Value& result)
     if (status == "turn_end") {
         return 0;
     }
-    return status == "timeout" || status == "blocked" ? 2 : 3;
+    return status == "timeout" || status == "blocked" || status == "stalled" ? 2 : 3;
 }
 
 Value list_output_sessions(const std::optional<std::string>& project, bool all, long limit)

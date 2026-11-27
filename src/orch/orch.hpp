@@ -18,8 +18,9 @@ public:
 };
 
 struct Timing {
-    double timeout = 14400.0;
+    double timeout = 7200.0;
     double idle_exit = 120.0;
+    double stall_exit = 900.0;
     double lock_wait = 14400.0;
 };
 

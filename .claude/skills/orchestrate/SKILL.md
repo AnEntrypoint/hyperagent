@@ -64,11 +64,12 @@ The cycle is three calls: the read, every send in one message, every delivery ch
 - Scope is maximal. Large and architectural changes are approved by default, and a breaking change is allowed when it is the better design and is recorded. Choose a minimal patch only when evidence shows the larger one is wrong.
 - A failing witness, a warning, a slow path, a flaky check or a surprising output is a defect: fixed, or recorded with its cause.
 - Decide every reversible choice and report it afterwards with its reason. Make an irreversible one reversible where possible.
-- Only four things wait for the owner: credentials; deleting or rewriting unrecoverable data; a licence or legal confirmation; a fact only the owner holds. An approval stands until withdrawn.
+- Progress-oriented decisions are the dispatcher's and are made, recorded with their reason, and executed in the same cycle. They are never held for the owner.
+- Only four things wait for the owner: credentials the work genuinely needs; deleting or rewriting unrecoverable data; a licence or legal confirmation; a fact only the owner holds that no window can produce. Never request a key or credential for a witness that does not need one. An approval stands until withdrawn.
 - A queue item held for an owner-supplied fact is not an idle peer: keep the file, end the turn, and resume its owner in the cycle the fact changes. Never poll.
 - A peer whose spec was verified DONE and whose queue is empty is not an idle peer: leave it ended and do not resume it for ranked work.
 - Answer a peer's question in the cycle it arrives, and give a blocked peer unblocked work. Answer the owner from evidence read now.
-- Every peer pushes each green window as it lands. A repository ahead of origin with no window queued is a defect for the top of its peer's list. The owner's uncommitted files and held decisions stay out of every push.
+- Every peer pushes each green window as it lands. A repository ahead of origin with no window queued is a defect for the top of its peer's list. Consolidate all progress: every green change is committed and pushed in the cycle it passes, including uncommitted work in a repository once its build is green.
 - A change you make in a peer's repository is committed there and named to its peer, with who made it and why; the peer's own gate pushes it.
 
 ## Keeping iterations short
