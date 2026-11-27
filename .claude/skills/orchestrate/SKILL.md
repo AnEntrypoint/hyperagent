@@ -64,6 +64,7 @@ The cycle is three calls: the read, every send in one message, every delivery ch
 - Scope is maximal. Large and architectural changes are approved by default, and a breaking change is allowed when it is the better design and is recorded. Choose a minimal patch only when evidence shows the larger one is wrong.
 - A failing witness, a warning, a slow path, a flaky check or a surprising output is a defect: fixed, or recorded with its cause.
 - Decide every reversible choice and report it afterwards with its reason. Make an irreversible one reversible where possible.
+- A peer whose turn ends with a step it was told to launch not launched (no gate ticket, no result file) is not re-sent the same words. The dispatcher launches that step itself through the gate, detached, in the same cycle, and records it in the peer's queue file. A second such turn for the same peer is a defect for the top of its list.
 - Progress-oriented decisions are the dispatcher's and are made, recorded with their reason, and executed in the same cycle. They are never held for the owner.
 - Only four things wait for the owner: credentials the work genuinely needs; deleting or rewriting unrecoverable data; a licence or legal confirmation; a fact only the owner holds that no window can produce. Never request a key or credential for a witness that does not need one. An approval stands until withdrawn.
 - A queue item held for an owner-supplied fact is not an idle peer: keep the file, end the turn, and resume its owner in the cycle the fact changes. Never poll.
