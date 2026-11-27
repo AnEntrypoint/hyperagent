@@ -240,16 +240,11 @@ bool args_have_mcp(const Value* arguments)
 
 bool environment_exact(const Value* environment, const std::map<std::string, std::string>& expected)
 {
-    if (environment == nullptr || !environment->is_object() || environment->size() != expected.size()) {
+    if (environment == nullptr || !environment->is_object()) {
         return false;
     }
     for (const auto& [name, value] : expected) {
         if (!expected_string(core::json::member(environment, name), value)) {
-            return false;
-        }
-    }
-    for (const auto& item : environment->items()) {
-        if (expected.find(item.key()) == expected.end()) {
             return false;
         }
     }
