@@ -1,3 +1,0 @@
-The dispatcher stopped your turn at 99% context after two output-limit resumes with no new tool output, preserved your worktree as WIP commit `89668d5`, and queued the final gate window. That window ended `LIVE_DONE 1` only because `/config/workspace/tmp/zellous-discord/discover-evidence.txt` was missing.
-
-This turn is one narrower step only: restore that browser evidence through playwriter, rerun the final gated window on `89668d5`, fix only the failures it reports, and push each green window when it lands. Name `docs/peer-rules.md` once in your report. Your remaining list stays in `specs/queue/zellous-discord.md`; do not repeat the earlier combined stage 5–8 prompt. Do not request token values or claim voice DONE; the distinct installed voice identity is held.
