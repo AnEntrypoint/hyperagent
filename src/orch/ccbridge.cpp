@@ -291,12 +291,12 @@ std::string ccbridge_binary()
     if (const char* override_binary = std::getenv("CCBRIDGE_BIN"); override_binary != nullptr && *override_binary != '\0') {
         return override_binary;
     }
-    if (const auto saved_binary = core::install::value("CCBRIDGE_BIN")) {
-        return *saved_binary;
-    }
     const auto beside = core::paths::executable_path().parent_path() / (std::string("ccbridge") + core::platform::executable_suffix);
     if (std::filesystem::is_regular_file(beside)) {
         return beside.string();
+    }
+    if (const auto saved_binary = core::install::value("CCBRIDGE_BIN")) {
+        return *saved_binary;
     }
     return HYPERAGENT_CCBRIDGE;
 }
