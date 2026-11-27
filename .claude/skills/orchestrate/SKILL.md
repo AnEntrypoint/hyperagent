@@ -49,6 +49,11 @@ A goal that spans stages or peers is driven from one file, `specs/<name>.md` (gi
 The cycle is three calls: the read, every send in one message, every delivery check in one body.
 
 ## Sending
+- Every message to a peer is work: it names the next step and the push that step ends in. Never ask a peer a question that does not change work; a peer that needs a decision decides it and says so in its report.
+- Ask a peer to evaluate and push forward in the same step: read the result, decide, change, witness and push in one turn. Do not send a checkpoint that waits for a reply.
+- Done is picked up the moment it happens: the watch line or the next cycle read marks a peer ENDED, and that cycle sends its next step. A peer is never left ENDED with work it could do.
+- Messages are not repeated. A prompt that says what was already sent is replaced by the new step only.
+
 
 - Send at a turn's end; a prompt typed at a busy peer can vanish. When a busy peer must have something now, `stop_peer` then `resume_project`, naming what it had running and its PID.
 - After a send, check it once with `cycle.cjs sent`. After a relaunch, `peer_status` must show the saved session with `--resume`; a fresh session has lost the peer's context, so stop it and resume the saved one.
