@@ -6,12 +6,6 @@
     "remote": "gh"
   },
   {
-    "name": "thebird",
-    "session": "94edcb5e-19f4-4d45-a42c-d3404e2ef932",
-    "checkout": "thebird",
-    "remote": "fetch"
-  },
-  {
     "name": "fx",
     "session": "c1b5c744-b949-4a27-bf3c-42b0cb5122d3",
     "checkout": "fx/fx",
