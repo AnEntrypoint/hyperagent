@@ -32,6 +32,7 @@ Anything that waits, repeats or blocks is a defect, whatever the work.
 
 - Phase A: every change in one pass, code, docs and tests, no builds. Commit each change locally as you make it and list it in `docs/PENDING_VALIDATION.md` with its witness and its red check. A new item joins the open pass.
 - Phase B: one window on the final tree. Run every listed witness and the red checks that are due, fix what fails, and push as soon as everything that ran passed. Each green window is its own push. Never push a red tree or push to see what CI says; read a hosted run at most once.
+- Push policy (dispatcher decision, 2026-11-27): rebase onto origin/main immediately before each window, run the window on that rebased tree, and push right after it if it is green. There is no shared-tree lock. A push that finds origin moved during its window rebases and re-runs the window; it does not force.
 - A window covers the commits it ran on. A later commit that changes nothing the window reads does not void it: push the covered commits and leave the rest for the next window.
 - Commits ahead of origin with no window queued or running are a defect: queue their window.
 - When the assignment points at a spec file, that file is the plan: read it in full, work your stages, and name what you need from another peer.
