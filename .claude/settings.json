@@ -3,9 +3,7 @@
     "~/.claude/CLAUDE.md",
     "~/.claude/RTK.md"
   ],
-  "enabledMcpjsonServers": [
-    "hyperagent"
-  ],
+  "enabledMcpjsonServers": [],
   "permissions": {
     "allow": [
       "CronCreate",
