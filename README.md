@@ -16,10 +16,16 @@ irm https://raw.githubusercontent.com/AnEntrypoint/hyperagent-install/main/insta
 
 The installer verifies the release checksum, installs the CLI, ccbridge, harness templates and GUI resources, runs `hyperagent setup`, prints `hyperagent doctor`, and tells you to restart Claude Code. A running Claude Code session keeps its old MCP environment until it is restarted.
 
+## Local binary, no build tools
+
+`scripts/fetch-release.sh [tag]` downloads the CI build for this machine (`x64-linux`, `arm64-linux`, `x64-macos`, `arm64-macos`), checks it against `SHA256SUMS`, and installs it under `build/release`. Nothing else is needed: no compiler packages and no system libraries. CI publishes every push to `main` as `latest`, so the next `fetch-release.sh` picks up the newest build.
+
 ## Source build
 
+The dependencies come from the vcpkg manifest (`vcpkg.json`), with `VCPKG_ROOT` pointing at a vcpkg checkout at the manifest's `builtin-baseline`. CI builds the same way.
+
 ```sh
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
 cmake --build build
 ctest --test-dir build --output-on-failure
 ```
