@@ -8,6 +8,7 @@ Anything that waits, repeats or blocks is a defect, whatever the work.
 
 - Do each thing once, on final inputs. A check that passed on a tree is not run again on that tree.
 - A cycle state read is issued once per cycle. A second read on unchanged state is a defect: report the duplicate and do not issue it again.
+- A cycle state read that reports a fresh session as stale is a defect: read the journal once after peer_status shows a new session and do not issue a second cycle read.
 - Prove each change with the narrowest check that can fail for it. Rerun a failing check alone, and run the full set once before a push. A red check is rerun only when its code or its witness changed.
 - Reuse before you build. A published artifact, a cache or another project's build that answers the question replaces a build. One build serves a series: switch behaviour at run time, not by rebuilding.
 - While something runs or is queued, work everything it does not test. With nothing reachable left, end the turn naming what is pending and where its result will land; you are resumed when it does. Never poll.
