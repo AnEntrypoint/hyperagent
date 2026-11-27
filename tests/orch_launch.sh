@@ -59,7 +59,8 @@ export FAKE_CLAUDE_ARGV_LOG=$TMP/argv.log
 export FAKE_CLAUDE_TURN_MS=200
 export PATH=$BUILD/fake_claude/bin:$PATH
 export ORCH_CLAUDE_MODEL=haiku
-unset ORCH_JOURNAL CCBRIDGE_TEMPLATES HYPERAGENT_ROOT
+unset ORCH_JOURNAL HYPERAGENT_ROOT
+export CCBRIDGE_TEMPLATES=$ROOT/airc/templates
 mkdir -p "$HOME" "$ORCH_HOME" "$ORCH_PARENT"
 for project in alpha beta gamma delta; do
     mkdir -p "$ORCH_PARENT/$project"
