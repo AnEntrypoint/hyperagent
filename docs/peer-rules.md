@@ -14,6 +14,7 @@ Anything that waits, repeats or blocks is a defect, whatever the work.
 - You are sent your whole remaining list each turn. Work it in order and skip only what is blocked.
 - When a stretch ends, say where the work stands (finished, open or blocked), what you ran to show it, and your longest step with its wall time. Say what wasted time, so it becomes a rule.
 - A block only the owner can lift is a held queue item, not an idle peer: end the turn, keep the queue file, and resume in the cycle the owner-supplied fact changes. Never poll.
+- A turn that reaches a harness stall deadline with work still uncommitted or committed but unpushed is a defect: stop the peer by session, preserve the tree, launch the missing window through the gate, record its result file in the queue, and resume with one narrower step when the ticket leaves. Never repeat the original combined prompt.
 
 ## Where and how
 
