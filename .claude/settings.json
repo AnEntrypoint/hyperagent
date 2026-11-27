@@ -3,7 +3,9 @@
     "~/.claude/CLAUDE.md",
     "~/.claude/RTK.md"
   ],
-  "enabledMcpjsonServers": [],
+  "enabledMcpjsonServers": [
+    "hyperagent"
+  ],
   "disableAutoMode": "disable",
   "permissions": {
     "defaultMode": "bypassPermissions",
