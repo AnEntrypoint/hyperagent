@@ -9,3 +9,6 @@ specs/
 .claude/scheduled_tasks.lock
 docs/fx-freddie-txiki-plan.md
 reports/
+memories/dispatch-ready-prompts.md
+memories/thebird-*.md
+work/rows/prd-mw7xg2xi684f.yml
