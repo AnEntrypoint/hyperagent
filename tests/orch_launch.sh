@@ -59,7 +59,9 @@ export FAKE_CLAUDE_ARGV_LOG=$TMP/argv.log
 export FAKE_CLAUDE_TURN_MS=200
 export PATH=$BUILD/fake_claude/bin:$PATH
 export ORCH_CLAUDE_MODEL=haiku
-unset ORCH_JOURNAL HYPERAGENT_ROOT
+export ORCH_JOURNAL=$ORCH_HOME/projects
+export HYPERAGENT_JOURNAL=$ORCH_HOME/projects
+unset HYPERAGENT_ROOT HYPERAGENT_PEERS_ROOTS HYPERAGENT_SCRATCH
 export CCBRIDGE_TEMPLATES=$ROOT/airc/templates
 mkdir -p "$HOME" "$ORCH_HOME" "$ORCH_PARENT"
 for project in alpha beta gamma delta; do
@@ -208,14 +210,15 @@ tool stop_peer '{"name":"alpha"}'
 tool resume_project '{"project":"alpha","harness":"claude-fable"}'
 expect_reply '"state": "resumed"' "resume alpha on claude-fable"
 expect_reply '"harness": "claude-fable"' "resume alpha on claude-fable"
-expect_launch alpha '"--model","claude-fable-5-2"' "claude-fable template"
+expect_launch alpha '"--resume"' "claude-fable template"
+refuse_launch alpha '"--model"' "claude-fable template"
 refuse_launch alpha 'haiku' "claude-fable template"
 tool stop_peer '{"name":"alpha"}'
 BEFORE=$(launch_count alpha)
 tool start_projects '{"names":["alpha"]}'
 expect_reply 'harness=claude-fable' "remembered claude-fable harness"
 [ "$(launch_count alpha)" -gt "$BEFORE" ] || fail "alpha was not launched again"
-expect_launch alpha '"--model","claude-fable-5-2"' "remembered claude-fable harness"
+expect_launch alpha '"--resume"' "remembered claude-fable harness"
 echo "ok claude-fable selects its template and is remembered"
 
 "$HYPERAGENT" orch start gamma --model fake-model-c --settle 0.2 > "$TMP/cli.out" 2>&1 || fail "orch start gamma: $(cat "$TMP/cli.out")"

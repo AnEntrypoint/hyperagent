@@ -63,7 +63,7 @@ template's `--model` on every later launch and resume of that project; `default`
 A project without a saved model launches with `ORCH_CLAUDE_MODEL` (default `haiku`). A model
 change applies at the next launch; `resume_project` relaunches a live peer whose launch model
 differs from the one asked for. The `claude-fable` harness is remembered the same way and
-launches `claude --model claude-fable-5-2` from its own template. `/sessions` and `peer_status`
+launches `claude` from its own template; the model is supplied per launch. `/sessions` and `peer_status`
 report each peer's launch `model`. A `ccbridge serve` built before the `model` parameter
 ignores it, so a saved model takes effect only after that server is restarted.
 

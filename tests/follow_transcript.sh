@@ -73,7 +73,9 @@ export ORCH_PORT=$PORT
 export FAKE_CLAUDE_TURN_MS=500
 export PATH=$BUILD/fake_claude/bin:$PATH
 export CCBRIDGE_TEMPLATES=$ROOT/airc/templates
-unset ORCH_JOURNAL ORCH_PARENT CCBRIDGE_IDLE_REAP CCBRIDGE_CWD
+export ORCH_JOURNAL=$ORCH_HOME/projects
+export HYPERAGENT_JOURNAL=$ORCH_HOME/projects
+unset ORCH_PARENT HYPERAGENT_ROOT HYPERAGENT_PEERS_ROOTS HYPERAGENT_SCRATCH CCBRIDGE_IDLE_REAP CCBRIDGE_CWD
 mkdir -p "$HOME" "$ORCH_HOME" "$TMP/work" "$TMP/scratch"
 
 "$CCBRIDGE" serve --host 127.0.0.1 --port "$PORT" --cwd "$TMP/scratch" --idle-reap 3600 > "$TMP/server.log" 2>&1 &
