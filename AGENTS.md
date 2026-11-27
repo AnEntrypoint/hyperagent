@@ -368,3 +368,4 @@ lines, and skips a duplicate same-SHA run when the latest published manifest is 
 - airc listens on `ORCH_PORT=8788` with `ORCH_PARENT=/config/workspace`, `ORCH_HOME=/config/workspace/hyperagent/.orch`, `ORCH_JOURNAL=/config/workspace/hyperagent/.orch/projects` and `CCBRIDGE_TEMPLATES=/config/workspace/hyperagent/.orch/templates`.
 - Gate state defaults to `/config/workspace/tmp/gate`; `HYPERAGENT_SCRATCH` is unset here, so `scripts/gate-ticket.cjs` uses the sibling `tmp` directory.
 - Cargo goes through the slot shim at `/config/.local/bin/cargo`.
+- `node scripts/cycle.cjs` prints `api=404` for its bare `https://api.anthropic.com/` root probe; that HTTP answer proves the network responds and is not a failed API call. Confirm a real endpoint only after a turn ends on a network error.
