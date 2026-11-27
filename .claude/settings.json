@@ -4,8 +4,14 @@
     "~/.claude/RTK.md"
   ],
   "enabledMcpjsonServers": [],
+  "disableAutoMode": "disable",
   "permissions": {
+    "defaultMode": "bypassPermissions",
+    "disableAutoMode": "disable",
     "allow": [
+      "Bash",
+      "mcp__hyperagent__*",
+      "mcp__gm__*",
       "CronCreate",
       "CronDelete",
       "CronList",
@@ -94,21 +100,7 @@
       "Bash(node --check:*)"
     ],
     "deny": [],
-    "ask": [
-      "Bash(rm:*)",
-      "Bash(rmdir:*)",
-      "Bash(kill:*)",
-      "Bash(pkill:*)",
-      "Bash(killall:*)",
-      "Bash(git reset --hard:*)",
-      "Bash(git clean:*)",
-      "Bash(git push --force:*)",
-      "Bash(git push -f:*)",
-      "Bash(find * -delete*)",
-      "Bash(find * -exec*)",
-      "Bash(sed -i:*)",
-      "Bash(gcloud * delete*)"
-    ]
+    "ask": []
   },
   "disableAllHooks": true,
   "enabledPlugins": {
