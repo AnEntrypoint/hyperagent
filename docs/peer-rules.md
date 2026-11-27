@@ -17,6 +17,7 @@ Anything that waits, repeats or blocks is a defect, whatever the work.
 - A turn that reaches a harness stall deadline with work still uncommitted or committed but unpushed is a defect: stop the peer by session, preserve the tree, launch the missing window through the gate, record its result file in the queue, and resume with one narrower step when the ticket leaves. Never repeat the original combined prompt.
 - A live witness that writes to an external service treats a rate-limit response as a witness defect: bound the attempts, honor backoff, avoid repeated marker runs on the same tree, and queue the final window on the tree that actually holds the changes.
 - A shipped-layout install rewrites the portable project MCP file. Regenerate the installed project configuration with setup immediately after the install and check the doctor before dispatching peers.
+- A live channel, server-identity or author-attribution mismatch is a defect: stop the active acceptance claim, add the first-person requirement to the spec, queue a source-of-truth witness and red check, and do not claim DONE until every live surface agrees.
 
 ## Where and how
 
