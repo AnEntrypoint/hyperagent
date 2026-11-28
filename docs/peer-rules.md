@@ -24,6 +24,7 @@ Anything that waits, repeats or blocks is a defect, whatever the work.
 - A live witness that writes to an external service treats a rate-limit response as a witness defect: bound the attempts, honor backoff, avoid repeated marker runs on the same tree, and queue the final window on the tree that actually holds the changes.
 - A shipped-layout install rewrites the portable project MCP file. Regenerate the installed project configuration with setup immediately after the install and check the doctor before dispatching peers.
 - A live channel, server-identity or author-attribution mismatch is a defect: stop the active acceptance claim, add the first-person requirement to the spec, queue a source-of-truth witness and red check, and do not claim DONE until every live surface agrees.
+- A green witness that bypasses the live client path is not evidence against a live reflection report: stop the acceptance claim, queue a live-client-path source-of-truth witness and red check, and do not claim DONE until every live surface agrees.
 - An ended peer with unblocked work is sent in the same cycle its state is read. A spec, queue or held-file rewrite that delays that send is a defect and is recorded as a rule.
 - A detached send writes its output to a directory that already exists. Create that directory in the same command before launching the send.
 - A delivery check made before a detached start attaches is a defect: confirm the peer is alive, then read the journal once.
